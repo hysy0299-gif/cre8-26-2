@@ -1,19 +1,31 @@
+import { HoldCard } from "@/components/hold-card";
 import { sortedHolds } from "@/data/holds";
 
 /**
  * HOLD ARCHIVE — 홀드 탐색.
- * product grid가 아니라 샘플 인덱스로 읽혀야 하므로
- * 카드는 이미지 + spec(form/material/surface/interaction)을 함께 노출한다.
- * 필터 축은 홀드 수와 변수 확정 후 결정한다.
+ * product grid가 아니라 샘플 인덱스로 읽혀야 하므로 카드가 spec을 함께 보여준다.
+ * 필터 축(material / surface)은 홀드 수와 변수 확정 후 붙인다.
  */
 export default function ArchivePage() {
   const holds = sortedHolds();
 
   return (
     <>
-      <section data-block="index-header" aria-label="Index" />
+      <section data-block="index-header" className="page-grid">
+        <h1 className="text-display col-span-8">Archive</h1>
+        <p className="text-body text-ink-muted col-span-4 self-end">
+          {holds.length} holds. Each one a separate study in form, material and surface.
+        </p>
+      </section>
+
       <section data-block="hold-grid" aria-label="Holds">
-        {holds.length === 0 ? null : null}
+        <ul className="grid grid-cols-2 gap-x-[var(--grid-gutter)] gap-y-[var(--section-gap)] md:grid-cols-3">
+          {holds.map((hold) => (
+            <li key={hold.slug}>
+              <HoldCard hold={hold} />
+            </li>
+          ))}
+        </ul>
       </section>
     </>
   );

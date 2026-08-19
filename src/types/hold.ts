@@ -53,7 +53,8 @@ export interface Hold {
   slug: string;
   name: string;
   spec: HoldSpec;
-  hero: MediaItem;
+  /** 대표 이미지 — 촬영 전이라 아직 비어 있을 수 있다 */
+  hero?: MediaItem;
   sections: HoldSection[];
   /** 이 홀드가 거쳐간 process 스테이지 — 프로세스 내용을 복제하지 않고 참조한다 */
   processRefs: ProcessStageKey[];
