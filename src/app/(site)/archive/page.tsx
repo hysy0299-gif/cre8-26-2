@@ -3,19 +3,21 @@ import { sortedHolds } from "@/data/holds";
 
 /**
  * ARCHIVE — CMF가 서로 다른 홀드들의 아카이빙.
- * 왼쪽 키워드 휠을 돌리면 오른쪽 오브제가 바뀐다. 확정하면 상세로 들어간다.
+ *
+ * 타이틀은 작게 위로 올리고 화면 대부분을 휠과 오브제에 내준다.
+ * 이 페이지의 주인공은 제목이 아니라 홀드다.
  */
 export default function ArchivePage() {
   const holds = sortedHolds();
 
   return (
     <>
-      <section data-block="index-header" className="page-grid">
-        <h1 className="text-display col-span-8">Archive</h1>
-        <p className="text-body text-ink-muted col-span-4 self-end">
-          {holds.length} holds. Same intent, different colour, material and finish — each one a
-          separate CMF sample.
-        </p>
+      <section
+        data-block="index-header"
+        className="text-label text-ink-muted flex items-baseline justify-between uppercase"
+      >
+        <h1>Archive</h1>
+        <p>{holds.length} CMF samples</p>
       </section>
 
       <section data-block="hold-wheel" aria-label="Holds">

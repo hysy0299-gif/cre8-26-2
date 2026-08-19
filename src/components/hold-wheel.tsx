@@ -11,7 +11,7 @@ import type { Hold } from "@/types/hold";
  * 휠은 행 높이를 fontSize에서 px로 계산하므로 CSS clamp을 못 쓴다.
  * 폭 구간별로 값을 바꿔 끼우면 휠이 알아서 다시 배치된다.
  */
-const FONT_SIZE = { sm: 1.9, md: 2.7, lg: 3.7 } as const;
+const FONT_SIZE = { sm: 2.4, md: 4, lg: 5.5 } as const;
 
 function useWheelFontSize() {
   const [size, setSize] = useState<number>(FONT_SIZE.lg);
@@ -61,8 +61,8 @@ export function HoldWheel({ holds }: { holds: Hold[] }) {
   const active = holds[index];
 
   return (
-    <div className="grid min-h-[72vh] grid-cols-12 gap-[var(--grid-gutter)]">
-      <div className="col-span-12 min-h-[50vh] md:col-span-5 md:min-h-0">
+    <div className="grid min-h-[82vh] grid-cols-12 gap-[var(--grid-gutter)]">
+      <div className="col-span-12 min-h-[55vh] md:col-span-5 md:min-h-0">
         <OptionWheel
           items={holds.map((h) => h.name)}
           defaultSelected={0}
@@ -96,7 +96,7 @@ export function HoldWheel({ holds }: { holds: Hold[] }) {
               height={active.hero.height}
               priority
               sizes="(max-width: 768px) 100vw, 58vw"
-              className="max-h-[60vh] w-full object-contain"
+              className="max-h-[74vh] w-full object-contain"
             />
             <figcaption className="text-label text-ink-muted flex justify-between uppercase">
               <span>{active.index}</span>

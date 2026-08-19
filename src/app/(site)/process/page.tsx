@@ -1,3 +1,4 @@
+import { BrandBook } from "@/components/brand-book";
 import { Slot, SectionLabel } from "@/components/wireframe";
 import { processStages } from "@/data/process";
 
@@ -18,15 +19,7 @@ export default function ProcessPage() {
 
       <section data-block="brand-book">
         <SectionLabel>Brand book</SectionLabel>
-        <div className="page-grid">
-          <Slot label="Book cover" ratio="3/4" className="col-span-4" />
-          <Slot label="Spread 01" ratio="3/2" className="col-span-8" />
-        </div>
-        <div className="mt-[var(--grid-gutter)] grid grid-cols-2 gap-[var(--grid-gutter)] md:grid-cols-4">
-          {Array.from({ length: 4 }, (_, i) => (
-            <Slot key={i} label={`Spread ${String(i + 2).padStart(2, "0")}`} ratio="3/2" />
-          ))}
-        </div>
+        <BrandBook />
       </section>
 
       {processStages.map((stage, i) => (

@@ -46,3 +46,6 @@ next-env.d.ts
 # 메뉴 이미지 원본 — public/img/menu/*.webp 만 저장소에 올린다
 /image
 /img-src
+
+# 브랜드북 원본 — public/img/book/*.webp 만 저장소에 올린다
+/books
