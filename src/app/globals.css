@@ -13,11 +13,18 @@
   --color-ink: var(--color-grit-black);
   --color-ink-muted: var(--color-grit-mid);
   --color-tint: var(--color-grit-green);
+
+  /* Helvetica Neue — 지급된 굵기는 300 / 700 / 900 셋뿐이다. */
+  --font-sans: var(--font-grit), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --default-font-family: var(--font-sans);
 }
 
 body {
   background-color: var(--color-ground);
   color: var(--color-ink);
+  font-family: var(--font-sans);
+  /* 400이 없으므로 기본은 Light */
+  font-weight: 300;
 }
 
-/* 타이포(폰트·스케일)와 간격 스케일은 아직 미정 — 확정되면 여기 @theme에 추가한다. */
+/* 타입 스케일과 간격 스케일은 아직 미정 — 확정되면 위 @theme에 추가한다. */

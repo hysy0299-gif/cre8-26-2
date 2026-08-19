@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# 웹폰트 원본 — 변환 결과(src/fonts/*.woff2)만 저장소에 올린다
+/fonts

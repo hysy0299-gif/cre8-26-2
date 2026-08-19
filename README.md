@@ -62,7 +62,21 @@ npm run build
 로고는 `src/components/logo.tsx` — `lockup` / `symbol` / `wordmark` 세 변형.
 `currentColor`를 상속하는 인라인 SVG라 배경에 따라 잉크색이 자동으로 맞는다.
 
-**미정:** 폰트·타입 스케일·간격 스케일.
+### 타이포
+
+Helvetica Neue **Light(300) / Bold(700) / Heavy(900)** 세 단. `next/font/local`로 셀프호스팅한다.
+
+400(Regular)이 없으므로 `body` 기본 굵기는 300이고, **이 세 단 밖의 값은 쓰지 않는다** —
+쓰면 브라우저가 굵기를 합성해서 글자가 뭉갠다.
+
+원본 `.otf`는 `fonts/`에 두고 저장소에 올리지 않는다(용량 + 라이선스).
+웹에 나가는 건 Latin 서브셋 `src/fonts/*.woff2`뿐이다.
+
+```bash
+npm run fonts   # fonts/*.otf → src/fonts/*.woff2  (1477KB → 73KB)
+```
+
+**미정:** 타입 스케일·간격 스케일.
 
 ## 폴더
 

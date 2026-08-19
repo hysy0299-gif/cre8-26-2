@@ -27,7 +27,8 @@
   white-space: nowrap;
   font-size: var(--ow-font-size);
   line-height: 1;
-  font-weight: 200;
+  /* 지급된 굵기가 300/700/900 셋뿐이라 200·500을 쓰면 브라우저가 합성해 뭉갠다 */
+  font-weight: 300;
   transform-origin: left center;
   cursor: pointer;
   will-change: transform, opacity, filter;
@@ -42,5 +43,5 @@
 }
 
 .option-wheel__item--selected {
-  font-weight: 500;
+  font-weight: 700;
 }
