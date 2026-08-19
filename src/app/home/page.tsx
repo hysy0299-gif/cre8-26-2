@@ -12,7 +12,7 @@ export default function MainPage() {
   return (
     <div data-screen="main" className="h-dvh">
       <FlowingMenu
-        items={destinations.map((d) => ({ link: d.href, text: d.label }))}
+        items={destinations.map((d) => ({ link: d.href, text: d.label, image: d.image }))}
         textColor="#010101"
         bgColor="#f5f5f5"
         marqueeBgColor="#bbccc7"

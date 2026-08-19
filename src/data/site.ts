@@ -9,6 +9,8 @@ export interface Destination {
   /** 메뉴·네비에 표기되는 라벨 */
   label: string;
   href: string;
+  /** 메인 메뉴 마퀴에 흐르는 이미지. 없으면 틴트 블록이 자리를 지킨다 */
+  image?: string;
 }
 
 /**
@@ -19,12 +21,14 @@ export interface Destination {
  * ARCHIVE  CMF가 다른 홀드들의 아카이빙
  * PROCESS  브랜드북 · 제작 과정
  * ABOUT    팀 · 전시
+ *
+ * 이미지는 `npm run menu-images`로 만든다.
  */
 export const destinations: Destination[] = [
-  { label: "GRIT", href: "/grit" },
+  { label: "GRIT", href: "/grit", image: "/img/menu/grit.webp" },
   { label: "ARCHIVE", href: "/archive" },
-  { label: "PROCESS", href: "/process" },
-  { label: "ABOUT", href: "/about" },
+  { label: "PROCESS", href: "/process", image: "/img/menu/process.webp" },
+  { label: "ABOUT", href: "/about", image: "/img/menu/about.webp" },
 ];
 
 export const nav = destinations;

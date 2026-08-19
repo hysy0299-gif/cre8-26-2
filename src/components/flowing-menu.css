@@ -100,14 +100,20 @@
   padding: 0 1vw;
 }
 
-/* 사진이 들어오기 전에는 틴트 블록이 자리를 지킨다 */
+/* 오브제 사진은 정사각에 가깝다. cover로 가운데만 잘라내면 형태가 안 보이므로
+   정사각 칸에 contain으로 통째로 담는다. */
 .marquee__img {
-  width: 200px;
   height: 7vh;
+  aspect-ratio: 1;
   margin: 2em 2vw;
-  background-color: var(--color-tint);
-  background-size: cover;
+  background-size: contain;
+  background-repeat: no-repeat;
   background-position: 50% 50%;
+}
+
+/* 사진이 아직 없는 항목은 틴트 블록이 자리를 지킨다 */
+.marquee__img--empty {
+  background-color: var(--color-tint);
 }
 
 @media (prefers-reduced-motion: reduce) {

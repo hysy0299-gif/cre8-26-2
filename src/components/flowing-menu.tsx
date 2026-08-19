@@ -173,7 +173,7 @@ function MenuItem({ link, text, image, speed }: FlowingMenuItem & { speed: numbe
               <div className="marquee__part" key={idx}>
                 <span>{text}</span>
                 <div
-                  className="marquee__img"
+                  className={`marquee__img${image ? "" : " marquee__img--empty"}`}
                   style={
                     image ? ({ backgroundImage: `url(${image})` } as CSSProperties) : undefined
                   }
