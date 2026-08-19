@@ -1,0 +1,88 @@
+.book {
+  /* 페이지 비율 1000:1415 */
+  --page-ratio: 0.7067;
+  /* 펼침면(2쪽)이 폭·높이 모두에 들어가도록 둘 중 작은 쪽을 택한다 */
+  --page-h: min(78vh, 66vw);
+  --page-w: calc(var(--page-h) * var(--page-ratio));
+
+  position: relative;
+  width: calc(var(--page-w) * 2);
+  height: var(--page-h);
+  margin-inline: auto;
+  perspective: 2400px;
+  user-select: none;
+  /* 가로 드래그는 우리가 먹고 세로 스크롤은 페이지에 넘긴다 */
+  touch-action: pan-y;
+}
+
+.book--dragging {
+  cursor: grabbing;
+}
+
+/* 펼침면 바닥 — 아직 안 넘긴 왼쪽이 빈 채로 뚫려 보이지 않게 받쳐준다 */
+.book__base {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--color-ink) 4%, var(--color-ground));
+}
+
+.book__leaf {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: var(--page-w);
+  height: 100%;
+  transform-origin: left center;
+  transform-style: preserve-3d;
+  will-change: transform;
+  cursor: grab;
+}
+
+.book__face {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  backface-visibility: hidden;
+  background: var(--color-ground);
+  box-shadow: 0 0 1px color-mix(in srgb, var(--color-ink) 25%, transparent);
+}
+
+/* 뒷면은 미리 뒤집어 둬야 앞면이 돌았을 때 바로 보인다 */
+.book__face--back {
+  transform: rotateY(180deg);
+}
+
+.book__face img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* 책등 쪽 그늘 — 종이가 두 장 겹쳐 있다는 느낌만 준다 */
+.book__face::after {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  width: 6%;
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--color-ink) 10%, transparent),
+    transparent
+  );
+}
+
+.book__face--back::after {
+  right: 0;
+  background: linear-gradient(
+    to left,
+    color-mix(in srgb, var(--color-ink) 10%, transparent),
+    transparent
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .book__leaf {
+    transition: none;
+  }
+}
