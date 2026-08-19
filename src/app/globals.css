@@ -1,7 +1,8 @@
 @import "tailwindcss";
 
 @theme {
-  /* GRIT 팔레트 — 브랜드 지정값. 이 4색 밖의 색은 쓰지 않는다. */
+  /* ── 색 ─────────────────────────────────────────────
+     GRIT 팔레트 — 브랜드 지정값. 이 4색 밖의 색은 쓰지 않는다. */
   --color-grit-white: #f5f5f5;
   --color-grit-black: #010101;
   --color-grit-mid: #aeb6bf;
@@ -14,9 +15,39 @@
   --color-ink-muted: var(--color-grit-mid);
   --color-tint: var(--color-grit-green);
 
-  /* Helvetica Neue — 지급된 굵기는 300 / 700 / 900 셋뿐이다. */
+  /* ── 타이포 ──────────────────────────────────────────
+     Helvetica Neue — 지급된 굵기는 300 / 700 / 900 셋뿐이다. */
   --font-sans: var(--font-grit), "Helvetica Neue", Helvetica, Arial, sans-serif;
   --default-font-family: var(--font-sans);
+
+  /* 5단 스케일. 라벨과 디스플레이의 대비를 크게 벌려 두는 편이
+     오브제 사진이 주인공인 화면에서 UI가 조용해진다. */
+  --text-label: 0.6875rem;
+  --text-label--line-height: 1.2;
+  --text-label--letter-spacing: 0.09em;
+
+  --text-body: 1rem;
+  --text-body--line-height: 1.6;
+
+  --text-lead: clamp(1.125rem, 1.4vw, 1.5rem);
+  --text-lead--line-height: 1.45;
+
+  --text-title: clamp(1.75rem, 3.5vw, 3rem);
+  --text-title--line-height: 1.1;
+  --text-title--letter-spacing: -0.01em;
+
+  --text-display: clamp(3rem, 9vw, 8rem);
+  --text-display--line-height: 0.92;
+  --text-display--letter-spacing: -0.02em;
+}
+
+:root {
+  /* ── 그리드 ──────────────────────────────────────────
+     12컬럼. 좌우 여백과 거터는 뷰포트를 따라 늘어난다. */
+  --page-margin: clamp(1.25rem, 4vw, 4rem);
+  --grid-gutter: clamp(0.75rem, 1.5vw, 1.5rem);
+  /* 섹션 사이 리듬 — Tailwind 기본 spacing으로는 못 잡는 큰 간격만 토큰으로 둔다 */
+  --section-gap: clamp(4rem, 10vw, 10rem);
 }
 
 body {
@@ -27,4 +58,15 @@ body {
   font-weight: 300;
 }
 
-/* 타입 스케일과 간격 스케일은 아직 미정 — 확정되면 위 @theme에 추가한다. */
+/* 12컬럼 그리드 + 페이지 좌우 여백 */
+.page-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: var(--grid-gutter);
+  padding-inline: var(--page-margin);
+}
+
+/* 여백만 필요한 곳 */
+.page-inset {
+  padding-inline: var(--page-margin);
+}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import OptionWheel from "@/components/option-wheel";
 import type { Destination } from "@/data/site";
 
@@ -13,6 +13,29 @@ interface MainWheelNavProps {
 }
 
 /**
+ * 휠 라벨 크기(rem).
+ * 휠은 rowH를 fontSize에서 px로 계산하므로 CSS clamp을 못 쓴다.
+ * 그래서 폭 구간별로 값을 바꿔 끼운다 — 바뀌면 휠이 알아서 다시 배치된다.
+ */
+const WHEEL_FONT_SIZE = { sm: 1.75, md: 2.5, lg: 3.5 } as const;
+
+function useWheelFontSize() {
+  const [size, setSize] = useState<number>(WHEEL_FONT_SIZE.lg);
+
+  useEffect(() => {
+    const pick = () => {
+      const w = window.innerWidth;
+      setSize(w < 768 ? WHEEL_FONT_SIZE.sm : w < 1280 ? WHEEL_FONT_SIZE.md : WHEEL_FONT_SIZE.lg);
+    };
+    pick();
+    window.addEventListener("resize", pick);
+    return () => window.removeEventListener("resize", pick);
+  }, []);
+
+  return size;
+}
+
+/**
  * 메인화면의 목적지 선택 장치.
  *
  * 휠을 돌리는 동안 이동하면 지나가는 화면마다 라우팅이 걸리므로,
@@ -20,13 +43,12 @@ interface MainWheelNavProps {
  */
 export function MainWheelNav({ destinations, defaultSelected = 0, onPreview }: MainWheelNavProps) {
   const router = useRouter();
-  const [, setActive] = useState(defaultSelected);
+  const fontSize = useWheelFontSize();
 
   const handleChange = useCallback(
     (index: number) => {
       const dest = destinations[index];
       if (!dest) return;
-      setActive(index);
       onPreview?.(dest);
       // 확정하기 전에 미리 받아둬서 이동이 끊기지 않게 한다
       router.prefetch(dest.href);
@@ -52,6 +74,9 @@ export function MainWheelNav({ destinations, defaultSelected = 0, onPreview }: M
       loop
       draggable
       ariaLabel="Sections"
+      fontSize={fontSize}
+      // 커브가 왼쪽으로 파고들 자리를 페이지 여백만큼 준다
+      inset="var(--page-margin)"
       // 역할 토큰 참조 — 바탕을 뒤집으면 globals.css의 네 줄만 바꿔도 휠이 따라간다
       textColor="var(--color-ink-muted)"
       activeColor="var(--color-ink)"

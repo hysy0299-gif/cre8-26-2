@@ -76,7 +76,27 @@ Helvetica Neue **Light(300) / Bold(700) / Heavy(900)** 세 단. `next/font/local
 npm run fonts   # fonts/*.otf → src/fonts/*.woff2  (1477KB → 73KB)
 ```
 
-**미정:** 타입 스케일·간격 스케일.
+### 그리드 · 스케일
+
+12컬럼. 좌우 여백과 거터는 뷰포트를 따라 늘어난다.
+
+| 토큰 | 값 |
+| --- | --- |
+| `--page-margin` | `clamp(1.25rem, 4vw, 4rem)` |
+| `--grid-gutter` | `clamp(0.75rem, 1.5vw, 1.5rem)` |
+| `--section-gap` | `clamp(4rem, 10vw, 10rem)` |
+
+`.page-grid`(12컬럼 + 여백), `.page-inset`(여백만) 두 클래스로 쓴다.
+
+타입은 5단 — `text-label` / `text-body` / `text-lead` / `text-title` / `text-display`.
+라벨과 디스플레이의 대비를 크게 벌려 두면 오브제 사진이 주인공인 화면에서 UI가 조용해진다.
+
+### 화면 구성
+
+- **`/` 랜딩** — 한 화면 고정. 워드마크를 폭 전체로 눕히고 하단에 Enter.
+- **`/home` 메인** — 한 화면 고정, 스크롤 없음. 좌 5칸 휠(왼쪽 full-bleed, 커브가 화면
+  가장자리까지 파고든다) / 우 7칸 선택 중인 목적지의 대표 이미지. 768px 아래에선 휠만 남는다.
+- **내부 페이지** — `(site)` 레이아웃이 좌우 여백과 `--section-gap` 리듬만 준다.
 
 ## 폴더
 
@@ -91,8 +111,8 @@ src/
 ## 작업 순서
 
 1. Information Architecture ✅
-2. Layout
-3. Design System
+2. Layout ✅
+3. Design System — 색·로고·타이포·그리드 완료
 4. Component
 5. Interaction
 6. Page Assembly

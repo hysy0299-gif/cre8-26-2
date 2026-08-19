@@ -36,7 +36,8 @@ export interface OptionWheelProps {
   fade?: number;
   minOpacity?: number;
   smoothing?: number;
-  inset?: number;
+  /** 앵커된 가장자리와 가운데 항목 사이 여백. 숫자는 px, 문자열은 CSS 길이(var() 가능) */
+  inset?: number | string;
   loop?: boolean;
   draggable?: boolean;
   soundUrl?: string;
@@ -365,7 +366,7 @@ export default function OptionWheel({
           "--ow-text-color": textColor,
           "--ow-active-color": activeColor,
           "--ow-font-size": `${fontSize}rem`,
-          "--ow-inset": `${inset}px`,
+          "--ow-inset": typeof inset === "number" ? `${inset}px` : inset,
         } as CSSProperties
       }
       onPointerDown={handlePointerDown}
