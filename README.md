@@ -28,19 +28,19 @@ npm run build
 
 ```
 /                  LANDING    진입 화면 → 메인화면으로
-/home              MAIN       로고타입 + OptionWheel 목적지 휠 (허브)
-/identity          IDENTITY   로고타입 / 로고 / 아이덴티티 시스템
+/home              MAIN       FlowingMenu 네 갈래 (GRIT · ARCHIVE · PROCESS · ABOUT)
+/identity          GRIT       로고타입 / 로고 / 아이덴티티 시스템
 /archive           ARCHIVE    홀드 탐색 그리드 (product grid 아님 — 샘플 인덱스)
 /archive/[hold]    DETAIL     Object hero → Form → CMF → Surface → Fabrication → Interaction → Experiment → Next
 /process           PROCESS    Research → Form Exploration → Modeling → 3D Printing → Mold → Casting/CMF → Sensor → Exhibition
-/visual            VISUAL     비주얼 아카이브 / 전시 기록
 /about             ABOUT      Definition / Team / Exhibition
+/visual            (미연결)   비주얼 아카이브 — 메뉴가 4갈래로 줄면서 링크가 빠졌다
 ```
 
 - 랜딩(`/`)과 메인화면(`/home`)은 상단 네비 없이 자기 진입 장치를 갖고, 나머지는 `(site)` 라우트 그룹이 감싼다.
-- 목적지 목록은 `src/data/site.ts`의 `destinations` 하나 — 휠과 네비가 같은 소스로 돈다.
-- 메인화면 휠은 **스크롤/드래그로 고르고, 가운데 항목 클릭 또는 Enter로 확정**해야 이동한다.
-  지나가는 항목마다 라우팅하면 안 되므로 통과 시엔 prefetch만 한다.
+- 목적지 목록은 `src/data/site.ts`의 `destinations` 하나 — 메인 메뉴와 내부 네비가 같은 소스로 돈다.
+- 메인화면은 네 갈래가 화면을 가로로 나눠 갖고, 띠에 커서를 올리면 **들어온 모서리 방향에서**
+  마퀴가 밀려 나오며 잉크/바탕이 반전된다.
 - Detail은 **템플릿 1개 + 데이터 N개**. 홀드가 늘어도 파일은 그대로다.
 - Process는 단일 페이지 + 스테이지 앵커(`/process#modeling`). timeline이 아니라 실험 아카이브로 다룬다.
 - Detail의 Fabrication은 프로세스 내용을 복제하지 않고 `hold.processRefs`로 `/process#key`에 연결한다.
