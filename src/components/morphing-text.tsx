@@ -1,99 +1,64 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useImperativeHandle, useRef, type Ref } from "react";
 
 /**
  * Magic UI의 MorphingText — 흐림+임계값 필터로 글자가 녹아 바뀌는 효과.
  *
- * 원본은 배열을 무한 순환하지만 여기선 **한 번만** 바꾼다.
- * 랜딩은 "Be Experimental"을 3초 보여준 뒤 "GRIT"으로 굳고 거기서 멈춘다 —
- * 계속 돌면 첫 화면이 안 가라앉고 클릭을 방해한다.
+ * 원본은 배열을 시간에 맞춰 무한 순환한다. 여기선 시간을 쓰지 않고
+ * **바깥에서 진행도(0→1)를 먹인다** — 랜딩에서 스크롤이 그 진행도를 몬다.
+ * 진행도를 state로 올리면 60fps로 리렌더가 도니 ref로 DOM만 직접 만진다.
  */
+export interface MorphingTextHandle {
+  /** 0이면 from만, 1이면 to만 보인다 */
+  setProgress(p: number): void;
+}
+
 interface MorphingTextProps {
   from: string;
   to: string;
-  /** from을 그대로 두는 시간(초) */
-  holdSeconds?: number;
-  /** 녹아 바뀌는 데 걸리는 시간(초) */
-  morphSeconds?: number;
   className?: string;
+  ref?: Ref<MorphingTextHandle>;
 }
 
 /** 흐림 최대치 — 넘어가면 글자가 사라진 것과 같다 */
 const MAX_BLUR = 100;
 
-export function MorphingText({
-  from,
-  to,
-  holdSeconds = 3,
-  morphSeconds = 1.5,
-  className = "",
-}: MorphingTextProps) {
+const blurFor = (v: number) => (v > 0 ? Math.min(8 / v - 8, MAX_BLUR) : MAX_BLUR);
+
+export function MorphingText({ from, to, className = "", ref }: MorphingTextProps) {
+  const rootRef = useRef<HTMLDivElement>(null);
   const fromRef = useRef<HTMLSpanElement>(null);
   const toRef = useRef<HTMLSpanElement>(null);
-  const [done, setDone] = useState(false);
 
-  useEffect(() => {
+  const setProgress = useCallback((p: number) => {
+    const root = rootRef.current;
     const a = fromRef.current;
     const b = toRef.current;
-    if (!a || !b) return;
+    if (!root || !a || !b) return;
 
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const f = Math.min(Math.max(p, 0), 1);
+    const inv = 1 - f;
 
-    /** 0이면 from만, 1이면 to만 보인다 */
-    const paint = (f: number) => {
-      const inv = 1 - f;
-      b.style.filter = f > 0 ? `blur(${Math.min(8 / f - 8, MAX_BLUR)}px)` : `blur(${MAX_BLUR}px)`;
-      b.style.opacity = `${Math.pow(f, 0.4) * 100}%`;
-      a.style.filter =
-        inv > 0 ? `blur(${Math.min(8 / inv - 8, MAX_BLUR)}px)` : `blur(${MAX_BLUR}px)`;
-      a.style.opacity = `${Math.pow(inv, 0.4) * 100}%`;
-    };
+    // 양끝에서는 필터를 떼야 글자가 또렷하게 선다.
+    // 물고 있으면 최종 상태의 GRIT이 미세하게 뭉갠 채로 남는다.
+    const settled = f <= 0 || f >= 1;
+    root.style.filter = settled ? "none" : "url(#morph-threshold) blur(0.6px)";
 
-    const settle = () => {
-      a.style.filter = "none";
-      a.style.opacity = "0%";
-      b.style.filter = "none";
-      b.style.opacity = "100%";
-      setDone(true);
-    };
+    a.style.filter = settled ? "none" : `blur(${blurFor(inv)}px)`;
+    a.style.opacity = `${Math.pow(inv, 0.4) * 100}%`;
+    b.style.filter = settled ? "none" : `blur(${blurFor(f)}px)`;
+    b.style.opacity = `${Math.pow(f, 0.4) * 100}%`;
+  }, []);
 
-    paint(0);
+  useImperativeHandle(ref, () => ({ setProgress }), [setProgress]);
 
-    if (reduced) {
-      const t = setTimeout(settle, holdSeconds * 1000);
-      return () => clearTimeout(t);
-    }
-
-    let raf = 0;
-    let start = 0;
-
-    const tick = (now: number) => {
-      if (!start) start = now;
-      const elapsed = (now - start) / 1000;
-
-      if (elapsed < holdSeconds) {
-        raf = requestAnimationFrame(tick);
-        return;
-      }
-
-      const f = Math.min((elapsed - holdSeconds) / morphSeconds, 1);
-      paint(f);
-
-      if (f < 1) raf = requestAnimationFrame(tick);
-      else settle();
-    };
-
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [from, to, holdSeconds, morphSeconds]);
+  useEffect(() => {
+    setProgress(0);
+  }, [setProgress, from, to]);
 
   return (
-    <div
-      className={`relative w-full text-center leading-none ${className}`}
-      // 다 굳은 뒤에도 필터를 물고 있으면 글자가 미세하게 뭉개진다
-      style={done ? undefined : { filter: "url(#morph-threshold) blur(0.6px)" }}
-    >
+    <div ref={rootRef} className={`relative w-full text-center leading-none ${className}`}>
       {/* 두 글자가 같은 자리에 겹쳐 있어야 녹아 넘어가는 것처럼 보인다 */}
       <span className="absolute inset-x-0 top-0 inline-block w-full" ref={fromRef}>
         {from}
