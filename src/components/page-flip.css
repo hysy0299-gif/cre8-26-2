@@ -19,13 +19,6 @@
   cursor: grabbing;
 }
 
-/* 펼침면 바닥 — 아직 안 넘긴 왼쪽이 빈 채로 뚫려 보이지 않게 받쳐준다 */
-.book__base {
-  position: absolute;
-  inset: 0;
-  background: color-mix(in srgb, var(--color-ink) 4%, var(--color-ground));
-}
-
 .book__leaf {
   position: absolute;
   top: 0;

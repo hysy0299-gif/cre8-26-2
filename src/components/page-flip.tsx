@@ -10,10 +10,10 @@ import "./page-flip.css";
  * 드래그로 넘기는 책.
  *
  * 종이 한 장(leaf)이 앞뒤 두 쪽을 갖는다 — 19쪽이면 10장, 마지막 장의 뒷면은 비어 있다.
- * 각 장은 책등(왼쪽 모서리)을 축으로 rotateY 하고, 넘긴 장은 -180도에서 왼쪽에 쌓인다.
+ * 그래서 펼침면은 1 / 2·3 / 4·5 … 순으로 간다. 표지는 혼자다.
  *
- * 오른쪽을 왼쪽으로 끌면 앞으로, 왼쪽을 오른쪽으로 끌면 뒤로 넘어간다.
- * 놓았을 때 절반을 넘겼으면 마저 넘어가고 아니면 되돌아온다. 그냥 클릭해도 한 장 넘어간다.
+ * 각 장은 책등(왼쪽 모서리)을 축으로 rotateY 하고, 넘긴 장은 -180도에서 왼쪽에 쌓인다.
+ * 오른쪽을 왼쪽으로 끌면 앞으로, 왼쪽을 오른쪽으로 끌면 뒤로. 그냥 클릭해도 한 장 넘어간다.
  *
  * 겹쳐 들어오는 입력 처리 —
  * 넘기는 중에 또 누르면 진행 중이던 장을 **즉시 제자리에 앉히고** 새 입력을 받는다.
@@ -44,6 +44,12 @@ export function PageFlip({ pages, className = "" }: PageFlipProps) {
     return out;
   }, [pages]);
 
+  /**
+   * 마지막 장의 뒷면이 비어 있으면(홀수 쪽) 거기까지 넘기면 빈 면이 보인다.
+   * 그래서 마지막 펼침면에서 멈춘다.
+   */
+  const maxTurned = leaves.length - (leaves[leaves.length - 1]?.back ? 0 : 1);
+
   const bookRef = useRef<HTMLDivElement | null>(null);
   const leafRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -65,6 +71,19 @@ export function PageFlip({ pages, className = "" }: PageFlipProps) {
   );
 
   /**
+   * 책 전체를 반쪽만큼 밀어주는 양(반쪽 단위).
+   *
+   * 닫혀 있을 때는 오른쪽 한 장뿐이라 그대로 두면 왼쪽이 빈 채로 펼쳐진 것처럼 보인다.
+   * 그래서 닫힘(+1) → 펼침(0)으로 밀어서 책이 실제로 열리는 것처럼 만든다.
+   */
+  const offsetFor = useCallback(
+    (count: number) => (count === 0 ? 1 : count >= leaves.length ? -1 : 0),
+    [leaves.length],
+  );
+
+  const halfPage = () => (bookRef.current?.offsetWidth ?? 0) / 4;
+
+  /**
    * 모든 장을 count 기준 제자리에 즉시 앉힌다.
    *
    * z-index를 JSX style로 주면 리렌더가 손으로 올려둔 값을 덮어써서
@@ -78,13 +97,27 @@ export function PageFlip({ pages, className = "" }: PageFlipProps) {
         gsap.set(el, { rotateY: i < count ? -180 : 0 });
         el.style.zIndex = String(zIndexFor(i, count));
       });
+      if (bookRef.current) {
+        gsap.killTweensOf(bookRef.current);
+        gsap.set(bookRef.current, { x: offsetFor(count) * halfPage() });
+      }
     },
-    [zIndexFor],
+    [zIndexFor, offsetFor],
   );
 
   useLayoutEffect(() => {
     rest(turnedRef.current);
   }, [rest]);
+
+  // 화면 크기가 바뀌면 반쪽 폭도 바뀌므로 밀어둔 양을 다시 잡는다
+  useEffect(() => {
+    const onResize = () => {
+      if (!bookRef.current || dragRef.current) return;
+      gsap.set(bookRef.current, { x: offsetFor(turnedRef.current) * halfPage() });
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [offsetFor]);
 
   /** 돌고 있던 장이 있으면 애니메이션을 끊고 목적지에 앉힌다 */
   const settleFlying = useCallback(() => {
@@ -96,7 +129,7 @@ export function PageFlip({ pages, className = "" }: PageFlipProps) {
     rest(flying.to);
   }, [rest]);
 
-  /** 한 장을 목적지까지 돌린다 */
+  /** 한 장을 목적지까지 돌린다. 책 전체 밀기도 같이 간다 */
   const animate = useCallback(
     (leaf: number, to: number) => {
       const el = leafRefs.current[leaf];
@@ -106,13 +139,14 @@ export function PageFlip({ pages, className = "" }: PageFlipProps) {
         return;
       }
 
+      const forward = to > turnedRef.current;
       flyingRef.current = { leaf, to };
       // 도는 동안은 무조건 맨 위에 있어야 앞뒤 장에 파묻히지 않는다
       el.style.zIndex = String(leaves.length + 1);
 
       gsap.killTweensOf(el);
       gsap.to(el, {
-        rotateY: to > turnedRef.current ? -180 : 0,
+        rotateY: forward ? -180 : 0,
         duration: TURN_DURATION,
         ease: "power2.inOut",
         onComplete: () => {
@@ -120,8 +154,17 @@ export function PageFlip({ pages, className = "" }: PageFlipProps) {
           settleFlying();
         },
       });
+
+      if (bookRef.current) {
+        gsap.killTweensOf(bookRef.current);
+        gsap.to(bookRef.current, {
+          x: offsetFor(to) * halfPage(),
+          duration: TURN_DURATION,
+          ease: "power2.inOut",
+        });
+      }
     },
-    [leaves.length, settleFlying],
+    [leaves.length, settleFlying, offsetFor],
   );
 
   /** 목표 장수로 이동 — 진행 중이던 건 먼저 앉힌다 */
@@ -129,13 +172,12 @@ export function PageFlip({ pages, className = "" }: PageFlipProps) {
     (next: number) => {
       settleFlying();
       const cur = turnedRef.current;
-      const target = Math.min(Math.max(next, 0), leaves.length);
+      const target = Math.min(Math.max(next, 0), maxTurned);
       if (target === cur) return;
-      // 한 번에 한 장씩만 — 앞으로면 현재 장, 뒤로면 직전 장이 돈다
       const step = target > cur ? cur + 1 : cur - 1;
       animate(target > cur ? cur : cur - 1, step);
     },
-    [animate, leaves.length, settleFlying],
+    [animate, maxTurned, settleFlying],
   );
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -150,6 +192,7 @@ export function PageFlip({ pages, className = "" }: PageFlipProps) {
     const cur = turnedRef.current;
     const leaf = onRightHalf ? cur : cur - 1;
     if (leaf < 0 || leaf >= leaves.length) return;
+    if (onRightHalf && cur >= maxTurned) return;
 
     dragRef.current = { leaf, startX: e.clientX, moved: 0, forward: onRightHalf };
     setIsDragging(true);
@@ -160,6 +203,7 @@ export function PageFlip({ pages, className = "" }: PageFlipProps) {
       gsap.killTweensOf(el);
       el.style.zIndex = String(leaves.length + 1);
     }
+    gsap.killTweensOf(book);
   };
 
   const progressOf = (drag: NonNullable<typeof dragRef.current>, clientX: number) => {
@@ -176,6 +220,14 @@ export function PageFlip({ pages, className = "" }: PageFlipProps) {
     const f = progressOf(drag, e.clientX);
     const el = leafRefs.current[drag.leaf];
     if (el) gsap.set(el, { rotateY: drag.forward ? -180 * f : -180 * (1 - f) });
+
+    // 표지를 넘기는 중이면 책이 열리는 만큼 같이 밀어준다
+    if (bookRef.current) {
+      const cur = turnedRef.current;
+      const from = offsetFor(cur);
+      const to = offsetFor(drag.forward ? cur + 1 : cur - 1);
+      gsap.set(bookRef.current, { x: (from + (to - from) * f) * halfPage() });
+    }
   };
 
   const finishDrag = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -204,6 +256,13 @@ export function PageFlip({ pages, className = "" }: PageFlipProps) {
           },
         });
       }
+      if (bookRef.current) {
+        gsap.to(bookRef.current, {
+          x: offsetFor(cur) * halfPage(),
+          duration: TURN_DURATION,
+          ease: "power2.inOut",
+        });
+      }
       return;
     }
 
@@ -220,7 +279,18 @@ export function PageFlip({ pages, className = "" }: PageFlipProps) {
     }
   };
 
-  useEffect(() => () => leafRefs.current.forEach((el) => el && gsap.killTweensOf(el)), []);
+  useEffect(() => {
+    const els = leafRefs.current;
+    return () => {
+      els.forEach((el) => {
+        if (el) gsap.killTweensOf(el);
+      });
+    };
+  }, []);
+
+  /** 표지는 혼자, 그 뒤로는 두 쪽씩 */
+  const spreadLabel =
+    turned === 0 ? "1" : `${turned * 2}–${Math.min(turned * 2 + 1, pages.length)}`;
 
   return (
     <div className={className}>
@@ -236,8 +306,6 @@ export function PageFlip({ pages, className = "" }: PageFlipProps) {
         onPointerCancel={finishDrag}
         onKeyDown={handleKeyDown}
       >
-        <div className="book__base" />
-
         {leaves.map((leaf, i) => (
           <div
             key={i}
@@ -278,7 +346,7 @@ export function PageFlip({ pages, className = "" }: PageFlipProps) {
       <p className="text-label text-ink-muted mt-6 flex justify-center gap-6 uppercase">
         <span>Drag to turn</span>
         <span>
-          {Math.min(turned * 2 + 1, pages.length)} / {pages.length}
+          {spreadLabel} / {pages.length}
         </span>
       </p>
     </div>
