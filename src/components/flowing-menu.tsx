@@ -26,12 +26,35 @@ interface FlowingMenuProps {
   items: FlowingMenuItem[];
   /** 마퀴 한 바퀴에 걸리는 시간(초). 낮을수록 빠르다 */
   speed?: number;
+  /** 색은 기본적으로 역할 토큰을 따르고, 넘기면 그 값이 이긴다 */
+  textColor?: string;
+  bgColor?: string;
+  marqueeBgColor?: string;
+  marqueeTextColor?: string;
+  borderColor?: string;
   className?: string;
 }
 
-export function FlowingMenu({ items, speed = 15, className = "" }: FlowingMenuProps) {
+export function FlowingMenu({
+  items,
+  speed = 15,
+  textColor,
+  bgColor,
+  marqueeBgColor,
+  marqueeTextColor,
+  borderColor,
+  className = "",
+}: FlowingMenuProps) {
+  const style = {
+    ...(textColor && { "--fm-text": textColor }),
+    ...(bgColor && { "--fm-bg": bgColor }),
+    ...(marqueeBgColor && { "--fm-marquee-bg": marqueeBgColor }),
+    ...(marqueeTextColor && { "--fm-marquee-text": marqueeTextColor }),
+    ...(borderColor && { "--fm-border": borderColor }),
+  } as CSSProperties;
+
   return (
-    <div className={`menu-wrap ${className}`}>
+    <div className={`menu-wrap ${className}`} style={style}>
       <nav className="menu">
         {items.map((item) => (
           <MenuItem key={item.link} {...item} speed={speed} />

@@ -2,8 +2,8 @@ import { Slot, SectionLabel } from "@/components/wireframe";
 import { processStages } from "@/data/process";
 
 /**
- * PROCESS — 단일 페이지, 스테이지별 앵커(/process#modeling).
- * timeline이 아니라 실험 아카이브로 보이도록 스테이지마다 독립 갤러리를 갖는다.
+ * PROCESS — 브랜드북 + 제작 과정.
+ * 스테이지는 timeline이 아니라 실험 아카이브로 보이도록 각자 독립 갤러리를 갖는다.
  */
 export default function ProcessPage() {
   return (
@@ -11,8 +11,22 @@ export default function ProcessPage() {
       <section data-block="process-header" className="page-grid">
         <h1 className="text-display col-span-8">Process</h1>
         <p className="text-body text-ink-muted col-span-4 self-end">
-          Not a timeline. Each stage is its own set of experiments.
+          Brand book and the making of the holds. Not a timeline — each stage is its own set of
+          experiments.
         </p>
+      </section>
+
+      <section data-block="brand-book">
+        <SectionLabel>Brand book</SectionLabel>
+        <div className="page-grid">
+          <Slot label="Book cover" ratio="3/4" className="col-span-4" />
+          <Slot label="Spread 01" ratio="3/2" className="col-span-8" />
+        </div>
+        <div className="mt-[var(--grid-gutter)] grid grid-cols-2 gap-[var(--grid-gutter)] md:grid-cols-4">
+          {Array.from({ length: 4 }, (_, i) => (
+            <Slot key={i} label={`Spread ${String(i + 2).padStart(2, "0")}`} ratio="3/2" />
+          ))}
+        </div>
       </section>
 
       {processStages.map((stage, i) => (

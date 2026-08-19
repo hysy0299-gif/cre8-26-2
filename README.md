@@ -28,14 +28,16 @@ npm run build
 
 ```
 /                  LANDING    진입 화면 → 메인화면으로
-/home              MAIN       FlowingMenu 네 갈래 (GRIT · ARCHIVE · PROCESS · ABOUT)
-/identity          GRIT       로고타입 / 로고 / 아이덴티티 시스템
-/archive           ARCHIVE    홀드 탐색 그리드 (product grid 아님 — 샘플 인덱스)
+/home              MAIN       FlowingMenu 네 갈래
+/grit              GRIT       브랜드 방향성 · 비주얼 · 매니페스토
+/archive           ARCHIVE    CMF가 서로 다른 홀드들의 아카이빙
 /archive/[hold]    DETAIL     Object hero → Form → CMF → Surface → Fabrication → Interaction → Experiment → Next
-/process           PROCESS    Research → Form Exploration → Modeling → 3D Printing → Mold → Casting/CMF → Sensor → Exhibition
-/about             ABOUT      Definition / Team / Exhibition
-/visual            (미연결)   비주얼 아카이브 — 메뉴가 4갈래로 줄면서 링크가 빠졌다
+/process           PROCESS    브랜드북 + 제작 과정 (스테이지 8개)
+/about             ABOUT      팀 · 전시
 ```
+
+GRIT은 로고 사용규정 같은 아이덴티티 매뉴얼이 아니라 **이 프로젝트가 무엇을 보는지**를 말하는
+페이지다. 매니페스토 → 방향성 3축 → 비주얼 갤러리.
 
 - 랜딩(`/`)과 메인화면(`/home`)은 상단 네비 없이 자기 진입 장치를 갖고, 나머지는 `(site)` 라우트 그룹이 감싼다.
 - 목적지 목록은 `src/data/site.ts`의 `destinations` 하나 — 메인 메뉴와 내부 네비가 같은 소스로 돈다.
