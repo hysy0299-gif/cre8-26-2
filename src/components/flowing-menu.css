@@ -6,8 +6,8 @@
   /* 호버 시 잉크/바탕이 반전된다 */
   --fm-marquee-bg: var(--color-ink);
   --fm-marquee-text: var(--color-ground);
-  /* 원본 기본값 4vh 유지 */
-  --fm-size: 4vh;
+  /* 원본 기본값 4vh는 전체 화면 메뉴에선 너무 작다 */
+  --fm-size: 8vh;
 
   width: 100%;
   height: 100%;
@@ -103,8 +103,9 @@
 /* 캡슐로 위아래를 잘라낸다 — 원본 레퍼런스와 같은 처리.
    사진은 흑백으로 미리 구워져 있다(scripts/build-menu-images.mjs). */
 .marquee__img {
-  height: 10vh;
-  aspect-ratio: 3 / 1;
+  height: 13vh;
+  /* 3:1이면 정사각 오브제의 가운데 3분의 1만 남는다. 1.6:1이면 6할쯤 보인다 */
+  aspect-ratio: 1.6 / 1;
   margin: 2em 2vw;
   border-radius: 999px;
   background-size: cover;
