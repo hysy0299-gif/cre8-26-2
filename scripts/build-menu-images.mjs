@@ -13,6 +13,8 @@ import sharp from "sharp";
 const OUT = "public/img/menu";
 const SIZE = 600;
 const SLUGS = ["grit", "archive", "process", "about"];
+/** GRIT WHITE — 네 장의 배경을 여기로 통일한다 */
+const GROUND = { r: 245, g: 245, b: 245, alpha: 1 };
 
 const sources = process.argv.slice(2);
 if (sources.length === 0) {
@@ -29,8 +31,10 @@ for (const [i, src] of sources.entries()) {
 
   const out = `${OUT}/${slug}.webp`;
   const info = await sharp(src)
-    // 알파는 살린다 — 마퀴 배경색이 비쳐야 로고가 판에 얹힌 것처럼 보이지 않는다
-    .resize(SIZE, SIZE, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } })
+    // 원본 배경이 제각각(투명 로고 / 흰 JPEG / 흰 배경 사진)이라 넷 다 GRIT WHITE 판에 얹어
+    // 통일한다. 흰 오브제가 섞여 있어 배경만 따로 지우는 건 불가능하다.
+    .resize(SIZE, SIZE, { fit: "contain", background: GROUND })
+    .flatten({ background: GROUND })
     .webp({ quality: 82 })
     .toFile(out);
 

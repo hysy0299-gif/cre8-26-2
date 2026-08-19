@@ -26,7 +26,7 @@ export interface Destination {
  */
 export const destinations: Destination[] = [
   { label: "GRIT", href: "/grit", image: "/img/menu/grit.webp" },
-  { label: "ARCHIVE", href: "/archive" },
+  { label: "ARCHIVE", href: "/archive", image: "/img/menu/archive.webp" },
   { label: "PROCESS", href: "/process", image: "/img/menu/process.webp" },
   { label: "ABOUT", href: "/about", image: "/img/menu/about.webp" },
 ];
