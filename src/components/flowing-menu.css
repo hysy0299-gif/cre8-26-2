@@ -27,6 +27,7 @@
   flex: 1;
   position: relative;
   overflow: hidden;
+  text-align: center;
   border-top: 1px solid var(--fm-border);
 }
 
@@ -37,8 +38,8 @@
 .menu__item-link {
   display: flex;
   align-items: center;
+  justify-content: center;
   height: 100%;
-  padding-inline: var(--page-margin);
   position: relative;
   cursor: pointer;
   text-transform: uppercase;
