@@ -79,3 +79,21 @@ body {
 .page-inset {
   padding-inline: var(--page-margin);
 }
+
+/* 아카이브에서 홀드가 바뀔 때 — key 교체로 다시 마운트되며 살짝 떠오른다 */
+.hold-swap {
+  animation: hold-swap 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes hold-swap {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hold-swap {
+    animation: none;
+  }
+}

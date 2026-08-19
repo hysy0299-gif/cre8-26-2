@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Slot, SectionLabel } from "@/components/wireframe";
@@ -22,7 +23,19 @@ export default async function HoldDetailPage({ params }: PageProps<"/archive/[ho
     <>
       <section data-block="object-hero" className="page-grid">
         <div className="col-span-12 md:col-span-7">
-          <Slot label={hold.index} ratio="4/5" />
+          {hold.hero ? (
+            <Image
+              src={hold.hero.src}
+              alt={hold.hero.alt}
+              width={hold.hero.width}
+              height={hold.hero.height}
+              priority
+              sizes="(max-width: 768px) 100vw, 58vw"
+              className="max-h-[70vh] w-full object-contain"
+            />
+          ) : (
+            <Slot label={hold.index} ratio="4/5" />
+          )}
         </div>
         <div className="col-span-12 flex flex-col justify-end gap-8 md:col-span-5">
           <h1 className="text-title">{hold.name}</h1>
