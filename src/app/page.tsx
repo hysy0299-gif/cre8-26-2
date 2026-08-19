@@ -1,15 +1,20 @@
+import Link from "next/link";
+import { site } from "@/data/site";
+
 /**
- * HOME — 첫인상과 세계관.
- * 블록 순서만 확정된 상태. 각 블록의 구현은 Component 단계에서 채운다.
+ * LANDING — 진입 화면. 여기서 메인화면(/home)으로 넘어간다.
+ * 진입 연출(타이포 reveal / 이미지)은 Interaction 단계에서 붙인다.
  */
-export default function HomePage() {
+export default function LandingPage() {
   return (
-    <>
-      <section data-block="hero" aria-label="Hero visual" />
-      <section data-block="statement" aria-label="Project statement" />
-      <section data-block="selected-holds" aria-label="Selected holds" />
-      <section data-block="material-research" aria-label="Material / tactile research" />
-      <section data-block="archive-entry" aria-label="Archive" />
-    </>
+    <div data-screen="landing">
+      <section data-block="landing-visual" aria-label="Landing visual" />
+      <section data-block="landing-mark" aria-label="Wordmark">
+        {site.name}
+      </section>
+      <Link href="/home" data-block="enter">
+        ENTER
+      </Link>
+    </div>
   );
 }
