@@ -3,11 +3,12 @@
  *
  *   npm run book-images
  *
- * 순서는 탐색기에 보이는 폴더 순서를 그대로 따른다(자연 정렬).
- * `grit_brandbook 20.png`이 공백 때문에 맨 앞에 오는 것도 의도한 순서다.
+ * 순서는 scripts/book-pages.mjs에 명시돼 있다 — 파일명 정렬을 믿으면 안 된다.
+ * 원본은 저장소에 넣지 않고 여기서 나온 public/img/book/*.webp만 올라간다.
  */
-import { mkdir, readdir } from "node:fs/promises";
+import { access, mkdir } from "node:fs/promises";
 import sharp from "sharp";
+import { BOOK_PAGES } from "./book-pages.mjs";
 
 const SRC = "books/8";
 const OUT = "public/img/book";
@@ -15,28 +16,26 @@ const WIDTH = 1000;
 
 await mkdir(OUT, { recursive: true });
 
-/** 탐색기와 같은 자연 정렬 */
-const files = (await readdir(SRC))
-  .filter((f) => /\.(png|jpe?g)$/i.test(f))
-  .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
-
 let total = 0;
-const manifest = [];
 
-for (const [i, file] of files.entries()) {
+for (const [i, file] of BOOK_PAGES.entries()) {
+  const path = `${SRC}/${file}`;
+  try {
+    await access(path);
+  } catch {
+    console.error(`없는 파일: ${path}`);
+    process.exit(1);
+  }
+
   const slug = `p${String(i + 1).padStart(2, "0")}`;
-  const info = await sharp(`${SRC}/${file}`)
+  const info = await sharp(path)
     .resize(WIDTH, null, { withoutEnlargement: true })
     .flatten({ background: "#ffffff" })
     .webp({ quality: 84 })
     .toFile(`${OUT}/${slug}.webp`);
 
   total += info.size;
-  manifest.push({ slug, width: info.width, height: info.height });
-  console.log(
-    `${slug}  ${file.padEnd(26)} ${info.width}x${info.height}  ${(info.size / 1024).toFixed(0)}KB`,
-  );
+  console.log(`${slug}  ${file.padEnd(26)} ${info.width}x${info.height}  ${(info.size / 1024).toFixed(0)}KB`);
 }
 
-console.log(`\n${files.length}쪽, 합계 ${(total / 1024 / 1024).toFixed(2)}MB`);
-console.log(JSON.stringify(manifest[0]), "…", JSON.stringify(manifest.at(-1)));
+console.log(`\n${BOOK_PAGES.length}쪽, 합계 ${(total / 1024 / 1024).toFixed(2)}MB`);
