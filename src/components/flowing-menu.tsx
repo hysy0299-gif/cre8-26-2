@@ -20,6 +20,8 @@ export interface FlowingMenuItem {
   text: string;
   /** 마퀴에 흐르는 이미지. 없으면 틴트 블록 */
   image?: string;
+  /** 기본은 캡슐로 위아래를 잘라낸다. 로고처럼 잘리면 안 되는 건 contain */
+  fit?: "cover" | "contain";
 }
 
 interface FlowingMenuProps {
@@ -78,7 +80,7 @@ const findClosestEdge = (mouseX: number, mouseY: number, width: number, height: 
     ? "top"
     : "bottom";
 
-function MenuItem({ link, text, image, speed }: FlowingMenuItem & { speed: number }) {
+function MenuItem({ link, text, image, fit = "cover", speed }: FlowingMenuItem & { speed: number }) {
   const itemRef = useRef<HTMLDivElement | null>(null);
   const marqueeRef = useRef<HTMLDivElement | null>(null);
   const marqueeInnerRef = useRef<HTMLDivElement | null>(null);
@@ -173,7 +175,9 @@ function MenuItem({ link, text, image, speed }: FlowingMenuItem & { speed: numbe
               <div className="marquee__part" key={idx}>
                 <span>{text}</span>
                 <div
-                  className={`marquee__img${image ? "" : " marquee__img--empty"}`}
+                  className={`marquee__img${fit === "contain" ? " marquee__img--contain" : ""}${
+                    image ? "" : " marquee__img--empty"
+                  }`}
                   style={
                     image ? ({ backgroundImage: `url(${image})` } as CSSProperties) : undefined
                   }

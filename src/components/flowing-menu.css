@@ -100,15 +100,23 @@
   padding: 0 1vw;
 }
 
-/* 오브제 사진은 정사각에 가깝다. cover로 가운데만 잘라내면 형태가 안 보이므로
-   정사각 칸에 contain으로 통째로 담는다. */
+/* 캡슐로 위아래를 잘라낸다 — 원본 레퍼런스와 같은 처리.
+   사진은 흑백으로 미리 구워져 있다(scripts/build-menu-images.mjs). */
 .marquee__img {
-  height: 7vh;
-  aspect-ratio: 1;
+  height: 10vh;
+  aspect-ratio: 3 / 1;
   margin: 2em 2vw;
+  border-radius: 999px;
+  background-size: cover;
+  background-position: 50% 50%;
+}
+
+/* 로고는 배경 없이 통째로 — 캡슐로 자르면 심볼이 심볼로 안 읽힌다 */
+.marquee__img--contain {
+  aspect-ratio: 1;
+  border-radius: 0;
   background-size: contain;
   background-repeat: no-repeat;
-  background-position: 50% 50%;
 }
 
 /* 사진이 아직 없는 항목은 틴트 블록이 자리를 지킨다 */

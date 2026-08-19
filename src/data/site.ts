@@ -11,6 +11,8 @@ export interface Destination {
   href: string;
   /** 메인 메뉴 마퀴에 흐르는 이미지. 없으면 틴트 블록이 자리를 지킨다 */
   image?: string;
+  /** 기본은 캡슐로 위아래를 잘라낸다. 로고는 잘리면 안 되므로 contain */
+  fit?: "cover" | "contain";
 }
 
 /**
@@ -25,7 +27,7 @@ export interface Destination {
  * 이미지는 `npm run menu-images`로 만든다.
  */
 export const destinations: Destination[] = [
-  { label: "GRIT", href: "/grit", image: "/img/menu/grit.webp" },
+  { label: "GRIT", href: "/grit", image: "/img/menu/grit.webp", fit: "contain" },
   { label: "ARCHIVE", href: "/archive", image: "/img/menu/archive.webp" },
   { label: "PROCESS", href: "/process", image: "/img/menu/process.webp" },
   { label: "ABOUT", href: "/about", image: "/img/menu/about.webp" },
