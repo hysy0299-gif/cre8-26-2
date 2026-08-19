@@ -52,9 +52,9 @@ export function MainWheelNav({ destinations, defaultSelected = 0, onPreview }: M
       loop
       draggable
       ariaLabel="Sections"
-      // 색은 Design System(3단계)에서 토큰으로 교체한다. 지금은 기본 배경에서 보이기만 하는 임시값.
-      textColor="#8a8a8a"
-      activeColor="#111111"
+      // 역할 토큰 참조 — 바탕을 뒤집으면 globals.css의 네 줄만 바꿔도 휠이 따라간다
+      textColor="var(--color-ink-muted)"
+      activeColor="var(--color-ink)"
     />
   );
 }

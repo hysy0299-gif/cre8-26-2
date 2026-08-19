@@ -1,4 +1,4 @@
-# CRE8 26-2 — 클라이밍 홀드 CMF / 인터랙션 프로젝트 웹
+# GRIT — 클라이밍 홀드 CMF / 인터랙션 프로젝트 웹
 
 클라이밍 홀드를 스포츠 장비가 아니라 **손이 닿는 tactile interface이자 CMF 실험 오브제**로
 다루는 프로젝트의 Brand Website + Project Archive + Digital Exhibition.
@@ -44,6 +44,25 @@ npm run build
 - Detail은 **템플릿 1개 + 데이터 N개**. 홀드가 늘어도 파일은 그대로다.
 - Process는 단일 페이지 + 스테이지 앵커(`/process#modeling`). timeline이 아니라 실험 아카이브로 다룬다.
 - Detail의 Fabrication은 프로세스 내용을 복제하지 않고 `hold.processRefs`로 `/process#key`에 연결한다.
+
+## 디자인 시스템 (진행 중)
+
+컬러는 `src/app/globals.css`의 `@theme` 한 곳. **팔레트 4색 밖의 색은 쓰지 않는다.**
+
+| 토큰 | 값 | |
+| --- | --- | --- |
+| `--color-grit-white` | `#F5F5F5` | GRIT WHITE |
+| `--color-grit-black` | `#010101` | GRIT BLACK |
+| `--color-grit-mid` | `#AEB6BF` | GRIT MID |
+| `--color-grit-green` | `#CBD7D4` | GRIT GREEN |
+
+컴포넌트는 팔레트를 직접 쓰지 않고 **역할 토큰**만 참조한다 (`ground` / `ink` / `ink-muted` / `tint`).
+바탕을 검정으로 뒤집을 땐 `@theme`의 역할 토큰 네 줄만 바꾸면 사이트 전체가 따라간다.
+
+로고는 `src/components/logo.tsx` — `lockup` / `symbol` / `wordmark` 세 변형.
+`currentColor`를 상속하는 인라인 SVG라 배경에 따라 잉크색이 자동으로 맞는다.
+
+**미정:** 폰트·타입 스케일·간격 스케일.
 
 ## 폴더
 

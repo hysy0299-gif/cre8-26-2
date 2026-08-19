@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { nav, site } from "@/data/site";
+import { Logo } from "@/components/logo";
+import { nav } from "@/data/site";
 
 /**
  * 내부 페이지 전역 네비게이션 — 구조 스텁.
@@ -8,7 +9,9 @@ import { nav, site } from "@/data/site";
 export function SiteNav() {
   return (
     <nav>
-      <Link href="/home">{site.name}</Link>
+      <Link href="/home" aria-label="GRIT — home">
+        <Logo variant="symbol" className="h-6 w-auto" />
+      </Link>
       <ul>
         {nav.map((item) => (
           <li key={item.href}>
