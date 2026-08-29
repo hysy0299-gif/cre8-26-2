@@ -55,6 +55,8 @@ export interface Hold {
   spec: HoldSpec;
   /** 대표 이미지 — 촬영 전이라 아직 비어 있을 수 있다 */
   hero?: MediaItem;
+  /** 3D 모델(.glb). 있으면 아카이브에서 이미지 대신 돌려볼 수 있다 */
+  model?: string;
   sections: HoldSection[];
   /** 이 홀드가 거쳐간 process 스테이지 — 프로세스 내용을 복제하지 않고 참조한다 */
   processRefs: ProcessStageKey[];

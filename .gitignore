@@ -49,3 +49,6 @@ next-env.d.ts
 
 # 브랜드북 원본 — public/img/book/*.webp 만 저장소에 올린다
 /books
+
+# 3D 원본 — public/models/*.glb 만 저장소에 올린다
+/glb

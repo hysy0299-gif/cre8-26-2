@@ -1,10 +1,20 @@
 "use client";
 
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import OptionWheel from "@/components/option-wheel";
 import type { Hold } from "@/types/hold";
+
+/**
+ * three는 1MB에 가깝다. 3D가 있는 홀드를 고를 때만 받아오게 해서
+ * 아카이브 첫 진입과 나머지 페이지는 예전 그대로 가볍게 둔다.
+ */
+const ModelViewer = dynamic(() => import("@/components/model-viewer"), {
+  ssr: false,
+  loading: () => <span className="text-label text-ink-muted uppercase">Loading 3D…</span>,
+});
 
 /**
  * 휠 라벨 크기(rem).
@@ -87,7 +97,17 @@ export function HoldWheel({ holds }: { holds: Hold[] }) {
       </div>
 
       <div className="col-span-12 flex min-h-0 flex-col justify-center md:col-span-7">
-        {active?.hero ? (
+        {active?.model ? (
+          <figure key={active.slug + "-3d"} className="hold-swap flex h-[74vh] flex-col gap-4">
+            <ModelViewer url={active.model} />
+            <figcaption className="text-label text-ink-muted flex justify-between uppercase">
+              <span>{active.index} · Drag to rotate</span>
+              <span>
+                {index + 1} / {holds.length}
+              </span>
+            </figcaption>
+          </figure>
+        ) : active?.hero ? (
           <figure key={active.slug} className="hold-swap flex flex-col gap-4">
             <Image
               src={active.hero.src}
