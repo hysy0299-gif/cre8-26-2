@@ -196,7 +196,6 @@ export const holds: Hold[] = [
     name: "Moss",
     spec: { form: "—", material: "—", surface: "—", interaction: "—" },
     hero: { src: "/img/holds/moss.webp", alt: "Moss hold", width: 944, height: 1012 },
-    model: "/models/hold-smooth-v3.glb",
     sections: [],
     processRefs: [],
     order: 19,
