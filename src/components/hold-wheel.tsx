@@ -3,7 +3,7 @@
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import OptionWheel from "@/components/option-wheel";
 import type { Hold } from "@/types/hold";
 
@@ -21,7 +21,7 @@ const ModelViewer = dynamic(() => import("@/components/model-viewer"), {
  * 휠은 행 높이를 fontSize에서 px로 계산하므로 CSS clamp을 못 쓴다.
  * 폭 구간별로 값을 바꿔 끼우면 휠이 알아서 다시 배치된다.
  */
-const FONT_SIZE = { sm: 2.4, md: 3.4, lg: 4.6 } as const;
+const FONT_SIZE = { sm: 2.8, md: 4.2, lg: 5.6 } as const;
 
 function useWheelFontSize() {
   const [size, setSize] = useState<number>(FONT_SIZE.lg);
@@ -40,10 +40,33 @@ function useWheelFontSize() {
 }
 
 /**
- * 아카이브 탐색 — 왼쪽 키워드 휠, 오른쪽 홀드와 설명.
+ * 휠을 화면 세로 정중앙에 앉히기 위한 보정값.
  *
- * 왼쪽 칸은 sticky + 화면 높이라 휠의 가운데가 늘 화면 세로 중앙에 온다.
- * 위에 헤더가 얼마나 오든 휠 위치는 안 흔들린다.
+ * sticky만 걸면 스크롤 전에는 문서 흐름 위치(네비·헤더 아래)에 그대로 있어서
+ * 첫 화면에서 휠이 아래로 처져 보인다. 위에 뭐가 얼마나 쌓였는지를 재서
+ * 높이를 `100dvh - 그 값의 두 배`로 잡고 sticky top을 그 값으로 주면,
+ * 스크롤 전이든 후든 가운데가 정확히 50dvh에 온다.
+ */
+function useTopOffset() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [offset, setOffset] = useState(0);
+
+  useEffect(() => {
+    const measure = () => {
+      const el = ref.current;
+      if (!el) return;
+      setOffset(Math.max(0, Math.round(el.getBoundingClientRect().top + window.scrollY)));
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, []);
+
+  return { ref, offset };
+}
+
+/**
+ * 아카이브 탐색 — 왼쪽 키워드 휠, 오른쪽 홀드와 설명.
  *
  * 스크롤/드래그로 휠을 돌리면 오른쪽이 바뀐다.
  * 가운데 키워드를 한 번 더 누르거나 Enter를 치면 그 홀드의 상세로 들어간다.
@@ -51,6 +74,7 @@ function useWheelFontSize() {
 export function HoldWheel({ holds }: { holds: Hold[] }) {
   const router = useRouter();
   const fontSize = useWheelFontSize();
+  const { ref: colRef, offset } = useTopOffset();
   const [index, setIndex] = useState(0);
 
   const handleChange = useCallback(
@@ -74,8 +98,13 @@ export function HoldWheel({ holds }: { holds: Hold[] }) {
 
   return (
     <div className="grid grid-cols-12 gap-[var(--grid-gutter)]">
-      <div className="col-span-12 md:col-span-4">
-        <div className="sticky top-[var(--nav-pad)] h-[60vh] md:h-[calc(100dvh-var(--nav-pad)*2)]">
+      <div ref={colRef} className="col-span-12 md:col-span-4">
+        <div
+          className="sticky h-[60vh] md:h-[var(--wheel-h)]"
+          style={
+            { top: offset, "--wheel-h": `calc(100dvh - ${offset * 2}px)` } as CSSProperties
+          }
+        >
           <OptionWheel
             items={holds.map((h) => h.name)}
             defaultSelected={0}
@@ -100,31 +129,32 @@ export function HoldWheel({ holds }: { holds: Hold[] }) {
         </div>
       </div>
 
-      <div className="col-span-12 flex min-h-[calc(100dvh-var(--nav-pad)*2)] flex-col justify-center md:col-span-8">
+      {/* 아래 여백을 조금 더 줘서 홀드가 정중앙보다 살짝 위에 앉는다 */}
+      <div
+        className="col-span-12 flex flex-col justify-center pb-[8vh] md:col-span-8"
+        style={{ minHeight: `calc(100dvh - ${offset}px)` }}
+      >
         {active ? (
-          <figure key={active.slug} className="hold-swap flex flex-col gap-8">
-            <div className="flex min-h-0 items-center justify-center">
-              {active.model ? (
-                <div className="h-[58vh] w-full">
-                  <ModelViewer url={active.model} />
-                </div>
-              ) : active.hero ? (
-                <Image
-                  src={active.hero.src}
-                  alt={active.hero.alt}
-                  width={active.hero.width}
-                  height={active.hero.height}
-                  priority
+          <figure key={active.slug} className="hold-swap flex flex-col items-center gap-8">
+            {active.model ? (
+              <div className="h-[54vh] w-full">
+                <ModelViewer url={active.model} />
+              </div>
+            ) : active.hero ? (
+              <Image
+                src={active.hero.src}
+                alt={active.hero.alt}
+                width={active.hero.width}
+                height={active.hero.height}
+                priority
+                quality={90}
+                sizes="(max-width: 768px) 100vw, 62vw"
+                className="max-h-[54vh] w-auto object-contain"
+              />
+            ) : null}
 
-                  quality={90}
-                  sizes="(max-width: 768px) 100vw, 62vw"
-                  className="max-h-[58vh] w-auto object-contain"
-                />
-              ) : null}
-            </div>
-
-            <figcaption className="flex flex-col gap-4">
-              <div className="text-label text-ink-muted flex items-baseline justify-between uppercase">
+            <figcaption className="flex w-full flex-col items-center gap-4">
+              <div className="text-label text-ink-muted flex w-full items-baseline justify-between uppercase">
                 <span>
                   {active.index}
                   {active.model ? " · Drag to rotate" : ""}
@@ -135,7 +165,8 @@ export function HoldWheel({ holds }: { holds: Hold[] }) {
               </div>
 
               {active.description.length ? (
-                <div className="text-body flex max-w-[52ch] flex-col gap-3 text-balance">
+                // 한 토막이 한 줄에 떨어지도록 폭을 넉넉히 잡고 가운데 정렬한다
+                <div className="text-body flex max-w-[76ch] flex-col gap-2 text-center text-pretty">
                   {active.description.map((line, i) => (
                     <p key={i} className={i > 0 ? "text-ink-muted" : undefined}>
                       {line}
