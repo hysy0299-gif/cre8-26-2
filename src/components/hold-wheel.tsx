@@ -66,6 +66,22 @@ function useTopOffset() {
 }
 
 /**
+ * 홀드 표시 높이(vh).
+ *
+ * 높이를 하나로 묶으면 SPROUT처럼 세로로 긴 홀드는 폭이 좁아 작아 보이고,
+ * 남는 높이를 다 주면 정사각 홀드가 화면을 잡아먹는다.
+ * 그래서 **면적**을 기준으로 맞춘다 — 정사각을 SQUARE_VH로 두고
+ * 가로세로비 r에 대해 높이를 SQUARE_VH / sqrt(r)로 잡으면 넓이가 엇비슷해진다.
+ */
+const SQUARE_VH = 34;
+const MAX_VH = 62;
+
+function holdHeightVh(width: number, height: number) {
+  const r = width / height;
+  return Math.min(MAX_VH, SQUARE_VH / Math.sqrt(r));
+}
+
+/**
  * 아카이브 탐색 — 왼쪽 키워드 휠, 오른쪽 홀드와 설명.
  *
  * 스크롤/드래그로 휠을 돌리면 오른쪽이 바뀐다.
@@ -134,21 +150,21 @@ export function HoldWheel({ holds }: { holds: Hold[] }) {
         오른쪽에 커서를 두고 굴려도 페이지가 안 밀린다.
       */}
       <div
-        className="col-span-12 flex flex-col md:col-span-8"
+        className="col-span-12 flex flex-col justify-center md:col-span-8"
         style={{ height: `calc(100dvh - ${offset}px)` }}
       >
         {active ? (
           <figure
             key={active.slug}
-            className="hold-swap flex min-h-0 flex-1 flex-col items-center gap-[5vh] pb-[6vh]"
+            className="hold-swap flex min-h-0 flex-col items-center gap-[4vh] pb-[4vh]"
           >
             {/*
               남는 높이를 홀드가 다 가져간다.
               고정 vh로 묶으면 SPROUT처럼 세로로 긴 홀드가 폭이 좁아 작아 보인다.
             */}
-            <div className="flex min-h-0 w-full flex-1 items-center justify-center">
+            <div className="flex min-h-0 w-full items-center justify-center">
               {active.model ? (
-                <div className="h-full w-full">
+                <div className="h-[46vh] w-full">
                   <ModelViewer url={active.model} />
                 </div>
               ) : active.hero ? (
@@ -160,7 +176,8 @@ export function HoldWheel({ holds }: { holds: Hold[] }) {
                   priority
                   quality={90}
                   sizes="(max-width: 768px) 100vw, 62vw"
-                  className="max-h-full w-auto object-contain"
+                  className="w-auto object-contain"
+                  style={{ maxHeight: `${holdHeightVh(active.hero.width, active.hero.height)}vh` }}
                 />
               ) : null}
             </div>
