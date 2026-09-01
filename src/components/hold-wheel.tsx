@@ -21,7 +21,7 @@ const ModelViewer = dynamic(() => import("@/components/model-viewer"), {
  * 휠은 행 높이를 fontSize에서 px로 계산하므로 CSS clamp을 못 쓴다.
  * 폭 구간별로 값을 바꿔 끼우면 휠이 알아서 다시 배치된다.
  */
-const FONT_SIZE = { sm: 2.4, md: 4, lg: 5.5 } as const;
+const FONT_SIZE = { sm: 2.4, md: 3.4, lg: 4.6 } as const;
 
 function useWheelFontSize() {
   const [size, setSize] = useState<number>(FONT_SIZE.lg);
@@ -40,11 +40,13 @@ function useWheelFontSize() {
 }
 
 /**
- * 아카이브 탐색 — 왼쪽 키워드 휠, 오른쪽 홀드.
+ * 아카이브 탐색 — 왼쪽 키워드 휠, 오른쪽 홀드와 설명.
  *
- * 스크롤/드래그로 휠을 돌리면 오른쪽 오브제가 바뀐다.
+ * 왼쪽 칸은 sticky + 화면 높이라 휠의 가운데가 늘 화면 세로 중앙에 온다.
+ * 위에 헤더가 얼마나 오든 휠 위치는 안 흔들린다.
+ *
+ * 스크롤/드래그로 휠을 돌리면 오른쪽이 바뀐다.
  * 가운데 키워드를 한 번 더 누르거나 Enter를 치면 그 홀드의 상세로 들어간다.
- * 지나가는 항목마다 라우팅하면 안 되므로 통과 시엔 prefetch만 한다.
  */
 export function HoldWheel({ holds }: { holds: Hold[] }) {
   const router = useRouter();
@@ -71,58 +73,76 @@ export function HoldWheel({ holds }: { holds: Hold[] }) {
   const active = holds[index];
 
   return (
-    <div className="grid min-h-[82vh] grid-cols-12 gap-[var(--grid-gutter)]">
-      <div className="col-span-12 min-h-[55vh] md:col-span-5 md:min-h-0">
-        <OptionWheel
-          items={holds.map((h) => h.name)}
-          defaultSelected={0}
-          onChange={handleChange}
-          onCommit={handleCommit}
-          side="left"
-          fontSize={fontSize}
-          spacing={1.75}
-          curve={1.1}
-          tilt={6.5}
-          blur={3}
-          fade={0.33}
-          smoothing={260}
-          inset={88}
-          loop={false}
-          draggable
-          ariaLabel="Holds"
-          // 흰 바탕이라 원본 예시의 흰색 활성값 대신 역할 토큰을 쓴다
-          textColor="var(--color-ink-muted)"
-          activeColor="var(--color-ink)"
-        />
+    <div className="grid grid-cols-12 gap-[var(--grid-gutter)]">
+      <div className="col-span-12 md:col-span-4">
+        <div className="sticky top-0 h-[60vh] md:h-dvh">
+          <OptionWheel
+            items={holds.map((h) => h.name)}
+            defaultSelected={0}
+            onChange={handleChange}
+            onCommit={handleCommit}
+            side="left"
+            fontSize={fontSize}
+            spacing={1.75}
+            curve={1.1}
+            tilt={6.5}
+            blur={3}
+            fade={0.33}
+            smoothing={260}
+            inset={88}
+            loop={false}
+            draggable
+            ariaLabel="Holds"
+            // 흰 바탕이라 원본 예시의 흰색 활성값 대신 역할 토큰을 쓴다
+            textColor="var(--color-ink-muted)"
+            activeColor="var(--color-ink)"
+          />
+        </div>
       </div>
 
-      <div className="col-span-12 flex min-h-0 flex-col justify-center md:col-span-7">
-        {active?.model ? (
-          <figure key={active.slug + "-3d"} className="hold-swap flex h-[74vh] flex-col gap-4">
-            <ModelViewer url={active.model} />
-            <figcaption className="text-label text-ink-muted flex justify-between uppercase">
-              <span>{active.index} · Drag to rotate</span>
-              <span>
-                {index + 1} / {holds.length}
-              </span>
-            </figcaption>
-          </figure>
-        ) : active?.hero ? (
-          <figure key={active.slug} className="hold-swap flex flex-col gap-4">
-            <Image
-              src={active.hero.src}
-              alt={active.hero.alt}
-              width={active.hero.width}
-              height={active.hero.height}
-              priority
-              sizes="(max-width: 768px) 100vw, 58vw"
-              className="max-h-[74vh] w-full object-contain"
-            />
-            <figcaption className="text-label text-ink-muted flex justify-between uppercase">
-              <span>{active.index}</span>
-              <span>
-                {index + 1} / {holds.length}
-              </span>
+      <div className="col-span-12 flex min-h-dvh flex-col justify-center gap-[var(--s-gap,2rem)] md:col-span-8">
+        {active ? (
+          <figure key={active.slug} className="hold-swap flex flex-col gap-8">
+            <div className="flex min-h-0 items-center justify-center">
+              {active.model ? (
+                <div className="h-[58vh] w-full">
+                  <ModelViewer url={active.model} />
+                </div>
+              ) : active.hero ? (
+                <Image
+                  src={active.hero.src}
+                  alt={active.hero.alt}
+                  width={active.hero.width}
+                  height={active.hero.height}
+                  priority
+                  sizes="(max-width: 768px) 100vw, 62vw"
+                  className="max-h-[58vh] w-auto object-contain"
+                />
+              ) : null}
+            </div>
+
+            <figcaption className="flex flex-col gap-4">
+              <div className="text-label text-ink-muted flex items-baseline justify-between uppercase">
+                <span>
+                  {active.index}
+                  {active.model ? " · Drag to rotate" : ""}
+                </span>
+                <span>
+                  {index + 1} / {holds.length}
+                </span>
+              </div>
+
+              <h2 className="text-title">{active.name}</h2>
+
+              {active.description.length ? (
+                <div className="text-body flex max-w-[52ch] flex-col gap-3 text-balance">
+                  {active.description.map((line, i) => (
+                    <p key={i} className={i > 0 ? "text-ink-muted" : undefined}>
+                      {line}
+                    </p>
+                  ))}
+                </div>
+              ) : null}
             </figcaption>
           </figure>
         ) : null}

@@ -52,6 +52,8 @@ export interface Hold {
   /** URL 세그먼트 — /archive/[hold] */
   slug: string;
   name: string;
+  /** 두 토막으로 나눈 소개글 — 형태 이야기와 표면 이야기 */
+  description: string[];
   spec: HoldSpec;
   /** 대표 이미지 — 촬영 전이라 아직 비어 있을 수 있다 */
   hero?: MediaItem;

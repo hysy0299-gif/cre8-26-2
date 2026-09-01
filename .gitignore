@@ -52,3 +52,6 @@ next-env.d.ts
 
 # 3D 원본 — public/models/*.glb 만 저장소에 올린다
 /glb
+
+# 홀드 원본 사진 — public/img/holds/*.webp 만 저장소에 올린다
+/HOLDER (C)
