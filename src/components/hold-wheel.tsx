@@ -156,13 +156,9 @@ export function HoldWheel({ holds }: { holds: Hold[] }) {
         {active ? (
           <figure
             key={active.slug}
-            className="hold-swap flex min-h-0 flex-1 flex-col items-center gap-[4vh] pb-[4vh]"
+            className="hold-swap flex min-h-0 flex-1 flex-col items-center gap-[1.5vh] pb-[10vh]"
           >
-            {/*
-              남는 높이를 홀드가 다 가져간다.
-              고정 vh로 묶으면 SPROUT처럼 세로로 긴 홀드가 폭이 좁아 작아 보인다.
-            */}
-            {/* 남는 높이를 차지하는 고정 칸 — 홀드가 커지든 작아지든 캡션은 제자리다 */}
+            {/* 남는 높이를 차지하는 고정 칸 — 홀드가 커지든 작아지든 설명은 제자리다 */}
             <div className="flex min-h-0 w-full flex-1 items-center justify-center">
               {active.model ? (
                 <div className="h-full w-full">
@@ -185,26 +181,14 @@ export function HoldWheel({ holds }: { holds: Hold[] }) {
               ) : null}
             </div>
 
-            <figcaption className="flex w-full shrink-0 flex-col items-center gap-4">
-              <div className="text-label text-ink-muted flex w-full items-baseline justify-between uppercase">
-                <span>
-                  {active.index}
-                  {active.model ? " · Drag to rotate" : ""}
-                </span>
-                <span>
-                  {index + 1} / {holds.length}
-                </span>
-              </div>
-
-              {active.description.length ? (
-                // 한 토막이 한 줄에 떨어지도록 폭을 넉넉히 잡고 가운데 정렬한다
-                <div className="text-body font-sans text-ink flex max-w-[76ch] flex-col gap-2 text-center text-pretty">
-                  {active.description.map((line, i) => (
-                    <p key={i}>{line}</p>
-                  ))}
-                </div>
-              ) : null}
-            </figcaption>
+            {active.description.length ? (
+              // 한 토막이 한 줄에 떨어지도록 폭을 넉넉히 잡고 가운데 정렬한다
+              <figcaption className="text-body font-sans text-ink flex max-w-[76ch] shrink-0 flex-col gap-2 text-center text-pretty">
+                {active.description.map((line, i) => (
+                  <p key={i}>{line}</p>
+                ))}
+              </figcaption>
+            ) : null}
           </figure>
         ) : null}
       </div>
