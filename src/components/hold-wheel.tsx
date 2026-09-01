@@ -129,31 +129,43 @@ export function HoldWheel({ holds }: { holds: Hold[] }) {
         </div>
       </div>
 
-      {/* 아래 여백을 조금 더 줘서 홀드가 정중앙보다 살짝 위에 앉는다 */}
+      {/*
+        한 화면에 딱 맞춘다. 높이를 min이 아니라 고정으로 잡아야
+        오른쪽에 커서를 두고 굴려도 페이지가 안 밀린다.
+      */}
       <div
-        className="col-span-12 flex flex-col justify-center pb-[8vh] md:col-span-8"
-        style={{ minHeight: `calc(100dvh - ${offset}px)` }}
+        className="col-span-12 flex flex-col md:col-span-8"
+        style={{ height: `calc(100dvh - ${offset}px)` }}
       >
         {active ? (
-          <figure key={active.slug} className="hold-swap flex flex-col items-center gap-[7vh]">
-            {active.model ? (
-              <div className="h-[54vh] w-full">
-                <ModelViewer url={active.model} />
-              </div>
-            ) : active.hero ? (
-              <Image
-                src={active.hero.src}
-                alt={active.hero.alt}
-                width={active.hero.width}
-                height={active.hero.height}
-                priority
-                quality={90}
-                sizes="(max-width: 768px) 100vw, 62vw"
-                className="max-h-[54vh] w-auto object-contain"
-              />
-            ) : null}
+          <figure
+            key={active.slug}
+            className="hold-swap flex min-h-0 flex-1 flex-col items-center gap-[5vh] pb-[6vh]"
+          >
+            {/*
+              남는 높이를 홀드가 다 가져간다.
+              고정 vh로 묶으면 SPROUT처럼 세로로 긴 홀드가 폭이 좁아 작아 보인다.
+            */}
+            <div className="flex min-h-0 w-full flex-1 items-center justify-center">
+              {active.model ? (
+                <div className="h-full w-full">
+                  <ModelViewer url={active.model} />
+                </div>
+              ) : active.hero ? (
+                <Image
+                  src={active.hero.src}
+                  alt={active.hero.alt}
+                  width={active.hero.width}
+                  height={active.hero.height}
+                  priority
+                  quality={90}
+                  sizes="(max-width: 768px) 100vw, 62vw"
+                  className="max-h-full w-auto object-contain"
+                />
+              ) : null}
+            </div>
 
-            <figcaption className="flex w-full flex-col items-center gap-4">
+            <figcaption className="flex w-full shrink-0 flex-col items-center gap-4">
               <div className="text-label text-ink-muted flex w-full items-baseline justify-between uppercase">
                 <span>
                   {active.index}

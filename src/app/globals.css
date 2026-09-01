@@ -99,3 +99,15 @@ body {
     animation: none;
   }
 }
+
+/*
+ * 아카이브는 한 화면 안에서 끝난다.
+ * 스크롤은 왼쪽 휠을 돌리는 데만 쓰이고, 오른쪽에 커서를 두고 굴려도 페이지는 안 움직인다.
+ */
+body:has([data-screen="archive"]) {
+  overflow: hidden;
+}
+
+body:has([data-screen="archive"]) main {
+  padding-bottom: 0;
+}
