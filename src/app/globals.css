@@ -48,6 +48,8 @@
   --grid-gutter: clamp(0.75rem, 1.5vw, 1.5rem);
   /* 섹션 사이 리듬 — Tailwind 기본 spacing으로는 못 잡는 큰 간격만 토큰으로 둔다 */
   --section-gap: clamp(4rem, 10vw, 10rem);
+  /* 네비 위아래 여백. 페이지 여백(--page-margin)을 그대로 쓰면 상단이 8rem을 먹는다 */
+  --nav-pad: clamp(0.875rem, 1.4vw, 1.25rem);
 }
 
 body {

@@ -75,7 +75,7 @@ export function HoldWheel({ holds }: { holds: Hold[] }) {
   return (
     <div className="grid grid-cols-12 gap-[var(--grid-gutter)]">
       <div className="col-span-12 md:col-span-4">
-        <div className="sticky top-0 h-[60vh] md:h-dvh">
+        <div className="sticky top-[var(--nav-pad)] h-[60vh] md:h-[calc(100dvh-var(--nav-pad)*2)]">
           <OptionWheel
             items={holds.map((h) => h.name)}
             defaultSelected={0}
@@ -100,7 +100,7 @@ export function HoldWheel({ holds }: { holds: Hold[] }) {
         </div>
       </div>
 
-      <div className="col-span-12 flex min-h-dvh flex-col justify-center gap-[var(--s-gap,2rem)] md:col-span-8">
+      <div className="col-span-12 flex min-h-[calc(100dvh-var(--nav-pad)*2)] flex-col justify-center md:col-span-8">
         {active ? (
           <figure key={active.slug} className="hold-swap flex flex-col gap-8">
             <div className="flex min-h-0 items-center justify-center">

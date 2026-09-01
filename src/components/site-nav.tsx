@@ -8,7 +8,7 @@ import { nav } from "@/data/site";
  */
 export function SiteNav() {
   return (
-    <nav className="page-inset flex items-center justify-between py-[var(--page-margin)]">
+    <nav className="page-inset flex items-center justify-between py-[var(--nav-pad)]">
       <Link href="/home" aria-label="GRIT — home">
         <Logo variant="symbol" className="h-5 w-auto text-ink" />
       </Link>

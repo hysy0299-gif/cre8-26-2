@@ -4,25 +4,21 @@ import { sortedHolds } from "@/data/holds";
 /**
  * ARCHIVE — CMF가 서로 다른 홀드들의 아카이빙.
  *
- * 타이틀은 작게 위로 올리고 화면 대부분을 휠과 오브제에 내준다.
- * 이 페이지의 주인공은 제목이 아니라 홀드다.
+ * 헤더와 본문을 한 섹션에 묶는다.
+ * 둘을 따로 두면 레이아웃의 --section-gap(최대 10rem)이 사이에 끼어
+ * 화면이 통째로 아래로 밀린다.
  */
 export default function ArchivePage() {
   const holds = sortedHolds();
 
   return (
-    <>
-      <section
-        data-block="index-header"
-        className="text-label text-ink-muted flex items-baseline justify-between uppercase"
-      >
+    <section data-block="archive" className="flex flex-col gap-6">
+      <div className="text-label text-ink-muted flex items-baseline justify-between uppercase">
         <h1>Archive</h1>
         <p>{holds.length} CMF samples</p>
-      </section>
+      </div>
 
-      <section data-block="hold-wheel" aria-label="Holds">
-        <HoldWheel holds={holds} />
-      </section>
-    </>
+      <HoldWheel holds={holds} />
+    </section>
   );
 }
