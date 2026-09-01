@@ -10,21 +10,30 @@
  */
 export const HOLD_SOURCES = [
   {
-    slug: "veil",
-    file: "VEIL.png",
-    name: "Veil",
+    slug: "slope",
+    file: "SLOPE.png",
+    name: "Slope",
     description: [
-      "VEIL is formed as if fabric has been stretched over a soft volume,",
-      "allowing tension, folds, and woven gray textures to define its sculptural surface.",
+      "SLOPE is shaped by a soft asymmetrical volume crossed by a sweeping diagonal ridge,",
+      "with a pale ice-blue matte surface that emphasizes subtle directional movement.",
     ],
   },
   {
-    slug: "chalk",
-    file: "CHALK.png",
-    name: "Chalk",
+    slug: "sprout",
+    file: "SPROUT.png",
+    name: "Sprout",
     description: [
-      "CHALK is shaped like a mass carved from climbing chalk, with irregular folds",
-      "and a powdery white surface that emphasizes its dry, porous tactility.",
+      "SPROUT is shaped like a young shoot rising from the ground, with a long tapered form",
+      "and soft off-white surface that gives it an organic presence.",
+    ],
+  },
+  {
+    slug: "valley",
+    file: "VALLEY.png",
+    name: "Valley",
+    description: [
+      "VALLEY is defined by a deep central depression between two rising ridges,",
+      "with a pale blue matte surface that evokes a softly eroded landscape.",
     ],
   },
   {
@@ -46,21 +55,12 @@ export const HOLD_SOURCES = [
     ],
   },
   {
-    slug: "cushion",
-    file: "CUSHION.png",
-    name: "Cushion",
+    slug: "bubble",
+    file: "BUBBLE.png",
+    name: "Bubble",
     description: [
-      "CUSHION is shaped like a compressed padded surface, with deep folds and worn black leather-like textures",
-      "that emphasize softness, pressure, and accumulated wear.",
-    ],
-  },
-  {
-    slug: "sprout",
-    file: "SPROUT.png",
-    name: "Sprout",
-    description: [
-      "SPROUT is shaped like a young shoot rising from the ground, with a long tapered form",
-      "and soft off-white surface that gives it an organic presence.",
+      "BUBBLE is formed from overlapping droplet-like volumes,",
+      "finished in translucent moss green to express the slick, fluid quality of soap and damp moss.",
     ],
   },
   {
@@ -73,6 +73,24 @@ export const HOLD_SOURCES = [
     ],
   },
   {
+    slug: "ray",
+    file: "RAY.png",
+    name: "Ray",
+    description: [
+      "RAY is defined by a wide, symmetrical silhouette that spreads outward like wings,",
+      "softened by a muted gray fur surface that adds warmth and tactile depth.",
+    ],
+  },
+  {
+    slug: "cushion",
+    file: "CUSHION.png",
+    name: "Cushion",
+    description: [
+      "CUSHION is shaped like a compressed padded surface, with deep folds and worn black leather-like textures",
+      "that emphasize softness, pressure, and accumulated wear.",
+    ],
+  },
+  {
     slug: "clover",
     file: "CLOVER.png",
     name: "Clover",
@@ -82,21 +100,12 @@ export const HOLD_SOURCES = [
     ],
   },
   {
-    slug: "melt",
-    file: "MELT.png",
-    name: "Melt",
+    slug: "shell",
+    file: "SHELL.png",
+    name: "Shell",
     description: [
-      "MELT is shaped like ice slowly melting downward, with softened edges",
-      "and a frosted translucent surface that captures the transition between solid and liquid.",
-    ],
-  },
-  {
-    slug: "valley",
-    file: "VALLEY.png",
-    name: "Valley",
-    description: [
-      "VALLEY is defined by a deep central depression between two rising ridges,",
-      "with a pale blue matte surface that evokes a softly eroded landscape.",
+      "SHELL is formed by a soft black outer mass intersected by a thin metal plate,",
+      "creating a strong contrast between tactile softness and cold precision.",
     ],
   },
   {
@@ -109,38 +118,19 @@ export const HOLD_SOURCES = [
     ],
   },
   {
-    slug: "ray",
-    file: "RAY.png",
-    name: "Ray",
-    description: [
-      "RAY is defined by a wide, symmetrical silhouette that spreads outward like wings,",
-      "softened by a muted gray fur surface that adds warmth and tactile depth.",
-    ],
-  },
-  {
-    slug: "bubble",
-    file: "BUBBLE.png",
-    name: "Bubble",
-    description: [
-      "BUBBLE is formed from overlapping droplet-like volumes,",
-      "finished in translucent moss green to express the slick, fluid quality of soap and damp moss.",
-    ],
-  },
-  {
-    slug: "slope",
-    file: "SLOPE.png",
-    name: "Slope",
-    description: [
-      "SLOPE is shaped by a soft asymmetrical volume crossed by a sweeping diagonal ridge,",
-      "with a pale ice-blue matte surface that emphasizes subtle directional movement.",
-    ],
-  },
-  {
-    // 설명 미수령 — 원문 받으면 여기만 채우면 된다
     slug: "whorl",
     file: "WHORL.png",
     name: "Whorl",
     description: [],
+  },
+  {
+    slug: "chalk",
+    file: "CHALK.png",
+    name: "Chalk",
+    description: [
+      "CHALK is shaped like a mass carved from climbing chalk, with irregular folds",
+      "and a powdery white surface that emphasizes its dry, porous tactility.",
+    ],
   },
   {
     slug: "crumple",
@@ -152,12 +142,21 @@ export const HOLD_SOURCES = [
     ],
   },
   {
-    slug: "shell",
-    file: "SHELL.png",
-    name: "Shell",
+    slug: "melt",
+    file: "MELT.png",
+    name: "Melt",
     description: [
-      "SHELL is formed by a soft black outer mass intersected by a thin metal plate,",
-      "creating a strong contrast between tactile softness and cold precision.",
+      "MELT is shaped like ice slowly melting downward, with softened edges",
+      "and a frosted translucent surface that captures the transition between solid and liquid.",
+    ],
+  },
+  {
+    slug: "veil",
+    file: "VEIL.png",
+    name: "Veil",
+    description: [
+      "VEIL is formed as if fabric has been stretched over a soft volume,",
+      "allowing tension, folds, and woven gray textures to define its sculptural surface.",
     ],
   },
 ];

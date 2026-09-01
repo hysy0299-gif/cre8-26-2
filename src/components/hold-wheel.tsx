@@ -122,8 +122,8 @@ export function HoldWheel({ holds }: { holds: Hold[] }) {
             loop={false}
             draggable
             ariaLabel="Holds"
-            // 흰 바탕이라 원본 예시의 흰색 활성값 대신 역할 토큰을 쓴다
-            textColor="var(--color-ink-muted)"
+            // 선택 여부로 색을 바꾸지 않는다 — 둘 다 잉크색
+            textColor="var(--color-ink)"
             activeColor="var(--color-ink)"
           />
         </div>
@@ -135,7 +135,7 @@ export function HoldWheel({ holds }: { holds: Hold[] }) {
         style={{ minHeight: `calc(100dvh - ${offset}px)` }}
       >
         {active ? (
-          <figure key={active.slug} className="hold-swap flex flex-col items-center gap-8">
+          <figure key={active.slug} className="hold-swap flex flex-col items-center gap-[7vh]">
             {active.model ? (
               <div className="h-[54vh] w-full">
                 <ModelViewer url={active.model} />
@@ -166,11 +166,9 @@ export function HoldWheel({ holds }: { holds: Hold[] }) {
 
               {active.description.length ? (
                 // 한 토막이 한 줄에 떨어지도록 폭을 넉넉히 잡고 가운데 정렬한다
-                <div className="text-body flex max-w-[76ch] flex-col gap-2 text-center text-pretty">
+                <div className="text-body font-sans text-ink flex max-w-[76ch] flex-col gap-2 text-center text-pretty">
                   {active.description.map((line, i) => (
-                    <p key={i} className={i > 0 ? "text-ink-muted" : undefined}>
-                      {line}
-                    </p>
+                    <p key={i}>{line}</p>
                   ))}
                 </div>
               ) : null}
