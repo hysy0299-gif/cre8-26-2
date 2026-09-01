@@ -16,7 +16,7 @@ import { HOLD_SOURCES } from "./hold-sources.mjs";
 
 const SRC = "HOLDER (C)";
 const OUT = "public/img/holds";
-const SIZE = 1400;
+const SIZE = 2200;
 
 await mkdir(OUT, { recursive: true });
 
@@ -37,8 +37,11 @@ for (const [i, hold] of HOLD_SOURCES.entries()) {
   }
 
   const { data, info } = await sharp(path)
+    // 원본은 5160 정사각 캔버스 한가운데 오브제가 떠 있다.
+    // 투명 여백을 먼저 잘라내야 같은 픽셀 수로 오브제가 훨씬 크게 담긴다.
+    .trim({ threshold: 1 })
     .resize(SIZE, SIZE, { fit: "inside", withoutEnlargement: true })
-    .webp({ quality: 82, alphaQuality: 100 })
+    .webp({ quality: 90, alphaQuality: 100 })
     .toBuffer({ resolveWithObject: true });
 
   const hash = createHash("sha1").update(data).digest("hex").slice(0, 8);

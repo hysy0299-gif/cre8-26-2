@@ -30,6 +30,8 @@ export default async function HoldDetailPage({ params }: PageProps<"/archive/[ho
               width={hold.hero.width}
               height={hold.hero.height}
               priority
+
+              quality={90}
               sizes="(max-width: 768px) 100vw, 58vw"
               className="max-h-[70vh] w-full object-contain"
             />

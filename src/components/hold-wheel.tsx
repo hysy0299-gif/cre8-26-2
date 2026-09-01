@@ -115,6 +115,8 @@ export function HoldWheel({ holds }: { holds: Hold[] }) {
                   width={active.hero.width}
                   height={active.hero.height}
                   priority
+
+                  quality={90}
                   sizes="(max-width: 768px) 100vw, 62vw"
                   className="max-h-[58vh] w-auto object-contain"
                 />
