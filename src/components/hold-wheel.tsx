@@ -134,8 +134,6 @@ export function HoldWheel({ holds }: { holds: Hold[] }) {
                 </span>
               </div>
 
-              <h2 className="text-title">{active.name}</h2>
-
               {active.description.length ? (
                 <div className="text-body flex max-w-[52ch] flex-col gap-3 text-balance">
                   {active.description.map((line, i) => (
