@@ -62,7 +62,10 @@ interface AccordionGalleryProps {
   /** 접힌 칸이 뒤로 눕는 각도(도). 0이면 평평하게 */
   tilt?: number;
   trigger?: "hover" | "click";
+  /** 접힌 칸을 흑백으로 뺀다 */
   grayscale?: boolean;
+  /** 접힌 칸을 바탕색으로 누르는 정도 (0 – 1). 0이면 사진 그대로 */
+  dim?: number;
   /** 열린 칸의 화면상 폭. srcset 고르는 데 쓴다 */
   sizes?: string;
   className?: string;
@@ -84,6 +87,7 @@ export function AccordionGallery({
   tilt = 8,
   trigger = "hover",
   grayscale = true,
+  dim = 0.35,
   sizes = "45vw",
   className = "",
 }: AccordionGalleryProps) {
@@ -146,7 +150,7 @@ export function AccordionGallery({
             media,
             {
               "--ag-gray": grayscale ? (isActive ? 0 : 1) : 0,
-              "--ag-dim": isActive ? 0 : 0.35,
+              "--ag-dim": isActive ? 0 : dim,
               duration: dur,
               ease,
             },
@@ -157,7 +161,7 @@ export function AccordionGallery({
 
       tlRef.current = tl;
     },
-    [active, count, openFraction, duration, ease, vertical, tilt, grayscale],
+    [active, count, openFraction, duration, ease, vertical, tilt, grayscale, dim],
   );
 
   useEffect(() => {

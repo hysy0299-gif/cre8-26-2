@@ -27,6 +27,9 @@ export default function MainPage() {
         gap={GAP}
         fitOpen
         trigger="hover"
+        // 사진은 원본 색 그대로 내보낸다 — 흑백도, 바탕색 워시도 걸지 않는다
+        grayscale={false}
+        dim={0}
         sizes="(max-width: 520px) 100vw, 40vw"
       />
     </div>
