@@ -73,8 +73,17 @@ function useTopOffset() {
  * 그래서 **면적**을 기준으로 맞춘다 — 정사각을 SQUARE_VH로 두고
  * 가로세로비 r에 대해 높이를 SQUARE_VH / sqrt(r)로 잡으면 넓이가 엇비슷해진다.
  */
-const SQUARE_VH = 44;
-const MAX_VH = 62;
+const SQUARE_VH = 42;
+/** 가장 큰 홀드도 아래 설명에 닿지 않는 선 */
+const MAX_VH = 52;
+
+/**
+ * 설명 글의 윗변 위치(화면 기준 vh).
+ *
+ * 홀드는 50dvh를 중심으로 놓이니 가장 큰 홀드의 아랫변이 50 + MAX_VH/2 = 76vh다.
+ * 그 바로 아래에 고정으로 둔다 — 홀드마다 따라 움직이면 글이 위아래로 널뛴다.
+ */
+const TEXT_TOP_VH = 50 + MAX_VH / 2 + 2.5;
 
 function holdHeightVh(width: number, height: number) {
   const r = width / height;
@@ -189,7 +198,10 @@ export function HoldWheel({ holds }: { holds: Hold[] }) {
                * 흐름에서 빼서 아래에 띄운다.
                * 흐름에 두면 글 높이만큼 홀드가 위로 밀려 휠과 중심이 어긋난다.
                */
-              <figcaption className="text-body font-sans text-ink absolute inset-x-0 bottom-[4vh] mx-auto flex max-w-[76ch] flex-col gap-2 text-center text-pretty">
+              <figcaption
+                className="text-body font-sans text-ink absolute inset-x-0 mx-auto flex max-w-[76ch] flex-col gap-2 text-center text-pretty"
+                style={{ top: `calc(${TEXT_TOP_VH}dvh - ${offset}px)` }}
+              >
                 {active.description.map((line, i) => (
                   <p key={i}>{line}</p>
                 ))}
