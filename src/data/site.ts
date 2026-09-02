@@ -5,12 +5,27 @@ export const site = {
   description: "",
 } as const;
 
+/**
+ * 섹션 사진 한 장.
+ *
+ * width/height는 원본 비율을 그대로 들고 다니기 위한 값이다.
+ * 메인화면 아코디언이 이 비율로 열린 칸의 폭을 정해서,
+ * 펼쳐진 사진이 잘리지도 여백이 생기지도 않게 한다.
+ * srcSet은 `npm run section-images`가 굽는 두 벌(1400w / 2600w)이다.
+ */
+export interface SectionImage {
+  src: string;
+  srcSet: string;
+  width: number;
+  height: number;
+}
+
 export interface Destination {
   /** 메뉴·네비에 표기되는 라벨 */
   label: string;
   href: string;
-  /** 메인화면 아코디언 칸에 깔리는 이미지. `npm run section-images`로 만든다 */
-  image?: string;
+  /** 메인화면 아코디언 칸에 깔리는 사진. `npm run section-images`로 만든다 */
+  image?: SectionImage;
 }
 
 /**
@@ -22,9 +37,39 @@ export interface Destination {
  * ABOUT    팀 · 전시
  */
 export const destinations: Destination[] = [
-  { label: "GRIT", href: "/grit", image: "/img/sections/grit-422f8583.webp" },
-  { label: "ARCHIVE", href: "/archive", image: "/img/sections/archive-3348da8c.webp" },
-  { label: "PROCESS", href: "/process", image: "/img/sections/process-03885a6d.webp" },
+  {
+    label: "GRIT",
+    href: "/grit",
+    image: {
+      src: "/img/sections/grit-1400-ede43e8d.webp",
+      srcSet:
+        "/img/sections/grit-1400-ede43e8d.webp 1400w, /img/sections/grit-2579-16b84f64.webp 2579w",
+      width: 2579,
+      height: 3800,
+    },
+  },
+  {
+    label: "ARCHIVE",
+    href: "/archive",
+    image: {
+      src: "/img/sections/archive-1400-5278186d.webp",
+      srcSet:
+        "/img/sections/archive-1400-5278186d.webp 1400w, /img/sections/archive-2079-ae530cea.webp 2079w",
+      width: 2079,
+      height: 3800,
+    },
+  },
+  {
+    label: "PROCESS",
+    href: "/process",
+    image: {
+      src: "/img/sections/process-1400-36e81af4.webp",
+      srcSet:
+        "/img/sections/process-1400-36e81af4.webp 1400w, /img/sections/process-2579-528afc6e.webp 2579w",
+      width: 2579,
+      height: 3800,
+    },
+  },
   { label: "ABOUT", href: "/about" },
 ];
 

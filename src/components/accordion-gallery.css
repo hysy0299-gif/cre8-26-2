@@ -1,7 +1,6 @@
 .accordion-gallery {
   --ag-gap: 10px;
   --ag-radius: 0px;
-  --ag-media-size: 320px;
   /* 색은 전부 역할 토큰에서 끌어온다 — 바탕을 뒤집으면 같이 따라간다 */
   --ag-accent: var(--color-ink);
   --ag-text: var(--color-ink);
@@ -21,6 +20,14 @@
   flex-direction: column;
 }
 
+/*
+ * will-change를 걸지 않는다.
+ *
+ * 원본은 `will-change: flex-grow, transform`으로 칸을 상시 합성 레이어로 올리는데,
+ * 그러면 브라우저가 한 번 뜬 래스터를 계속 늘려 쓰면서 사진이 뭉개진다.
+ * 3D로 눕는 칸에서 특히 심하다. 애니메이션은 GSAP이 프레임마다 다시 그리므로
+ * 이 힌트 없이도 부드럽고, 대신 사진이 매 폭에서 제 해상도로 다시 그려진다.
+ */
 .ag-panel {
   position: relative;
   flex: 1 1 0;
@@ -35,7 +42,6 @@
   transform-style: preserve-3d;
   transform-origin: center center;
   background: var(--ag-panel);
-  will-change: flex-grow, transform;
   -webkit-tap-highlight-color: transparent;
   transition: background-color 400ms ease;
 }
@@ -55,29 +61,29 @@
   border-radius: inherit;
 }
 
-/*
- * 칸을 꽉 채우고 사진은 contain으로 담는다.
- * cover로 채우면 칸 폭이 열리고 접힐 때마다 사진이 다르게 잘린다.
- */
 .ag-panel__media {
   --ag-gray: 1;
   --ag-dim: 0.35;
   position: absolute;
   inset: 0;
   filter: grayscale(var(--ag-gray));
-  will-change: filter;
 }
 
+/*
+ * cover다. 열린 칸의 폭 자체를 사진 원본 비율에 맞춰 잡으므로(컴포넌트의 fitOpen),
+ * 펼쳐진 사진은 cover여도 잘리는 데 없이 칸을 정확히 채운다.
+ * 접힌 칸에서만 좌우가 잘린다 — 거긴 사진을 보여주는 자리가 아니다.
+ */
 .ag-panel__media img {
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
   user-select: none;
   -webkit-user-drag: none;
 }
 
-/* 사진이 있을 때만 깔리는 가독성 그라디언트 */
+/* 접힌 칸을 바탕색으로 눌러 열린 칸이 앞으로 나오게 한다 */
 .ag-panel__overlay {
   position: absolute;
   inset: 0;
@@ -87,8 +93,8 @@
 
 /*
  * 라벨은 접힌 칸에서도 계속 보인다.
- * 원본은 펼쳐진 칸에만 라벨을 띄우는데, 그건 사진이 칸을 설명해줄 때 얘기다.
- * 지금은 사진이 없어서 라벨을 숨기면 빈 칸 세 개가 된다.
+ * 원본은 펼쳐진 칸에만 라벨을 띄우는데, 그건 사진만으로 칸이 설명될 때 얘기다.
+ * 여기선 라벨이 곧 목적지 이름이라 항상 읽혀야 한다.
  */
 .ag-panel__label {
   position: absolute;
@@ -100,7 +106,6 @@
   pointer-events: none;
   z-index: 2;
 }
-
 
 .ag-panel__text {
   color: var(--ag-text);
@@ -115,6 +120,7 @@
   text-overflow: ellipsis;
 }
 
+/* 좁은 화면에선 가로로 못 벌린다. 세로로 쌓고 3D를 끈다 */
 @media (max-width: 520px) {
   .accordion-gallery {
     flex-direction: column;
@@ -122,18 +128,7 @@
     height: auto !important;
   }
   .ag-panel {
-    min-height: 96px;
+    aspect-ratio: 16 / 10;
     transform: none !important;
-  }
-  .accordion-gallery .ag-panel__media {
-    width: 100%;
-    height: var(--ag-media-size);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .ag-panel,
-  .ag-panel__media {
-    will-change: auto;
   }
 }
