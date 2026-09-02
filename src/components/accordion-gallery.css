@@ -101,18 +101,10 @@
   left: 20px;
   display: flex;
   align-items: center;
-  gap: 12px;
   pointer-events: none;
   z-index: 2;
 }
 
-.ag-panel__bar {
-  flex: 0 0 auto;
-  width: 2px;
-  height: 1.1em;
-  background: var(--ag-accent);
-  opacity: 0;
-}
 
 .ag-panel__text {
   color: var(--ag-text);

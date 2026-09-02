@@ -12,6 +12,7 @@ import "./accordion-gallery.css";
  * - image가 선택값이다. 사진이 없으면 빈 판으로 두고 라벨만 세운다.
  * - 그래서 라벨을 접힌 칸에서도 계속 띄운다. 원본은 펼쳐진 칸에만 띄우는데,
  *   그건 사진이 칸을 설명해줄 때 성립하는 규칙이다.
+ * - 라벨 옆 강조 막대 제거 — 어느 칸이 열렸는지는 폭과 색이 이미 말해준다.
  * - 색 프롭 세 개 → CSS 변수 한 벌(역할 토큰).
  * - <a href> → next/link.
  * - height가 CSS 길이도 받는다. 전체 화면(100dvh)에 깔아야 해서.
@@ -39,7 +40,6 @@ interface AccordionGalleryProps {
   parallax?: number;
   /** 접힌 칸이 뒤로 눕는 각도(도). 0이면 평평하게 */
   tilt?: number;
-  stagger?: number;
   trigger?: "hover" | "click";
   grayscale?: boolean;
   className?: string;
@@ -57,7 +57,6 @@ export function AccordionGallery({
   ease = "power3.out",
   parallax = 0.5,
   tilt = 8,
-  stagger = 0.06,
   trigger = "hover",
   grayscale = true,
   className = "",
@@ -65,7 +64,6 @@ export function AccordionGallery({
   const rootRef = useRef<HTMLDivElement>(null);
   const panelRefs = useRef<(HTMLAnchorElement | null)[]>([]);
   const mediaRefs = useRef<(HTMLSpanElement | null)[]>([]);
-  const barRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const tlRef = useRef<gsap.core.Timeline | null>(null);
   const firstRunRef = useRef(true);
   const mediaSizeRef = useRef(320);
@@ -92,7 +90,6 @@ export function AccordionGallery({
         if (!panel) return;
         const isActive = i === active;
         const media = mediaRefs.current[i];
-        const bar = barRefs.current[i];
 
         const rot = isActive ? 0 : i < active ? tilt : -tilt;
         const rotProp = vertical ? { rotateX: -rot } : { rotateY: rot };
@@ -117,25 +114,11 @@ export function AccordionGallery({
             0,
           );
         }
-
-        // 라벨 자체는 늘 보이고, 강조 막대만 열린 칸에 선다
-        if (bar) {
-          tl.to(
-            bar,
-            {
-              opacity: isActive ? 1 : 0,
-              duration: isActive ? dur : dur * 0.6,
-              ease,
-              delay: isActive && !reduced ? stagger : 0,
-            },
-            0,
-          );
-        }
       });
 
       tlRef.current = tl;
     },
-    [active, count, expandRatio, duration, ease, vertical, tilt, parallax, grayscale, stagger],
+    [active, count, expandRatio, duration, ease, vertical, tilt, parallax, grayscale],
   );
 
   useEffect(() => {
@@ -231,13 +214,6 @@ export function AccordionGallery({
             ) : null}
 
             <span className="ag-panel__label">
-              <span
-                className="ag-panel__bar"
-                ref={(el) => {
-                  barRefs.current[i] = el;
-                }}
-                aria-hidden="true"
-              />
               <span className="ag-panel__text">{item.label}</span>
             </span>
           </Link>
