@@ -9,6 +9,8 @@ export interface Destination {
   /** 메뉴·네비에 표기되는 라벨 */
   label: string;
   href: string;
+  /** 메인화면 아코디언 칸에 깔리는 이미지. `npm run section-images`로 만든다 */
+  image?: string;
 }
 
 /**
@@ -20,9 +22,9 @@ export interface Destination {
  * ABOUT    팀 · 전시
  */
 export const destinations: Destination[] = [
-  { label: "GRIT", href: "/grit" },
-  { label: "ARCHIVE", href: "/archive" },
-  { label: "PROCESS", href: "/process" },
+  { label: "GRIT", href: "/grit", image: "/img/sections/grit-422f8583.webp" },
+  { label: "ARCHIVE", href: "/archive", image: "/img/sections/archive-3348da8c.webp" },
+  { label: "PROCESS", href: "/process", image: "/img/sections/process-03885a6d.webp" },
   { label: "ABOUT", href: "/about" },
 ];
 

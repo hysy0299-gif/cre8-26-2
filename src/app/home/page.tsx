@@ -11,7 +11,7 @@ export default function MainPage() {
   return (
     <div data-screen="main" className="h-dvh p-[var(--page-margin)]">
       <AccordionGallery
-        items={mainSections.map((s) => ({ label: s.label, href: s.href }))}
+        items={mainSections.map((s) => ({ label: s.label, href: s.href, image: s.image }))}
         defaultIndex={0}
         orientation="horizontal"
         height="100%"
