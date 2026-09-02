@@ -49,7 +49,7 @@
   /* 섹션 사이 리듬 — Tailwind 기본 spacing으로는 못 잡는 큰 간격만 토큰으로 둔다 */
   --section-gap: clamp(4rem, 10vw, 10rem);
   /* 아카이브 전체를 오른쪽으로 조금 밀어주는 값 — 휠·홀드·설명이 같이 움직인다 */
-  --archive-shift: clamp(1.5rem, 7vw, 9rem);
+  --archive-shift: clamp(1rem, 3.5vw, 4.5rem);
   /* 네비 위아래 여백. 페이지 여백(--page-margin)을 그대로 쓰면 상단이 8rem을 먹는다 */
   --nav-pad: clamp(0.875rem, 1.4vw, 1.25rem);
 }

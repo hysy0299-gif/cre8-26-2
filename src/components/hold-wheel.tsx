@@ -73,9 +73,9 @@ function useTopOffset() {
  * 그래서 **면적**을 기준으로 맞춘다 — 정사각을 SQUARE_VH로 두고
  * 가로세로비 r에 대해 높이를 SQUARE_VH / sqrt(r)로 잡으면 넓이가 엇비슷해진다.
  */
-const SQUARE_VH = 48;
+const SQUARE_VH = 58;
 /** 가장 큰 홀드도 아래 설명에 닿지 않는 선 */
-const MAX_VH = 58;
+const MAX_VH = 68;
 
 /**
  * 설명 글의 윗변 위치(화면 기준 vh).
