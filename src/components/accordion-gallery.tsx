@@ -51,6 +51,8 @@ interface AccordionGalleryProps {
   gap?: number;
   radius?: number;
   expandRatio?: number;
+  /** 열린 칸의 폭을 그 칸 사진의 원본 비율에서 뽑는다 */
+  fitOpen?: boolean;
   orientation?: "horizontal" | "vertical";
   duration?: number;
   ease?: string;
@@ -75,6 +77,7 @@ export function AccordionGallery({
   gap = 10,
   radius = 16,
   expandRatio = 0.52,
+  fitOpen = false,
   orientation = "horizontal",
   duration = 0.6,
   ease = "power3.out",
@@ -99,6 +102,33 @@ export function AccordionGallery({
   const vertical = orientation === "vertical";
   const count = items.length;
   const [active, setActive] = useState(Math.min(Math.max(defaultIndex, 0), count - 1));
+  /** 실측한 바깥 상자. fitOpen이 켜져 있을 때만 쓴다 */
+  const boxRef = useRef({ w: 0, h: 0 });
+
+  /**
+   * 열린 칸이 안쪽 폭에서 차지할 비율.
+   *
+   * fitOpen이 꺼져 있으면 원본대로 expandRatio를 그대로 쓴다.
+   *
+   * 켜면 그 칸 사진의 원본 비율에서 뽑는다. 칸 높이는 상자 높이와 같으니
+   * 열린 칸의 폭이 `높이 × 사진비율`이면 사진이 cover로도 잘리지 않고
+   * 빈 띠도 없이 칸을 정확히 채운다.
+   *
+   * 1/count를 바닥으로 깐다 — 상자가 넓고 낮으면 세로로 긴 사진의 제 폭이
+   * 1/count보다 좁아져서 열린 칸이 접힌 칸보다 좁아지는(뒤집히는) 일이 생긴다.
+   */
+  const openFraction = useCallback(
+    (i: number) => {
+      const img = items[i]?.image;
+      const { w, h } = boxRef.current;
+      const inner = w - gap * (count - 1);
+
+      if (!fitOpen || vertical || !img || inner <= 0 || h <= 0) return expandRatio;
+      const natural = (img.width / img.height) * (h / inner);
+      return Math.max(natural, 1 / count);
+    },
+    [items, fitOpen, vertical, expandRatio, gap, count],
+  );
 
   const applyLayout = useCallback(
     (animate: boolean) => {
@@ -107,7 +137,7 @@ export function AccordionGallery({
 
       // 원본은 렌더 중에 이걸 읽는데 서버에는 window가 없다. 그래서 여기로 옮겼다
       const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      const r = Math.min(Math.max(expandRatio, 0.2), 0.9);
+      const r = Math.min(Math.max(openFraction(active), 0.2), 0.9);
       const grow = count > 1 ? (r * (count - 1)) / (1 - r) : 1;
       const mediaSize = mediaSizeRef.current;
 
@@ -177,7 +207,6 @@ export function AccordionGallery({
     [
       active,
       count,
-      expandRatio,
       duration,
       ease,
       vertical,
@@ -186,6 +215,7 @@ export function AccordionGallery({
       grayscale,
       showLabels,
       stagger,
+      openFraction,
     ],
   );
 
@@ -195,6 +225,7 @@ export function AccordionGallery({
 
     const measure = () => {
       const rect = el.getBoundingClientRect();
+      boxRef.current = { w: rect.width, h: rect.height };
       const total = vertical ? rect.height : rect.width;
       const usable = Math.max(total - gap * (count - 1), 120);
       const size = Math.max(140, usable * Math.min(Math.max(expandRatio, 0.2), 0.9) * 1.22);
