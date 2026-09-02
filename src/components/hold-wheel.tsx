@@ -74,7 +74,7 @@ function useTopOffset() {
  * 가로세로비 r에 대해 높이를 SQUARE_VH / sqrt(r)로 잡으면 넓이가 엇비슷해진다.
  */
 const SQUARE_VH = 44;
-const MAX_VH = 68;
+const MAX_VH = 62;
 
 function holdHeightVh(width: number, height: number) {
   const r = width / height;
@@ -134,7 +134,7 @@ export function HoldWheel({ holds }: { holds: Hold[] }) {
             blur={3}
             fade={0.33}
             smoothing={260}
-            inset={88}
+            inset={56}
             loop={false}
             draggable
             ariaLabel="Holds"
@@ -150,16 +150,19 @@ export function HoldWheel({ holds }: { holds: Hold[] }) {
         오른쪽에 커서를 두고 굴려도 페이지가 안 밀린다.
       */}
       <div
-        className="col-span-12 flex flex-col md:col-span-8"
+        className="relative col-span-12 md:col-span-8"
         style={{ height: `calc(100dvh - ${offset}px)` }}
       >
         {active ? (
-          <figure
-            key={active.slug}
-            className="hold-swap flex min-h-0 flex-1 flex-col items-center gap-[1.5vh] pb-[10vh]"
-          >
-            {/* 남는 높이를 차지하는 고정 칸 — 홀드가 커지든 작아지든 설명은 제자리다 */}
-            <div className="flex min-h-0 w-full flex-1 items-center justify-center">
+          <figure key={active.slug} className="hold-swap absolute inset-0">
+            {/*
+              휠과 같은 계산으로 높이를 잡는다 — 이 칸의 가운데가 정확히 50dvh다.
+              그래야 홀드 중심과 휠 중심이 같은 가로선에 놓인다.
+            */}
+            <div
+              className="flex w-full items-center justify-center"
+              style={{ height: `calc(100dvh - ${offset * 2}px)` }}
+            >
               {active.model ? (
                 <div className="h-full w-full">
                   <ModelViewer url={active.model} />
@@ -182,8 +185,11 @@ export function HoldWheel({ holds }: { holds: Hold[] }) {
             </div>
 
             {active.description.length ? (
-              // 한 토막이 한 줄에 떨어지도록 폭을 넉넉히 잡고 가운데 정렬한다
-              <figcaption className="text-body font-sans text-ink flex max-w-[76ch] shrink-0 flex-col gap-2 text-center text-pretty">
+              /*
+               * 흐름에서 빼서 아래에 띄운다.
+               * 흐름에 두면 글 높이만큼 홀드가 위로 밀려 휠과 중심이 어긋난다.
+               */
+              <figcaption className="text-body font-sans text-ink absolute inset-x-0 bottom-[4vh] mx-auto flex max-w-[76ch] flex-col gap-2 text-center text-pretty">
                 {active.description.map((line, i) => (
                   <p key={i}>{line}</p>
                 ))}
