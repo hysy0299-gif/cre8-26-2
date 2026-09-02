@@ -1,11 +1,11 @@
-/* React Bits AccordionGallery 원본 CSS 그대로. will-change 두 줄만 뺐다 — 아래 주석 참고 */
 .accordion-gallery {
-  --ag-accent: #ffffff;
-  --ag-overlay: #060010;
-  --ag-text: #ffffff;
   --ag-gap: 10px;
-  --ag-radius: 16px;
-  --ag-media-size: 320px;
+  --ag-radius: 0px;
+  /* 색은 전부 역할 토큰에서 끌어온다 — 바탕을 뒤집으면 같이 따라간다 */
+  --ag-accent: var(--color-ink);
+  --ag-text: var(--color-ink);
+  --ag-panel: color-mix(in srgb, var(--color-ink) 5%, var(--color-ground));
+  --ag-panel-active: color-mix(in srgb, var(--color-tint) 55%, var(--color-ground));
 
   display: flex;
   flex-direction: row;
@@ -21,9 +21,12 @@
 }
 
 /*
- * 원본의 `will-change: flex-grow, transform`을 뺐다.
- * 칸이 상시 합성 레이어로 올라가면 브라우저가 한 번 뜬 래스터를 계속 늘려 쓰면서
- * 사진이 뭉개진다 — 3D로 눕는 칸에서 특히 심하다. 보이는 움직임은 그대로다.
+ * will-change를 걸지 않는다.
+ *
+ * 원본은 `will-change: flex-grow, transform`으로 칸을 상시 합성 레이어로 올리는데,
+ * 그러면 브라우저가 한 번 뜬 래스터를 계속 늘려 쓰면서 사진이 뭉개진다.
+ * 3D로 눕는 칸에서 특히 심하다. 애니메이션은 GSAP이 프레임마다 다시 그리므로
+ * 이 힌트 없이도 부드럽고, 대신 사진이 매 폭에서 제 해상도로 다시 그려진다.
  */
 .ag-panel {
   position: relative;
@@ -38,16 +41,17 @@
   outline: none;
   transform-style: preserve-3d;
   transform-origin: center center;
-  /* 원본은 어두운 페이지를 전제로 한 색. 이 사이트 바탕색으로 바꾼다 */
-  background: var(--color-ground);
-  box-shadow: 0 10px 30px -18px rgba(0, 0, 0, 0.8);
+  background: var(--ag-panel);
   -webkit-tap-highlight-color: transparent;
+  transition: background-color 400ms ease;
+}
+
+.ag-panel--active {
+  background: var(--ag-panel-active);
 }
 
 .ag-panel:focus-visible {
-  box-shadow:
-    0 0 0 2px var(--ag-accent),
-    0 10px 30px -18px rgba(0, 0, 0, 0.8);
+  box-shadow: inset 0 0 0 2px var(--ag-accent);
 }
 
 .ag-panel__frame {
@@ -57,86 +61,66 @@
   border-radius: inherit;
 }
 
-/*
- * 원본은 사진을 칸보다 넓게(--ag-media-size) 깔아서 안에서 미끄러뜨린다.
- * 여기선 사진을 원본 비율 그대로 보여야 해서 칸 크기에 맞춘다.
- * top/left 50% + GSAP의 -50% translate 조합은 그대로라 정확히 칸을 덮는다.
- */
 .ag-panel__media {
   --ag-gray: 1;
   --ag-dim: 0.35;
   position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 100%;
-  height: 100%;
+  inset: 0;
   filter: grayscale(var(--ag-gray));
 }
 
-.accordion-gallery--vertical .ag-panel__media {
-  width: 100%;
-  height: var(--ag-media-size);
-}
-
 /*
- * cover다. 열린 칸의 폭 자체를 그 사진의 원본 비율로 잡으므로(컴포넌트의 fitOpen),
- * 펼쳐진 사진은 cover여도 잘리는 데 없이 칸을 꽉 채운다 — 흰 띠도 안 생긴다.
- * 접힌 칸에서만 좌우가 잘린다.
+ * cover다. 열린 칸의 폭 자체를 사진 원본 비율에 맞춰 잡으므로(컴포넌트의 fitOpen),
+ * 펼쳐진 사진은 cover여도 잘리는 데 없이 칸을 정확히 채운다.
+ * 접힌 칸에서만 좌우가 잘린다 — 거긴 사진을 보여주는 자리가 아니다.
  */
 .ag-panel__media img {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  display: block;
   user-select: none;
   -webkit-user-drag: none;
 }
 
+/* 접힌 칸을 바탕색으로 눌러 열린 칸이 앞으로 나오게 한다 */
 .ag-panel__overlay {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background:
-    linear-gradient(180deg, transparent 45%, color-mix(in srgb, var(--ag-overlay) 78%, transparent) 100%),
-    color-mix(in srgb, var(--ag-overlay) calc(var(--ag-dim, 0.35) * 100%), transparent);
+  background: color-mix(in srgb, var(--color-ground) calc(var(--ag-dim, 0.35) * 100%), transparent);
 }
 
+/*
+ * 라벨은 접힌 칸에서도 계속 보인다.
+ * 원본은 펼쳐진 칸에만 라벨을 띄우는데, 그건 사진만으로 칸이 설명될 때 얘기다.
+ * 여기선 라벨이 곧 목적지 이름이라 항상 읽혀야 한다.
+ */
 .ag-panel__label {
   position: absolute;
-  left: 20px;
-  bottom: 20px;
   right: 20px;
+  bottom: 24px;
+  left: 20px;
   display: flex;
   align-items: center;
-  gap: 12px;
   pointer-events: none;
   z-index: 2;
-}
-
-.ag-panel__bar {
-  flex: 0 0 auto;
-  width: 3px;
-  height: 26px;
-  border-radius: 3px;
-  background: var(--ag-accent);
-  opacity: 0;
-  box-shadow: 0 0 12px color-mix(in srgb, var(--ag-accent) 60%, transparent);
 }
 
 .ag-panel__text {
   color: var(--ag-text);
   font-family: inherit;
-  /* 지급된 굵기는 300/700/900 셋뿐 — 원본의 600은 합성 굵기라 700으로 올렸다 */
+  /* 지급된 굵기는 300/700/900 셋뿐 — 원본의 600은 합성 굵기라 쓰지 않는다 */
   font-weight: 700;
-  font-size: clamp(1rem, 1.4vw, 1.4rem);
-  letter-spacing: 0.01em;
+  font-size: clamp(1rem, 2vw, 2rem);
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  opacity: 0;
-  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.55);
 }
 
+/* 좁은 화면에선 가로로 못 벌린다. 세로로 쌓고 3D를 끈다 */
 @media (max-width: 520px) {
   .accordion-gallery {
     flex-direction: column;
@@ -144,11 +128,7 @@
     height: auto !important;
   }
   .ag-panel {
-    min-height: 84px;
+    aspect-ratio: 16 / 10;
     transform: none !important;
-  }
-  .accordion-gallery .ag-panel__media {
-    width: 100%;
-    height: var(--ag-media-size);
   }
 }

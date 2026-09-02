@@ -8,27 +8,31 @@ import {
   useState,
   type CSSProperties,
   type KeyboardEvent,
-  type MouseEvent,
 } from "react";
 import { gsap } from "gsap";
 import "./accordion-gallery.css";
 
 /**
- * React Bits의 AccordionGallery. 원본 로직 그대로다.
+ * React Bits의 AccordionGallery — **모션과 인터랙션만** 가져왔다.
+ * 커서를 올린 칸이 열리고 나머지가 접히며, 접힌 칸은 살짝 뒤로 눕는다.
  *
- * 손댄 곳은 넷뿐이고, 전부 이 프로젝트에서 돌아가게 하려는 것이지
- * 인터랙션을 바꾸는 게 아니다.
- * 1. TypeScript 타입
- * 2. <a href> → next/link. 내부 이동이라 전체 새로고침이 나면 안 된다
- * 3. <img>에 srcSet/sizes. 사진이 화면 절반을 차지해서 한 벌만 두면 화질이 깨진다
- * 4. height가 CSS 길이 문자열도 받는다. 화면 높이에 맞춰야 해서
- *
- * 버그 하나도 고쳤다 — 아래 stagger 주석 참고.
+ * 비례와 색은 원본을 따르지 않는다
+ * - 열린 칸의 폭을 **그 칸 사진의 원본 비율**에서 뽑는다(fitOpen).
+ *   원본은 expandRatio 하나로 모든 칸을 똑같이 벌리는데, 그러면 사진이
+ *   칸에 맞춰 잘리거나 여백이 생긴다. 여기선 반대로 칸이 사진에 맞춘다 —
+ *   펼쳐진 사진은 언제나 원본 비율 그대로, 무손실로 화면을 채운다.
+ * - 접힌 칸은 그 남은 폭을 나눠 갖고 사진은 좌우가 잘린다(cover). 접힌 칸은
+ *   "여기 뭔가 있다"는 신호지 사진을 보여주는 자리가 아니다.
+ * - 색 프롭 세 개 → CSS 변수 한 벌(역할 토큰).
+ * - <a href> → next/link.
+ * - 라벨을 접힌 칸에서도 계속 띄운다. 원본은 열린 칸에만 띄운다.
+ * - height가 CSS 길이도 받는다.
  */
 export interface AccordionImage {
   src: string;
   /** 두 벌 이상 구웠으면 srcset. 브라우저가 화면 배율에 맞는 걸 고른다 */
   srcSet?: string;
+  /** 원본 비율. 열린 칸의 폭이 여기서 나온다 */
   width: number;
   height: number;
 }
@@ -36,6 +40,7 @@ export interface AccordionImage {
 export interface AccordionItem {
   label: string;
   href: string;
+  /** 없으면 빈 판 */
   image?: AccordionImage;
   alt?: string;
 }
@@ -43,79 +48,67 @@ export interface AccordionItem {
 interface AccordionGalleryProps {
   items: AccordionItem[];
   defaultIndex?: number;
-  accentColor?: string;
-  overlayColor?: string;
-  textColor?: string;
   /** px 숫자 또는 CSS 길이 문자열 */
   height?: number | string;
   gap?: number;
   radius?: number;
+  /** 사진 비율을 못 쓸 때(사진 없는 칸) 쓰는 기본 벌어짐 비율 (0.2 – 0.9) */
   expandRatio?: number;
   /** 열린 칸의 폭을 그 칸 사진의 원본 비율에서 뽑는다 */
   fitOpen?: boolean;
   orientation?: "horizontal" | "vertical";
   duration?: number;
   ease?: string;
-  parallax?: number;
+  /** 접힌 칸이 뒤로 눕는 각도(도). 0이면 평평하게 */
   tilt?: number;
-  stagger?: number;
   trigger?: "hover" | "click";
-  showLabels?: boolean;
+  /** 접힌 칸을 흑백으로 뺀다 */
   grayscale?: boolean;
+  /** 접힌 칸을 바탕색으로 누르는 정도 (0 – 1). 0이면 사진 그대로 */
+  dim?: number;
   /** 열린 칸의 화면상 폭. srcset 고르는 데 쓴다 */
   sizes?: string;
   className?: string;
 }
 
+const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), hi);
+
 export function AccordionGallery({
   items,
-  defaultIndex = 2,
-  accentColor = "#ffffff",
-  overlayColor = "#060010",
-  textColor = "#ffffff",
+  defaultIndex = 0,
   height = 460,
   gap = 10,
-  radius = 16,
-  expandRatio = 0.52,
-  fitOpen = false,
+  radius = 0,
+  expandRatio = 0.5,
+  fitOpen = true,
   orientation = "horizontal",
   duration = 0.6,
   ease = "power3.out",
-  parallax = 0.5,
   tilt = 8,
-  stagger = 0.06,
   trigger = "hover",
-  showLabels = true,
   grayscale = true,
-  sizes = "(max-width: 520px) 100vw, 55vw",
+  dim = 0.35,
+  sizes = "45vw",
   className = "",
 }: AccordionGalleryProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const panelRefs = useRef<(HTMLAnchorElement | null)[]>([]);
   const mediaRefs = useRef<(HTMLSpanElement | null)[]>([]);
-  const barRefs = useRef<(HTMLSpanElement | null)[]>([]);
-  const textRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const tlRef = useRef<gsap.core.Timeline | null>(null);
   const firstRunRef = useRef(true);
-  const mediaSizeRef = useRef(320);
+  /** 실측한 바깥 상자. 열린 칸 폭을 사진 비율에서 뽑으려면 실제 높이가 필요하다 */
+  const boxRef = useRef({ w: 0, h: 0 });
 
   const vertical = orientation === "vertical";
   const count = items.length;
-  const [active, setActive] = useState(Math.min(Math.max(defaultIndex, 0), count - 1));
-  /** 실측한 바깥 상자. fitOpen이 켜져 있을 때만 쓴다 */
-  const boxRef = useRef({ w: 0, h: 0 });
+  const [active, setActive] = useState(clamp(defaultIndex, 0, count - 1));
 
   /**
    * 열린 칸이 안쪽 폭에서 차지할 비율.
    *
-   * fitOpen이 꺼져 있으면 원본대로 expandRatio를 그대로 쓴다.
-   *
-   * 켜면 그 칸 사진의 원본 비율에서 뽑는다. 칸 높이는 상자 높이와 같으니
-   * 열린 칸의 폭이 `높이 × 사진비율`이면 사진이 cover로도 잘리지 않고
-   * 빈 띠도 없이 칸을 정확히 채운다.
-   *
-   * 1/count를 바닥으로 깐다 — 상자가 넓고 낮으면 세로로 긴 사진의 제 폭이
-   * 1/count보다 좁아져서 열린 칸이 접힌 칸보다 좁아지는(뒤집히는) 일이 생긴다.
+   * 칸 높이는 상자 높이와 같으니, 사진을 원본 비율로 채우려면
+   * 열린 칸의 폭이 정확히 `높이 × 사진비율`이어야 한다. 그 폭을
+   * 칸 사이 간격을 뺀 안쪽 폭으로 나눈 값이 여기서 구하는 비율이다.
    */
   const openFraction = useCallback(
     (i: number) => {
@@ -124,8 +117,7 @@ export function AccordionGallery({
       const inner = w - gap * (count - 1);
 
       if (!fitOpen || vertical || !img || inner <= 0 || h <= 0) return expandRatio;
-      const natural = (img.width / img.height) * (h / inner);
-      return Math.max(natural, 1 / count);
+      return clamp((img.width / img.height) * (h / inner), 0.2, 0.9);
     },
     [items, fitOpen, vertical, expandRatio, gap, count],
   );
@@ -135,22 +127,18 @@ export function AccordionGallery({
       const panels = panelRefs.current;
       if (!panels.length) return;
 
-      // 원본은 렌더 중에 이걸 읽는데 서버에는 window가 없다. 그래서 여기로 옮겼다
-      const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      const r = Math.min(Math.max(openFraction(active), 0.2), 0.9);
-      const grow = count > 1 ? (r * (count - 1)) / (1 - r) : 1;
-      const mediaSize = mediaSizeRef.current;
+      const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const f = openFraction(active);
+      const grow = count > 1 ? (f * (count - 1)) / (1 - f) : 1;
 
       tlRef.current?.kill();
-      const dur = animate && !prefersReduced ? duration : 0;
+      const dur = animate && !reduced ? duration : 0;
       const tl = gsap.timeline();
 
       panels.forEach((panel, i) => {
         if (!panel) return;
         const isActive = i === active;
         const media = mediaRefs.current[i];
-        const bar = barRefs.current[i];
-        const text = textRefs.current[i];
 
         const rot = isActive ? 0 : i < active ? tilt : -tilt;
         const rotProp = vertical ? { rotateX: -rot } : { rotateY: rot };
@@ -158,65 +146,22 @@ export function AccordionGallery({
         tl.to(panel, { flexGrow: isActive ? grow : 1, ...rotProp, duration: dur, ease }, 0);
 
         if (media) {
-          const drift = Math.max(-1.5, Math.min(1.5, active - i));
-          const shift = drift * parallax * mediaSize * 0.06;
-          const gray = grayscale ? (isActive ? 0 : 1) : 0;
           tl.to(
             media,
             {
-              xPercent: -50,
-              yPercent: -50,
-              x: vertical ? 0 : isActive ? 0 : shift,
-              y: vertical ? (isActive ? 0 : shift) : 0,
-              "--ag-gray": gray,
-              "--ag-dim": isActive ? 0 : 0.35,
+              "--ag-gray": grayscale ? (isActive ? 0 : 1) : 0,
+              "--ag-dim": isActive ? 0 : dim,
               duration: dur,
               ease,
             },
             0,
           );
         }
-
-        if (showLabels && bar && text) {
-          if (isActive) {
-            tl.to(
-              [bar, text],
-              {
-                opacity: 1,
-                x: 0,
-                duration: dur,
-                ease,
-                /*
-                 * 원본은 여기에 항상 stagger를 건다. 그런데 첫 배치는 dur가 0이라
-                 * 막대는 t=0, 글자는 t=stagger에 예약되고, 그 사이에 다음 배치가
-                 * 타임라인을 죽인다 — 첫 화면에서 막대만 뜨고 글자는 안 뜬다.
-                 * dur가 0이면 stagger를 걸지 않는다.
-                 */
-                stagger: prefersReduced || dur === 0 ? 0 : stagger,
-              },
-              0,
-            );
-          } else {
-            tl.to([bar, text], { opacity: 0, x: -14, duration: dur * 0.6, ease }, 0);
-          }
-        }
       });
 
       tlRef.current = tl;
     },
-    [
-      active,
-      count,
-      duration,
-      ease,
-      vertical,
-      tilt,
-      parallax,
-      grayscale,
-      showLabels,
-      stagger,
-      openFraction,
-    ],
+    [active, count, openFraction, duration, ease, vertical, tilt, grayscale, dim],
   );
 
   useEffect(() => {
@@ -226,11 +171,6 @@ export function AccordionGallery({
     const measure = () => {
       const rect = el.getBoundingClientRect();
       boxRef.current = { w: rect.width, h: rect.height };
-      const total = vertical ? rect.height : rect.width;
-      const usable = Math.max(total - gap * (count - 1), 120);
-      const size = Math.max(140, usable * Math.min(Math.max(expandRatio, 0.2), 0.9) * 1.22);
-      mediaSizeRef.current = size;
-      el.style.setProperty("--ag-media-size", `${size}px`);
       applyLayout(!firstRunRef.current);
     };
 
@@ -238,7 +178,7 @@ export function AccordionGallery({
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [applyLayout, gap, count, expandRatio, vertical]);
+  }, [applyLayout]);
 
   useEffect(() => {
     applyLayout(!firstRunRef.current);
@@ -246,17 +186,6 @@ export function AccordionGallery({
   }, [applyLayout]);
 
   useEffect(() => () => void tlRef.current?.kill(), []);
-
-  const handleEnter = (i: number) => {
-    if (trigger === "hover") setActive(i);
-  };
-
-  const handleClick = (i: number, e: MouseEvent<HTMLAnchorElement>) => {
-    if (i !== active) {
-      e.preventDefault();
-      setActive(i);
-    }
-  };
 
   const handleKeyDown = (i: number, e: KeyboardEvent<HTMLAnchorElement>) => {
     if (e.key === "ArrowRight" || e.key === "ArrowDown") {
@@ -276,16 +205,13 @@ export function AccordionGallery({
       }`}
       style={
         {
-          "--ag-accent": accentColor,
-          "--ag-overlay": overlayColor,
-          "--ag-text": textColor,
           "--ag-gap": `${gap}px`,
           "--ag-radius": `${radius}px`,
           height: typeof height === "number" ? `${height}px` : height,
         } as CSSProperties
       }
       role="list"
-      aria-label="Image accordion gallery"
+      aria-label="Sections"
     >
       {items.map((item, i) => {
         const isActive = i === active;
@@ -295,58 +221,48 @@ export function AccordionGallery({
             ref={(el) => {
               panelRefs.current[i] = el;
             }}
-            className={`ag-panel${isActive ? " ag-panel--active" : ""}`}
-            style={{ borderRadius: `${radius}px` }}
             href={item.href}
-            onClick={(e) => handleClick(i, e)}
-            onMouseEnter={() => handleEnter(i)}
+            className={`ag-panel${isActive ? " ag-panel--active" : ""}`}
+            // 접힌 칸을 한 번 누르면 펼치기만 하고, 펼쳐진 칸을 누르면 이동한다
+            onClick={(e) => {
+              if (i !== active) {
+                e.preventDefault();
+                setActive(i);
+              }
+            }}
+            onMouseEnter={() => trigger === "hover" && setActive(i)}
             onFocus={() => setActive(i)}
             onKeyDown={(e) => handleKeyDown(i, e)}
             role="listitem"
-            tabIndex={0}
             aria-current={isActive ? "true" : undefined}
-            aria-label={item.label}
           >
-            <span className="ag-panel__frame">
-              <span
-                className="ag-panel__media"
-                ref={(el) => {
-                  mediaRefs.current[i] = el;
-                }}
-              >
-                {item.image ? (
-                  // eslint-disable-next-line @next/next/no-img-element
+            {item.image ? (
+              <span className="ag-panel__frame">
+                <span
+                  className="ag-panel__media"
+                  ref={(el) => {
+                    mediaRefs.current[i] = el;
+                  }}
+                >
+                  {/* next/image가 아니라 <img>인 이유 — 흑백 필터를 직접 먹여야 한다 */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={item.image.src}
                     srcSet={item.image.srcSet}
                     sizes={sizes}
                     width={item.image.width}
                     height={item.image.height}
-                    alt={item.alt || item.label || ""}
+                    alt={item.alt || item.label}
                     draggable={false}
                   />
-                ) : null}
-              </span>
-              <span className="ag-panel__overlay" aria-hidden="true" />
-            </span>
-            {showLabels && (
-              <span className="ag-panel__label" aria-hidden="true">
-                <span
-                  className="ag-panel__bar"
-                  ref={(el) => {
-                    barRefs.current[i] = el;
-                  }}
-                />
-                <span
-                  className="ag-panel__text"
-                  ref={(el) => {
-                    textRefs.current[i] = el;
-                  }}
-                >
-                  {item.label}
                 </span>
+                <span className="ag-panel__overlay" aria-hidden="true" />
               </span>
-            )}
+            ) : null}
+
+            <span className="ag-panel__label">
+              <span className="ag-panel__text">{item.label}</span>
+            </span>
           </Link>
         );
       })}
