@@ -23,10 +23,12 @@ export default function MainPage() {
         defaultIndex={3}
         expandRatio={0.52}
         trigger="hover"
-        accentColor="#000000"
-        overlayColor="#282828"
+        accentColor="#010101"
+        textColor="#010101"
+        overlayColor="#f5f5f5"
         duration={0.75}
-        parallax={0.85}
+        // 미끄러짐을 끈다. 켜면 사진을 칸 밖으로 밀어내야 해서 잘린다
+        parallax={0}
         gap={8}
         radius={10}
         height="100%"
