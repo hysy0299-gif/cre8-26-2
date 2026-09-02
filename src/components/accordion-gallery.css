@@ -61,21 +61,12 @@
   border-radius: inherit;
 }
 
-/*
- * 흑백 → 컬러 전환에 채도를 함께 올린다.
- *
- * 세 사진 다 원본 채도가 최대 8%밖에 안 되는 거의 흑백 사진이다.
- * grayscale만 풀면 되살아날 색이 없어서 전환이 일어난 줄 모른다.
- * 열린 칸에서만 채도를 끌어올려, 사진이 원래 가진 옅은 민트·베이지가
- * 눈에 보이는 선까지 올라오게 한다.
- */
 .ag-panel__media {
   --ag-gray: 1;
-  --ag-sat: 1;
   --ag-dim: 0.35;
   position: absolute;
   inset: 0;
-  filter: grayscale(var(--ag-gray)) saturate(var(--ag-sat));
+  filter: grayscale(var(--ag-gray));
 }
 
 /*
