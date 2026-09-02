@@ -194,28 +194,29 @@ export function HoldWheel({ holds }: { holds: Hold[] }) {
             </div>
           </figure>
         ) : null}
+
+        {/*
+          설명은 흐름에서 빼서 고정 위치에 건다.
+          흐름에 두면 글 높이만큼 홀드가 위로 밀려 휠과 중심이 어긋난다.
+
+          left-1/2 + -translate-x-1/2 로 홀드 중심에 맞추고, 폭은 글에 맡긴다(w-max).
+          칸 폭에 가두면 긴 문장이 넘쳐 두 줄이 세 줄 네 줄이 된다.
+        */}
+        {active?.description.length ? (
+          <div
+            className="text-ink absolute left-1/2 flex w-max max-w-[92vw] -translate-x-1/2 flex-col gap-1 text-center text-[clamp(0.75rem,1.15vw,1rem)] leading-relaxed"
+            style={{ top: `calc(${TEXT_TOP_VH}dvh - ${offset}px)` }}
+          >
+            {active.description.map((line, i) => (
+              // 좁은 화면에서는 줄바꿈을 허용한다 — 안 그러면 글자가 읽을 수 없게 작아진다
+              <p key={i} className="md:whitespace-nowrap">
+                {line}
+              </p>
+            ))}
+          </div>
+        ) : null}
       </div>
 
-      {/*
-        설명은 흐름에서 빼서 화면에 고정으로 건다.
-        흐름에 두면 글 높이만큼 홀드가 위로 밀려 휠과 중심이 어긋난다.
-
-        오른쪽 칸이 아니라 그리드 전체 폭을 쓴다 — 한 토막이 한 줄에 떨어져야
-        늘 두 줄로 보이는데, 8칸 폭으로는 긴 문장이 넘쳐 세 줄 네 줄이 된다.
-      */}
-      {active?.description.length ? (
-        <div
-          className="text-ink absolute inset-x-0 flex flex-col gap-1 text-center text-[clamp(0.75rem,1.15vw,1rem)] leading-relaxed"
-          style={{ top: `calc(${TEXT_TOP_VH}dvh - ${offset}px)` }}
-        >
-          {active.description.map((line, i) => (
-            // 좁은 화면에서는 줄바꿈을 허용한다 — 안 그러면 글자가 읽을 수 없게 작아진다
-            <p key={i} className="md:whitespace-nowrap">
-              {line}
-            </p>
-          ))}
-        </div>
-      ) : null}
     </div>
   );
 }
