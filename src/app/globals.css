@@ -113,3 +113,14 @@ body:has([data-screen="archive"]) {
 body:has([data-screen="archive"]) main {
   padding-bottom: 0;
 }
+
+/* 아카이브 상단은 비워둔다 — 심볼만 남기고 링크 글씨는 감춘다 */
+body:has([data-screen="archive"]) [data-nav-links] {
+  opacity: 0;
+  pointer-events: none;
+}
+
+body:has([data-screen="archive"]) [data-nav-links]:focus-within {
+  opacity: 1;
+  pointer-events: auto;
+}
