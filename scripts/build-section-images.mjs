@@ -3,9 +3,10 @@
  *
  *   npm run section-images
  *
- * 소스는 image/ 안에서 슬러그로 시작하는 파일 중 **가장 최근 것**을 고른다.
- * 같은 사진을 다시 받으면 윈도우가 `GRIT (2).png`처럼 이름을 바꿔 놓는데,
- * 그때마다 스크립트를 고치지 않아도 새 파일이 자동으로 잡히게 하려는 것.
+ * 소스는 image/ 안에서 슬러그로 시작하는 파일 중 마지막으로 넣은 것을 고른다.
+ * 같은 이름으로 다시 넣으면 윈도우가 `GRIT (2).png`처럼 뒤에 번호를 붙이는데,
+ * **번호가 큰 쪽이 나중에 넣은 것**이다. 그래서 번호를 먼저 보고, 없을 때만 수정시각을 본다.
+ * 스크립트를 고치지 않아도 사진만 새로 넣으면 잡히게 하려는 것.
  *
  * 한 칸당 두 벌(w1/w2)을 굽고 srcset으로 넘긴다.
  * 칸은 화면의 25~50% 폭이라 한 벌만 구우면 저해상 화면에선 과하고
@@ -38,7 +39,13 @@ const QUALITY = 92;
 
 const SLUGS = ["grit", "archive", "process"];
 
-/** image/ 안에서 슬러그로 시작하는 파일 중 제일 최근 것 */
+/** `GRIT (2).png` 의 2. 번호가 없으면 0 */
+function dupIndex(name) {
+  const m = name.match(/\((\d+)\)\s*\.[^.]+$/);
+  return m ? Number(m[1]) : 0;
+}
+
+/** image/ 안에서 슬러그로 시작하는 파일 중 마지막으로 넣은 것 */
 async function newestSource(slug) {
   const entries = await readdir(SRC);
   const candidates = entries.filter(
@@ -47,9 +54,15 @@ async function newestSource(slug) {
   if (!candidates.length) return null;
 
   const stamped = await Promise.all(
-    candidates.map(async (f) => ({ f, mtime: (await stat(`${SRC}/${f}`)).mtimeMs })),
+    candidates.map(async (f) => ({
+      f,
+      dup: dupIndex(f),
+      mtime: (await stat(`${SRC}/${f}`)).mtimeMs,
+    })),
   );
-  stamped.sort((a, b) => b.mtime - a.mtime);
+  // 번호를 먼저 본다. 수정시각만 보면 안 된다 —
+  // 새 사진이 `ARCHIVE (2).png`로 들어와도 옛 `ARCHIVE.png` 쪽이 몇 초 더 최신으로 잡힌다.
+  stamped.sort((a, b) => b.dup - a.dup || b.mtime - a.mtime);
   return stamped[0].f;
 }
 

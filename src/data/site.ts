@@ -52,11 +52,11 @@ export const destinations: Destination[] = [
     label: "ARCHIVE",
     href: "/archive",
     image: {
-      src: "/img/sections/archive-1400-5278186d.webp",
+      src: "/img/sections/archive-1400-5afe0d73.webp",
       srcSet:
-        "/img/sections/archive-1400-5278186d.webp 1400w, /img/sections/archive-2079-ae530cea.webp 2079w",
-      width: 2079,
-      height: 3800,
+        "/img/sections/archive-1400-5afe0d73.webp 1400w, /img/sections/archive-2600-4e9e1cd8.webp 2600w",
+      width: 2600,
+      height: 3762,
     },
   },
   {
