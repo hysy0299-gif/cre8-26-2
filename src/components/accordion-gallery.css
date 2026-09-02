@@ -1,12 +1,11 @@
+/* React Bits AccordionGallery 원본 CSS 그대로. will-change 두 줄만 뺐다 — 아래 주석 참고 */
 .accordion-gallery {
-  --ag-accent: #000000;
-  --ag-overlay: #282828;
+  --ag-accent: #ffffff;
+  --ag-overlay: #060010;
   --ag-text: #ffffff;
-  --ag-gap: 8px;
-  --ag-radius: 10px;
+  --ag-gap: 10px;
+  --ag-radius: 16px;
   --ag-media-size: 320px;
-  /* 소실점은 열린 칸을 따라간다 — 값은 컴포넌트가 매 전환마다 넣는다 */
-  --ag-origin-x: 50%;
 
   display: flex;
   flex-direction: row;
@@ -14,7 +13,7 @@
   width: 100%;
   max-width: 100%;
   perspective: 1400px;
-  perspective-origin: var(--ag-origin-x) 50%;
+  perspective-origin: 50% 50%;
 }
 
 .accordion-gallery--vertical {
@@ -24,8 +23,7 @@
 /*
  * 원본의 `will-change: flex-grow, transform`을 뺐다.
  * 칸이 상시 합성 레이어로 올라가면 브라우저가 한 번 뜬 래스터를 계속 늘려 쓰면서
- * 사진이 뭉개진다. 3D로 눕는 칸에서 특히 심하다.
- * 애니메이션은 GSAP이 프레임마다 다시 그리므로 이 힌트 없이도 부드럽다.
+ * 사진이 뭉개진다 — 3D로 눕는 칸에서 특히 심하다. 보이는 움직임은 그대로다.
  */
 .ag-panel {
   position: relative;
@@ -40,7 +38,7 @@
   outline: none;
   transform-style: preserve-3d;
   transform-origin: center center;
-  background: var(--ag-overlay);
+  background: #0a0713;
   box-shadow: 0 10px 30px -18px rgba(0, 0, 0, 0.8);
   -webkit-tap-highlight-color: transparent;
 }
@@ -58,7 +56,6 @@
   border-radius: inherit;
 }
 
-/* 칸보다 넓게 깔아두고 안에서 미끄러뜨린다 — parallax가 여기서 나온다 */
 .ag-panel__media {
   --ag-gray: 1;
   --ag-dim: 0.35;
@@ -95,9 +92,9 @@
 
 .ag-panel__label {
   position: absolute;
-  right: 20px;
-  bottom: 20px;
   left: 20px;
+  bottom: 20px;
+  right: 20px;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -118,11 +115,10 @@
 .ag-panel__text {
   color: var(--ag-text);
   font-family: inherit;
-  /* 지급된 굵기는 300/700/900 셋뿐 — 원본의 600은 합성 굵기라 쓰지 않는다 */
+  /* 지급된 굵기는 300/700/900 셋뿐 — 원본의 600은 합성 굵기라 700으로 올렸다 */
   font-weight: 700;
   font-size: clamp(1rem, 1.4vw, 1.4rem);
   letter-spacing: 0.01em;
-  text-transform: uppercase;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

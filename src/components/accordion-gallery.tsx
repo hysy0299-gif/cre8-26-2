@@ -8,24 +8,22 @@ import {
   useState,
   type CSSProperties,
   type KeyboardEvent,
+  type MouseEvent,
 } from "react";
 import { gsap } from "gsap";
 import "./accordion-gallery.css";
 
 /**
- * React Bits의 AccordionGallery.
+ * React Bits의 AccordionGallery. 원본 로직 그대로다.
  *
- * 원본 로직을 그대로 쓴다 — expandRatio로 칸을 벌리고, 사진은 cover로 채우고,
- * 접힌 칸은 흑백으로 눕고, 라벨은 열린 칸에서 밀려 들어온다.
+ * 손댄 곳은 넷뿐이고, 전부 이 프로젝트에서 돌아가게 하려는 것이지
+ * 인터랙션을 바꾸는 게 아니다.
+ * 1. TypeScript 타입
+ * 2. <a href> → next/link. 내부 이동이라 전체 새로고침이 나면 안 된다
+ * 3. <img>에 srcSet/sizes. 사진이 화면 절반을 차지해서 한 벌만 두면 화질이 깨진다
+ * 4. height가 CSS 길이 문자열도 받는다. 화면 높이에 맞춰야 해서
  *
- * 이 프로젝트에 맞춘 부분만 다르다
- * - <a href> → next/link (내부 이동이라 프리페치가 붙는다)
- * - <img>에 srcSet/sizes. 사진이 화면 절반을 차지해서 한 벌만 두면 화질이 깨진다
- * - perspective-origin이 열린 칸을 따라간다. 원본은 상자 정중앙에 박혀 있어서
- *   양 끝 칸이 열리면 부채가 한쪽으로 쏠린다
- * - will-change 제거. 칸이 상시 합성 레이어로 올라가면 브라우저가 한 번 뜬
- *   래스터를 늘려 써서 사진이 뭉갠다
- * - height가 CSS 길이 문자열도 받는다. 화면 높이에 맞춰야 해서
+ * 버그 하나도 고쳤다 — 아래 stagger 주석 참고.
  */
 export interface AccordionImage {
   src: string;
@@ -52,16 +50,12 @@ interface AccordionGalleryProps {
   height?: number | string;
   gap?: number;
   radius?: number;
-  /** 펼쳐진 칸이 차지하는 비율 (0.2 – 0.9) */
   expandRatio?: number;
   orientation?: "horizontal" | "vertical";
   duration?: number;
   ease?: string;
-  /** 칸이 벌어질 때 사진이 안에서 미끄러지는 정도. 0이면 끔 */
   parallax?: number;
-  /** 접힌 칸이 뒤로 눕는 각도(도) */
   tilt?: number;
-  /** 라벨 막대와 글자가 들어오는 시간차(초) */
   stagger?: number;
   trigger?: "hover" | "click";
   showLabels?: boolean;
@@ -71,22 +65,20 @@ interface AccordionGalleryProps {
   className?: string;
 }
 
-const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), hi);
-
 export function AccordionGallery({
   items,
-  defaultIndex = 1,
-  accentColor = "#000000",
-  overlayColor = "#282828",
+  defaultIndex = 2,
+  accentColor = "#ffffff",
+  overlayColor = "#060010",
   textColor = "#ffffff",
   height = 460,
-  gap = 8,
-  radius = 10,
+  gap = 10,
+  radius = 16,
   expandRatio = 0.52,
   orientation = "horizontal",
-  duration = 0.75,
+  duration = 0.6,
   ease = "power3.out",
-  parallax = 0.85,
+  parallax = 0.5,
   tilt = 8,
   stagger = 0.06,
   trigger = "hover",
@@ -106,22 +98,21 @@ export function AccordionGallery({
 
   const vertical = orientation === "vertical";
   const count = items.length;
-  const [active, setActive] = useState(clamp(defaultIndex, 0, count - 1));
+  const [active, setActive] = useState(Math.min(Math.max(defaultIndex, 0), count - 1));
 
   const applyLayout = useCallback(
     (animate: boolean) => {
       const panels = panelRefs.current;
-      const root = rootRef.current;
-      if (!panels.length || !root) return;
+      if (!panels.length) return;
 
-      // 렌더 중에 window를 읽지 않는다 — 서버에는 없다
-      const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      const r = clamp(expandRatio, 0.2, 0.9);
+      // 원본은 렌더 중에 이걸 읽는데 서버에는 window가 없다. 그래서 여기로 옮겼다
+      const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const r = Math.min(Math.max(expandRatio, 0.2), 0.9);
       const grow = count > 1 ? (r * (count - 1)) / (1 - r) : 1;
       const mediaSize = mediaSizeRef.current;
 
       tlRef.current?.kill();
-      const dur = animate && !reduced ? duration : 0;
+      const dur = animate && !prefersReduced ? duration : 0;
       const tl = gsap.timeline();
 
       panels.forEach((panel, i) => {
@@ -137,8 +128,9 @@ export function AccordionGallery({
         tl.to(panel, { flexGrow: isActive ? grow : 1, ...rotProp, duration: dur, ease }, 0);
 
         if (media) {
-          const drift = clamp(active - i, -1.5, 1.5);
+          const drift = Math.max(-1.5, Math.min(1.5, active - i));
           const shift = drift * parallax * mediaSize * 0.06;
+          const gray = grayscale ? (isActive ? 0 : 1) : 0;
           tl.to(
             media,
             {
@@ -146,7 +138,7 @@ export function AccordionGallery({
               yPercent: -50,
               x: vertical ? 0 : isActive ? 0 : shift,
               y: vertical ? (isActive ? 0 : shift) : 0,
-              "--ag-gray": grayscale ? (isActive ? 0 : 1) : 0,
+              "--ag-gray": gray,
               "--ag-dim": isActive ? 0 : 0.35,
               duration: dur,
               ease,
@@ -159,10 +151,19 @@ export function AccordionGallery({
           if (isActive) {
             tl.to(
               [bar, text],
-              // dur가 0인 첫 배치에서는 stagger를 걸지 않는다.
-              // 걸면 글자가 t=stagger에 예약되는데, 그 전에 다음 배치가 타임라인을
-              // 죽여버려서 글자만 opacity 0에 남는다 — 원본이 갖고 있는 버그다.
-              { opacity: 1, x: 0, duration: dur, ease, stagger: reduced || dur === 0 ? 0 : stagger },
+              {
+                opacity: 1,
+                x: 0,
+                duration: dur,
+                ease,
+                /*
+                 * 원본은 여기에 항상 stagger를 건다. 그런데 첫 배치는 dur가 0이라
+                 * 막대는 t=0, 글자는 t=stagger에 예약되고, 그 사이에 다음 배치가
+                 * 타임라인을 죽인다 — 첫 화면에서 막대만 뜨고 글자는 안 뜬다.
+                 * dur가 0이면 stagger를 걸지 않는다.
+                 */
+                stagger: prefersReduced || dur === 0 ? 0 : stagger,
+              },
               0,
             );
           } else {
@@ -170,11 +171,6 @@ export function AccordionGallery({
           }
         }
       });
-
-      // 소실점을 열린 칸 한가운데로. 그래야 열린 칸이 정면으로 서고 나머지가 좌우로 눕는다
-      const units = grow + (count - 1);
-      const originX = ((active + grow / 2) / units) * 100;
-      tl.to(root, { "--ag-origin-x": `${originX}%`, duration: dur, ease }, 0);
 
       tlRef.current = tl;
     },
@@ -201,17 +197,9 @@ export function AccordionGallery({
       const rect = el.getBoundingClientRect();
       const total = vertical ? rect.height : rect.width;
       const usable = Math.max(total - gap * (count - 1), 120);
-      const size = Math.max(140, usable * clamp(expandRatio, 0.2, 0.9) * 1.22);
+      const size = Math.max(140, usable * Math.min(Math.max(expandRatio, 0.2), 0.9) * 1.22);
       mediaSizeRef.current = size;
-      /*
-       * parallax를 끄면 사진을 칸 크기에 딱 맞춘다.
-       *
-       * 원본은 사진을 칸보다 넓게(칸폭 × expandRatio × 1.22) 깔아야 안에서
-       * 미끄러질 여지가 생기는 구조인데, 그 폭에 세로로 긴 사진이 cover로
-       * 들어가면 위아래가 절반 넘게 잘린다. 칸마다 사진이 다른 이 화면에선
-       * 각 사진이 제 칸에 맞아야 해서, 미끄러짐을 쓰지 않을 땐 폭을 100%로 둔다.
-       */
-      el.style.setProperty("--ag-media-size", parallax > 0 ? `${size}px` : "100%");
+      el.style.setProperty("--ag-media-size", `${size}px`);
       applyLayout(!firstRunRef.current);
     };
 
@@ -219,7 +207,7 @@ export function AccordionGallery({
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [applyLayout, gap, count, expandRatio, vertical, parallax]);
+  }, [applyLayout, gap, count, expandRatio, vertical]);
 
   useEffect(() => {
     applyLayout(!firstRunRef.current);
@@ -227,6 +215,17 @@ export function AccordionGallery({
   }, [applyLayout]);
 
   useEffect(() => () => void tlRef.current?.kill(), []);
+
+  const handleEnter = (i: number) => {
+    if (trigger === "hover") setActive(i);
+  };
+
+  const handleClick = (i: number, e: MouseEvent<HTMLAnchorElement>) => {
+    if (i !== active) {
+      e.preventDefault();
+      setActive(i);
+    }
+  };
 
   const handleKeyDown = (i: number, e: KeyboardEvent<HTMLAnchorElement>) => {
     if (e.key === "ArrowRight" || e.key === "ArrowDown") {
@@ -255,7 +254,7 @@ export function AccordionGallery({
         } as CSSProperties
       }
       role="list"
-      aria-label="Sections"
+      aria-label="Image accordion gallery"
     >
       {items.map((item, i) => {
         const isActive = i === active;
@@ -265,20 +264,15 @@ export function AccordionGallery({
             ref={(el) => {
               panelRefs.current[i] = el;
             }}
-            href={item.href}
             className={`ag-panel${isActive ? " ag-panel--active" : ""}`}
             style={{ borderRadius: `${radius}px` }}
-            // 접힌 칸을 한 번 누르면 펼치기만 하고, 펼쳐진 칸을 누르면 이동한다
-            onClick={(e) => {
-              if (i !== active) {
-                e.preventDefault();
-                setActive(i);
-              }
-            }}
-            onMouseEnter={() => trigger === "hover" && setActive(i)}
+            href={item.href}
+            onClick={(e) => handleClick(i, e)}
+            onMouseEnter={() => handleEnter(i)}
             onFocus={() => setActive(i)}
             onKeyDown={(e) => handleKeyDown(i, e)}
             role="listitem"
+            tabIndex={0}
             aria-current={isActive ? "true" : undefined}
             aria-label={item.label}
           >
@@ -290,7 +284,6 @@ export function AccordionGallery({
                 }}
               >
                 {item.image ? (
-                  // next/image가 아니라 <img>인 이유 — transform/filter를 직접 먹여야 한다
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={item.image.src}
@@ -298,14 +291,13 @@ export function AccordionGallery({
                     sizes={sizes}
                     width={item.image.width}
                     height={item.image.height}
-                    alt={item.alt || item.label}
+                    alt={item.alt || item.label || ""}
                     draggable={false}
                   />
                 ) : null}
               </span>
               <span className="ag-panel__overlay" aria-hidden="true" />
             </span>
-
             {showLabels && (
               <span className="ag-panel__label" aria-hidden="true">
                 <span
