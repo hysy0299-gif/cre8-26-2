@@ -12,7 +12,7 @@ export default function ArchivePage() {
   const holds = sortedHolds();
 
   return (
-    <section data-screen="archive" data-block="archive" className="flex flex-col gap-6">
+    <section data-screen="archive" data-block="archive" className="flex flex-col gap-6 pl-[var(--archive-shift)]">
       <div className="text-label text-ink-muted flex items-baseline justify-between uppercase">
         <h1>Archive</h1>
         <p>{holds.length} CMF samples</p>
