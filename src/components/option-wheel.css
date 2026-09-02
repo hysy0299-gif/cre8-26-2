@@ -9,16 +9,18 @@
   height: 100%;
   overflow: hidden;
   /*
-   * overflow: hidden이 위아래를 직선으로 잘라서 경계가 드러난다.
-   * 끝으로 갈수록 투명해지게 마스크를 씌워 잘린 자리를 감춘다.
+   * overflow: hidden이 네 변을 직선으로 잘라서 상자 윤곽이 드러난다.
+   * 위아래는 항목이 끊기는 자리, 좌우는 커브를 따라 밀려난 항목과 흐림이 잘리는 자리다.
+   * 네 변 모두 끝으로 갈수록 투명해지게 해서 잘린 선을 없앤다.
    */
-  mask-image: linear-gradient(
-    to bottom,
-    transparent 0%,
-    black 18%,
-    black 82%,
-    transparent 100%
-  );
+  mask-image:
+    linear-gradient(to bottom, transparent 0%, black 16%, black 84%, transparent 100%),
+    linear-gradient(to right, transparent 0%, black 5%, black 90%, transparent 100%);
+  mask-composite: intersect;
+  -webkit-mask-image:
+    linear-gradient(to bottom, transparent 0%, black 16%, black 84%, transparent 100%),
+    linear-gradient(to right, transparent 0%, black 5%, black 90%, transparent 100%);
+  -webkit-mask-composite: source-in;
   cursor: grab;
   user-select: none;
   touch-action: none;
