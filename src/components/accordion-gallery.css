@@ -13,7 +13,9 @@
   width: 100%;
   max-width: 100%;
   perspective: 1400px;
-  perspective-origin: 50% 50%;
+  /* 소실점은 열린 칸을 따라간다 — 값은 컴포넌트가 매 전환마다 넣는다 */
+  --ag-origin-x: 50%;
+  perspective-origin: var(--ag-origin-x) 50%;
 }
 
 .accordion-gallery--vertical {

@@ -106,9 +106,13 @@ export function AccordionGallery({
   /**
    * 열린 칸이 안쪽 폭에서 차지할 비율.
    *
-   * 칸 높이는 상자 높이와 같으니, 사진을 원본 비율로 채우려면
-   * 열린 칸의 폭이 정확히 `높이 × 사진비율`이어야 한다. 그 폭을
-   * 칸 사이 간격을 뺀 안쪽 폭으로 나눈 값이 여기서 구하는 비율이다.
+   * 칸 높이는 상자 높이와 같으니, 사진을 원본 비율 그대로 채우려면
+   * 열린 칸의 폭이 정확히 `높이 × 사진비율`이어야 한다.
+   *
+   * 다만 그 값이 접힌 칸보다 크다는 보장이 없다. 상자가 넓고 낮으면
+   * 세로로 긴 사진의 제 폭이 1/n보다도 좁아져 **아코디언이 뒤집힌다** —
+   * 열린 칸이 접힌 칸보다 좁아진다. 그래서 expandRatio를 바닥으로 깐다.
+   * 바닥에 걸리는 만큼만 사진 위아래가 잘린다.
    */
   const openFraction = useCallback(
     (i: number) => {
@@ -117,7 +121,8 @@ export function AccordionGallery({
       const inner = w - gap * (count - 1);
 
       if (!fitOpen || vertical || !img || inner <= 0 || h <= 0) return expandRatio;
-      return clamp((img.width / img.height) * (h / inner), 0.2, 0.9);
+      const natural = (img.width / img.height) * (h / inner);
+      return clamp(Math.max(natural, expandRatio), 1 / count, 0.9);
     },
     [items, fitOpen, vertical, expandRatio, gap, count],
   );
@@ -125,7 +130,8 @@ export function AccordionGallery({
   const applyLayout = useCallback(
     (animate: boolean) => {
       const panels = panelRefs.current;
-      if (!panels.length) return;
+      const root = rootRef.current;
+      if (!panels.length || !root) return;
 
       const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       const f = openFraction(active);
@@ -158,6 +164,18 @@ export function AccordionGallery({
           );
         }
       });
+
+      /*
+       * 원근의 소실점을 열린 칸 한가운데로 옮긴다.
+       *
+       * 원본은 perspective-origin이 상자 정중앙에 박혀 있다. 열린 칸이
+       * 가운데일 때만 맞는 값이라, 양 끝 칸이 열리면 부채가 한쪽으로 쏠려서
+       * 열린 칸이 오히려 접힌 칸보다 작아 보인다.
+       * 소실점을 열린 칸에 맞추면 그 칸은 정면으로 서고 나머지가 좌우로 눕는다.
+       */
+      const units = grow + (count - 1);
+      const originX = ((active + grow / 2) / units) * 100;
+      tl.to(root, { "--ag-origin-x": `${originX}%`, duration: dur, ease }, 0);
 
       tlRef.current = tl;
     },
