@@ -125,7 +125,7 @@ export function HoldWheel({ holds }: { holds: Hold[] }) {
     <div className="relative grid grid-cols-12 gap-[var(--grid-gutter)]">
       <div ref={colRef} className="col-span-12 md:col-span-4">
         <div
-          className="sticky h-[60vh] md:h-[var(--wheel-h)]"
+          className="sticky h-[60vh] -translate-y-[2.5vh] md:h-[var(--wheel-h)]"
           style={
             { top: offset, "--wheel-h": `calc(100dvh - ${offset * 2}px)` } as CSSProperties
           }
@@ -143,7 +143,7 @@ export function HoldWheel({ holds }: { holds: Hold[] }) {
             blur={3}
             fade={0.33}
             smoothing={260}
-            inset={56}
+            inset={36}
             loop={false}
             draggable
             ariaLabel="Holds"
