@@ -63,6 +63,11 @@ interface AccordionGalleryProps {
   tilt?: number;
   trigger?: "hover" | "click";
   grayscale?: boolean;
+  /**
+   * 열린 칸의 채도 배율. 사진 자체가 거의 흑백이라 grayscale만 풀면
+   * 전환이 눈에 안 띈다. 1이면 원본 그대로.
+   */
+  saturate?: number;
   /** 열린 칸의 화면상 폭. srcset 고르는 데 쓴다 */
   sizes?: string;
   className?: string;
@@ -84,6 +89,7 @@ export function AccordionGallery({
   tilt = 8,
   trigger = "hover",
   grayscale = true,
+  saturate = 2,
   sizes = "45vw",
   className = "",
 }: AccordionGalleryProps) {
@@ -146,6 +152,7 @@ export function AccordionGallery({
             media,
             {
               "--ag-gray": grayscale ? (isActive ? 0 : 1) : 0,
+              "--ag-sat": isActive ? saturate : 1,
               "--ag-dim": isActive ? 0 : 0.35,
               duration: dur,
               ease,
@@ -157,7 +164,7 @@ export function AccordionGallery({
 
       tlRef.current = tl;
     },
-    [active, count, openFraction, duration, ease, vertical, tilt, grayscale],
+    [active, count, openFraction, duration, ease, vertical, tilt, grayscale, saturate],
   );
 
   useEffect(() => {
