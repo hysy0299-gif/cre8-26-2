@@ -4,14 +4,13 @@ import { mainSections } from "@/data/site";
 /**
  * MAIN — 랜딩 다음에 오는 갈림 화면.
  *
- * 세 칸이 화면을 나눠 갖고, 커서를 올린 칸이 열린다.
+ * React Bits AccordionGallery를 프롭 그대로 세 칸에 건다.
+ * 커서를 올린 칸이 열리고 나머지가 접힌다.
  * 접힌 칸을 누르면 펼치기만 하고, 펼쳐진 칸을 다시 누르면 그 화면으로 들어간다.
  *
- * 상자에 비율을 따로 주지 않는다 — 여백을 뺀 화면이 그대로 상자다.
- * 열린 칸의 폭만 그 칸 사진의 원본 비율에서 나온다(AccordionGallery의 fitOpen).
+ * 가운데(ARCHIVE)를 열어둔 채 시작한다 — 세 칸이라 가운데가 1번이고,
+ * 그 상태에서 좌우 칸이 대칭으로 눕는다.
  */
-const GAP = 10;
-
 export default function MainPage() {
   return (
     <div data-screen="main" className="flex h-dvh items-stretch p-[var(--page-margin)]">
@@ -21,13 +20,16 @@ export default function MainPage() {
           href: s.href,
           image: s.image,
         }))}
-        defaultIndex={0}
-        orientation="horizontal"
+        defaultIndex={1}
         height="100%"
-        gap={GAP}
-        fitOpen
+        expandRatio={0.52}
         trigger="hover"
-        sizes="(max-width: 520px) 100vw, 40vw"
+        accentColor="#000000"
+        overlayColor="#282828"
+        duration={0.75}
+        parallax={0.85}
+        gap={8}
+        radius={10}
       />
     </div>
   );
