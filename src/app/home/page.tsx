@@ -27,7 +27,8 @@ export default function MainPage() {
         accentColor="#000000"
         overlayColor="#282828"
         duration={0.75}
-        parallax={0.85}
+        // 칸마다 사진이 다르다. 미끄러짐을 켜면 사진을 칸보다 넓게 깔아야 해서 크게 잘린다
+        parallax={0}
         gap={8}
         radius={10}
       />

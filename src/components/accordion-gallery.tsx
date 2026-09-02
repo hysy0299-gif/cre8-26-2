@@ -159,7 +159,10 @@ export function AccordionGallery({
           if (isActive) {
             tl.to(
               [bar, text],
-              { opacity: 1, x: 0, duration: dur, ease, stagger: reduced ? 0 : stagger },
+              // dur가 0인 첫 배치에서는 stagger를 걸지 않는다.
+              // 걸면 글자가 t=stagger에 예약되는데, 그 전에 다음 배치가 타임라인을
+              // 죽여버려서 글자만 opacity 0에 남는다 — 원본이 갖고 있는 버그다.
+              { opacity: 1, x: 0, duration: dur, ease, stagger: reduced || dur === 0 ? 0 : stagger },
               0,
             );
           } else {
@@ -200,7 +203,15 @@ export function AccordionGallery({
       const usable = Math.max(total - gap * (count - 1), 120);
       const size = Math.max(140, usable * clamp(expandRatio, 0.2, 0.9) * 1.22);
       mediaSizeRef.current = size;
-      el.style.setProperty("--ag-media-size", `${size}px`);
+      /*
+       * parallax를 끄면 사진을 칸 크기에 딱 맞춘다.
+       *
+       * 원본은 사진을 칸보다 넓게(칸폭 × expandRatio × 1.22) 깔아야 안에서
+       * 미끄러질 여지가 생기는 구조인데, 그 폭에 세로로 긴 사진이 cover로
+       * 들어가면 위아래가 절반 넘게 잘린다. 칸마다 사진이 다른 이 화면에선
+       * 각 사진이 제 칸에 맞아야 해서, 미끄러짐을 쓰지 않을 땐 폭을 100%로 둔다.
+       */
+      el.style.setProperty("--ag-media-size", parallax > 0 ? `${size}px` : "100%");
       applyLayout(!firstRunRef.current);
     };
 
@@ -208,7 +219,7 @@ export function AccordionGallery({
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [applyLayout, gap, count, expandRatio, vertical]);
+  }, [applyLayout, gap, count, expandRatio, vertical, parallax]);
 
   useEffect(() => {
     applyLayout(!firstRunRef.current);
