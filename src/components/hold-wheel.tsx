@@ -21,7 +21,7 @@ const ModelViewer = dynamic(() => import("@/components/model-viewer"), {
  * 휠은 행 높이를 fontSize에서 px로 계산하므로 CSS clamp을 못 쓴다.
  * 폭 구간별로 값을 바꿔 끼우면 휠이 알아서 다시 배치된다.
  */
-const FONT_SIZE = { sm: 2.8, md: 4.2, lg: 5.6 } as const;
+const FONT_SIZE = { sm: 3.2, md: 4.6, lg: 6.2 } as const;
 
 function useWheelFontSize() {
   const [size, setSize] = useState<number>(FONT_SIZE.lg);
@@ -123,7 +123,7 @@ export function HoldWheel({ holds }: { holds: Hold[] }) {
 
   return (
     <div className="relative grid grid-cols-12 gap-[var(--grid-gutter)]">
-      <div ref={colRef} className="col-span-12 md:col-span-4">
+      <div ref={colRef} className="col-span-12 md:col-span-5">
         <div
           className="sticky h-[60vh] -translate-y-[2.5vh] md:h-[var(--wheel-h)]"
           style={
@@ -159,7 +159,7 @@ export function HoldWheel({ holds }: { holds: Hold[] }) {
         오른쪽에 커서를 두고 굴려도 페이지가 안 밀린다.
       */}
       <div
-        className="relative col-span-12 md:col-span-8"
+        className="relative col-span-12 md:col-span-7"
         style={{ height: `calc(100dvh - ${offset}px)` }}
       >
         {active ? (
