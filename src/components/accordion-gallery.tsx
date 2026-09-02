@@ -13,6 +13,8 @@ import "./accordion-gallery.css";
  * - 그래서 라벨을 접힌 칸에서도 계속 띄운다. 원본은 펼쳐진 칸에만 띄우는데,
  *   그건 사진이 칸을 설명해줄 때 성립하는 규칙이다.
  * - 라벨 옆 강조 막대 제거 — 어느 칸이 열렸는지는 폭과 색이 이미 말해준다.
+ * - 사진을 cover가 아니라 contain으로 담는다. 칸 폭이 계속 바뀌는 구조라
+ *   cover로 채우면 열고 접을 때마다 사진이 다르게 잘린다.
  * - 색 프롭 세 개 → CSS 변수 한 벌(역할 토큰).
  * - <a href> → next/link.
  * - height가 CSS 길이도 받는다. 전체 화면(100dvh)에 깔아야 해서.
@@ -37,7 +39,6 @@ interface AccordionGalleryProps {
   orientation?: "horizontal" | "vertical";
   duration?: number;
   ease?: string;
-  parallax?: number;
   /** 접힌 칸이 뒤로 눕는 각도(도). 0이면 평평하게 */
   tilt?: number;
   trigger?: "hover" | "click";
@@ -55,7 +56,6 @@ export function AccordionGallery({
   orientation = "horizontal",
   duration = 0.6,
   ease = "power3.out",
-  parallax = 0.5,
   tilt = 8,
   trigger = "hover",
   grayscale = true,
@@ -66,7 +66,6 @@ export function AccordionGallery({
   const mediaRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const tlRef = useRef<gsap.core.Timeline | null>(null);
   const firstRunRef = useRef(true);
-  const mediaSizeRef = useRef(320);
 
   const vertical = orientation === "vertical";
   const count = items.length;
@@ -80,7 +79,6 @@ export function AccordionGallery({
       const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       const r = Math.min(Math.max(expandRatio, 0.2), 0.9);
       const grow = count > 1 ? (r * (count - 1)) / (1 - r) : 1;
-      const mediaSize = mediaSizeRef.current;
 
       tlRef.current?.kill();
       const dur = animate && !reduced ? duration : 0;
@@ -97,15 +95,9 @@ export function AccordionGallery({
         tl.to(panel, { flexGrow: isActive ? grow : 1, ...rotProp, duration: dur, ease }, 0);
 
         if (media) {
-          const drift = Math.max(-1.5, Math.min(1.5, active - i));
-          const shift = drift * parallax * mediaSize * 0.06;
           tl.to(
             media,
             {
-              xPercent: -50,
-              yPercent: -50,
-              x: vertical ? 0 : isActive ? 0 : shift,
-              y: vertical ? (isActive ? 0 : shift) : 0,
               "--ag-gray": grayscale ? (isActive ? 0 : 1) : 0,
               "--ag-dim": isActive ? 0 : 0.35,
               duration: dur,
@@ -118,22 +110,14 @@ export function AccordionGallery({
 
       tlRef.current = tl;
     },
-    [active, count, expandRatio, duration, ease, vertical, tilt, parallax, grayscale],
+    [active, count, expandRatio, duration, ease, vertical, tilt, grayscale],
   );
 
   useEffect(() => {
     const el = rootRef.current;
     if (!el) return;
 
-    const measure = () => {
-      const rect = el.getBoundingClientRect();
-      const total = vertical ? rect.height : rect.width;
-      const usable = Math.max(total - gap * (count - 1), 120);
-      const size = Math.max(140, usable * Math.min(Math.max(expandRatio, 0.2), 0.9) * 1.22);
-      mediaSizeRef.current = size;
-      el.style.setProperty("--ag-media-size", `${size}px`);
-      applyLayout(!firstRunRef.current);
-    };
+    const measure = () => applyLayout(!firstRunRef.current);
 
     measure();
     const ro = new ResizeObserver(measure);
