@@ -36,8 +36,8 @@
   inset: 0;
   overflow: hidden;
   backface-visibility: hidden;
-  background: var(--color-ground);
-  box-shadow: 0 0 1px color-mix(in srgb, var(--color-ink) 25%, transparent);
+  /* 종이 자체가 흰색이라 바탕색을 깔면 가장자리에 띠가 보인다 */
+  background: #ffffff;
 }
 
 /* 뒷면은 미리 뒤집어 둬야 앞면이 돌았을 때 바로 보인다 */
