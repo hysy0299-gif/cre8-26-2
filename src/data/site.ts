@@ -41,10 +41,10 @@ export const destinations: Destination[] = [
     label: "GRIT",
     href: "/grit",
     image: {
-      src: "/img/sections/grit-1400-ede43e8d.webp",
+      src: "/img/sections/grit-1400-9a436940.webp",
       srcSet:
-        "/img/sections/grit-1400-ede43e8d.webp 1400w, /img/sections/grit-2579-16b84f64.webp 2579w",
-      width: 2579,
+        "/img/sections/grit-1400-9a436940.webp 1400w, /img/sections/grit-1869-7405ca68.webp 1869w",
+      width: 1869,
       height: 3800,
     },
   },
@@ -52,22 +52,22 @@ export const destinations: Destination[] = [
     label: "ARCHIVE",
     href: "/archive",
     image: {
-      src: "/img/sections/archive-1400-5afe0d73.webp",
+      src: "/img/sections/archive-1400-d6162876.webp",
       srcSet:
-        "/img/sections/archive-1400-5afe0d73.webp 1400w, /img/sections/archive-2600-4e9e1cd8.webp 2600w",
-      width: 2600,
-      height: 3762,
+        "/img/sections/archive-1400-d6162876.webp 1400w, /img/sections/archive-2044-5bcb9371.webp 2044w",
+      width: 2044,
+      height: 3800,
     },
   },
   {
     label: "PROCESS",
     href: "/process",
     image: {
-      src: "/img/sections/process-1400-36e81af4.webp",
+      src: "/img/sections/process-1400-7c53a844.webp",
       srcSet:
-        "/img/sections/process-1400-36e81af4.webp 1400w, /img/sections/process-2579-528afc6e.webp 2579w",
-      width: 2579,
-      height: 3800,
+        "/img/sections/process-1400-7c53a844.webp 1400w, /img/sections/process-2600-cfd2555e.webp 2600w",
+      width: 2600,
+      height: 3480,
     },
   },
   { label: "ABOUT", href: "/about" },

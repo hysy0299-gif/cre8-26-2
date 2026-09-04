@@ -110,9 +110,12 @@ export function AccordionGallery({
    * 열린 칸의 폭이 정확히 `높이 × 사진비율`이어야 한다. 그 폭을
    * 칸 사이 간격을 뺀 안쪽 폭으로 나눈 값이 여기서 구하는 비율이다.
    *
-   * 1/count를 바닥으로 깐다. 상자가 넓고 낮으면 세로로 긴 사진의 제 폭이
+   * expandRatio를 바닥으로 깐다. 상자가 넓고 낮으면 세로로 긴 사진의 제 폭이
    * 1/count보다도 좁아져서 **열린 칸이 접힌 칸보다 좁아진다** — 아코디언이 뒤집힌다.
-   * 기울기를 뺀 뒤로는 폭이 유일한 신호라 이게 곧 고장으로 보인다.
+   * 기울기가 없으면 폭이 유일한 신호라 이게 곧 고장으로 보인다.
+   *
+   * 바닥에 걸리면 칸이 사진보다 넓어져서 그만큼 사진 위아래가 잘린다.
+   * 즉 상자를 넓게 쓸수록(화면을 꽉 채울수록) 사진이 더 잘린다 — 맞바꿈이다.
    */
   const openFraction = useCallback(
     (i: number) => {
@@ -122,7 +125,7 @@ export function AccordionGallery({
 
       if (!fitOpen || vertical || !img || inner <= 0 || h <= 0) return expandRatio;
       const natural = (img.width / img.height) * (h / inner);
-      return clamp(Math.max(natural, 1 / count), 0.2, 0.9);
+      return clamp(Math.max(natural, expandRatio), 0.2, 0.9);
     },
     [items, fitOpen, vertical, expandRatio, gap, count],
   );
