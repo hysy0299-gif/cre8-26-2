@@ -57,6 +57,8 @@ export interface Hold {
   spec: HoldSpec;
   /** 대표 이미지 — 촬영 전이라 아직 비어 있을 수 있다 */
   hero?: MediaItem;
+  /** 상세 뷰. 두 장 이상이면 아카이브에서 오른쪽에 썸네일이 걸린다 (첫 장이 hero) */
+  views?: MediaItem[];
   /** 3D 모델(.glb). 있으면 아카이브에서 이미지 대신 돌려볼 수 있다 */
   model?: string;
   sections: HoldSection[];

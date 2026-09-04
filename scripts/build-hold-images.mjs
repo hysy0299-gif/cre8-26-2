@@ -15,16 +15,58 @@ import sharp from "sharp";
 import { HOLD_SOURCES } from "./hold-sources.mjs";
 
 const SRC = "HOLDER (C)";
+/** 상세 뷰 원본. 배경이 살아 있는 사진이라 잘라내지 않는다 */
+const VIEW_SRC = "holder thumnail";
 const OUT = "public/img/holds";
+const VIEW_OUT = "public/img/holds/views";
 const SIZE = 2200;
+/** 뷰는 홀드만큼 클 일이 없다 — 오른쪽 썸네일과 가운데 큰 그림 둘 다 이걸로 쓴다 */
+const VIEW_SIZE = 1600;
+
+let total = 0;
 
 await mkdir(OUT, { recursive: true });
+await mkdir(VIEW_OUT, { recursive: true });
 
 for (const f of await readdir(OUT)) {
   if (f.endsWith(".webp")) await rm(`${OUT}/${f}`);
 }
+for (const f of await readdir(VIEW_OUT)) {
+  if (f.endsWith(".webp")) await rm(`${VIEW_OUT}/${f}`);
+}
 
-let total = 0;
+/**
+ * 상세 뷰를 굽는다. 대표 이미지가 첫 장으로 들어가서,
+ * 썸네일을 눌러 돌아다니다 원래 그림으로 돌아올 수 있다.
+ *
+ * 홀드 본체와 달리 배경이 살아 있는 사진이라 trim하지 않는다 — 잘리면 안 된다.
+ */
+async function buildViews(hold, hero) {
+  if (!hold.views?.length) return null;
+
+  const out = [hero];
+  for (const [i, view] of hold.views.entries()) {
+    const { data, info } = await sharp(`${VIEW_SRC}/${view.file}`)
+      .resize(VIEW_SIZE, VIEW_SIZE, { fit: "inside", withoutEnlargement: true })
+      .webp({ quality: 90, alphaQuality: 100 })
+      .toBuffer({ resolveWithObject: true });
+
+    const hash = createHash("sha1").update(data).digest("hex").slice(0, 8);
+    const name = `${hold.slug}-${String(i + 1).padStart(2, "0")}-${hash}.webp`;
+    await writeFile(`${VIEW_OUT}/${name}`, data);
+    total += data.length;
+
+    out.push({
+      src: `/img/holds/views/${name}`,
+      alt: view.alt,
+      width: info.width,
+      height: info.height,
+    });
+    console.log(`  view ${name}  ${info.width}x${info.height}  ${(data.length / 1024).toFixed(0)}KB`);
+  }
+  return out;
+}
+
 const rows = [];
 
 for (const [i, hold] of HOLD_SOURCES.entries()) {
@@ -49,6 +91,14 @@ for (const [i, hold] of HOLD_SOURCES.entries()) {
   await writeFile(`${OUT}/${name}`, data);
   total += data.length;
 
+  const hero = {
+    src: `/img/holds/${name}`,
+    alt: `${hold.name} hold`,
+    width: info.width,
+    height: info.height,
+  };
+  const views = await buildViews(hold, hero);
+
   const index = `HOLD ${String(i + 1).padStart(2, "0")}`;
   const desc = hold.description.map((line) => `      ${JSON.stringify(line)},`).join("\n");
 
@@ -60,7 +110,8 @@ for (const [i, hold] of HOLD_SOURCES.entries()) {
       `    name: ${JSON.stringify(hold.name)},`,
       hold.description.length ? `    description: [\n${desc}\n    ],` : "    description: [],",
       `    spec: { form: "—", material: "—", surface: "—", interaction: "—" },`,
-      `    hero: { src: ${JSON.stringify(`/img/holds/${name}`)}, alt: ${JSON.stringify(`${hold.name} hold`)}, width: ${info.width}, height: ${info.height} },`,
+      `    hero: ${JSON.stringify(hero)},`,
+      views ? `    views: ${JSON.stringify(views)},` : null,
       "    sections: [],",
       "    processRefs: [],",
       `    order: ${i + 1},`,

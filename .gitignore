@@ -58,3 +58,6 @@ next-env.d.ts
 
 # 홀드 원본 사진 — public/img/holds/*.webp 만 저장소에 올린다
 /HOLDER (C)
+
+# 홀드 상세 뷰 원본 — public/img/holds/views/*.webp 만 저장소에 올린다
+/holder thumnail

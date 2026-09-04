@@ -101,10 +101,14 @@ export function HoldWheel({ holds }: { holds: Hold[] }) {
   const fontSize = useWheelFontSize();
   const { ref: colRef, offset } = useTopOffset();
   const [index, setIndex] = useState(0);
+  /** 상세 뷰가 여러 장인 홀드에서 지금 보고 있는 장 */
+  const [view, setView] = useState(0);
 
   const handleChange = useCallback(
     (i: number) => {
       setIndex(i);
+      // 홀드가 바뀌면 대표 이미지로 되돌린다 — 앞 홀드의 3번째 뷰가 남아 있으면 헷갈린다
+      setView(0);
       const hold = holds[i];
       if (hold) router.prefetch(`/archive/${hold.slug}`);
     },
@@ -120,6 +124,9 @@ export function HoldWheel({ holds }: { holds: Hold[] }) {
   );
 
   const active = holds[index];
+  /** 썸네일이 걸리는 건 뷰가 두 장 이상일 때뿐 */
+  const views = active?.views ?? [];
+  const shown = views[view] ?? active?.hero;
 
   return (
     <div className="relative grid grid-cols-12 gap-[var(--grid-gutter)]">
@@ -163,7 +170,7 @@ export function HoldWheel({ holds }: { holds: Hold[] }) {
         style={{ height: `calc(100dvh - ${offset}px)` }}
       >
         {active ? (
-          <figure key={active.slug} className="hold-swap absolute inset-0">
+          <figure key={`${active.slug}-${view}`} className="hold-swap absolute inset-0">
             {/*
               휠과 같은 계산으로 높이를 잡는다 — 이 칸의 가운데가 정확히 50dvh다.
               그래야 홀드 중심과 휠 중심이 같은 가로선에 놓인다.
@@ -176,23 +183,67 @@ export function HoldWheel({ holds }: { holds: Hold[] }) {
                 <div className="h-full w-full">
                   <ModelViewer url={active.model} />
                 </div>
-              ) : active.hero ? (
+              ) : shown ? (
                 <Image
-                  src={active.hero.src}
-                  alt={active.hero.alt}
-                  width={active.hero.width}
-                  height={active.hero.height}
+                  src={shown.src}
+                  alt={shown.alt}
+                  width={shown.width}
+                  height={shown.height}
                   priority
                   quality={90}
                   sizes="(max-width: 768px) 100vw, 62vw"
                   className="w-auto object-contain"
                   style={{
-                    maxHeight: `min(100%, ${holdHeightVh(active.hero.width, active.hero.height)}vh)`,
+                    maxHeight: `min(100%, ${holdHeightVh(shown.width, shown.height)}vh)`,
                   }}
                 />
               ) : null}
             </div>
           </figure>
+        ) : null}
+
+        {/*
+          상세 뷰 썸네일 — 오른쪽 가장자리에 세로로 세운다.
+          홀드 그림과 겹치지 않게 흐름 밖으로 빼고, 휠과 같은 계산으로 세로 가운데를 맞춘다.
+          뷰가 두 장 이상인 홀드에만 걸린다.
+        */}
+        {views.length > 1 ? (
+          <div
+            className="absolute right-0 flex w-16 flex-col gap-2 lg:w-20"
+            style={{
+              top: `calc((100dvh - ${offset * 2}px) / 2)`,
+              transform: "translateY(-50%)",
+            }}
+          >
+            {views.map((v, i) => (
+              <button
+                key={v.src}
+                type="button"
+                onClick={() => setView(i)}
+                aria-label={v.alt}
+                aria-current={i === view ? "true" : undefined}
+                className={`bg-ground relative aspect-square w-full overflow-hidden transition-opacity ${
+                  i === view ? "opacity-100" : "opacity-45 hover:opacity-80"
+                }`}
+              >
+                <Image
+                  src={v.src}
+                  alt=""
+                  fill
+                  quality={90}
+                  sizes="80px"
+                  className="object-contain"
+                />
+                {/* 지금 보고 있는 장에만 밑줄 — 테두리를 두르면 사진마다 액자가 생긴다 */}
+                <span
+                  aria-hidden
+                  className={`bg-ink absolute inset-x-0 bottom-0 h-px transition-opacity ${
+                    i === view ? "opacity-100" : "opacity-0"
+                  }`}
+                />
+              </button>
+            ))}
+          </div>
         ) : null}
 
         {/*

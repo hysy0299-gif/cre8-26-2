@@ -10,6 +10,22 @@
  */
 export const HOLD_SOURCES = [
   {
+    slug: "bubble",
+    file: "BUBBLE.png",
+    name: "Bubble",
+    /** 상세 뷰 — holder thumnail/ 에 있는 파일들. 오른쪽 썸네일로 걸린다 */
+    views: [
+      { file: "hf_20260904_050849_faf6093f-4f37-4d23-b719-d178aa021e09.png", alt: "Bubble hold, full view" },
+      { file: "hf_20260904_051124_24bf4a5f-c002-466d-bb1b-044ca0038025_cell_3.png", alt: "Bubble hold, close-up" },
+      { file: "hf_20260904_051124_24bf4a5f-c002-466d-bb1b-044ca0038025_cell_4.png", alt: "Bubble hold from above" },
+      { file: "hf_20260904_051124_24bf4a5f-c002-466d-bb1b-044ca0038025_cell_5.png", alt: "Bubble hold surface" },
+    ],
+    description: [
+      "BUBBLE is formed from overlapping droplet-like volumes,",
+      "finished in translucent moss green to express the slick, fluid quality of soap and damp moss.",
+    ],
+  },
+  {
     slug: "slope",
     file: "SLOPE.png",
     name: "Slope",
@@ -52,15 +68,6 @@ export const HOLD_SOURCES = [
     description: [
       "RIPPLE is composed of five forms that gradually shift in scale,",
       "echoing spreading waves through clear surfaces and softly textured pale-gray edges.",
-    ],
-  },
-  {
-    slug: "bubble",
-    file: "BUBBLE.png",
-    name: "Bubble",
-    description: [
-      "BUBBLE is formed from overlapping droplet-like volumes,",
-      "finished in translucent moss green to express the slick, fluid quality of soap and damp moss.",
     ],
   },
   {
