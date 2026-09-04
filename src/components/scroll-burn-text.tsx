@@ -9,14 +9,21 @@ import { SYMBOL_PATH, SYMBOL_VIEW_BOX } from "@/components/logo";
  *
  * 원본(ScrollBurnText)에서 가져온 건 움직임의 논리뿐이다.
  * - shadcn을 쓰지 않으므로 cn·bg-background 같은 것은 전부 우리 역할 토큰으로 바꿨다.
- * - **글자가 사라지는 모양을 GRIT 심볼로 바꿨다.** 원본은 사인파 두 개로 만든
- *   얼룩과 가운데부터 번지는 원형이라 종이가 타는 느낌인데, 여기서는 심볼이
- *   글자를 뚫고 번져 나간다 — 아래 useLogoField 참고.
- * - 색수차는 형광 분홍·시안 대신 우리 팔레트 두 색으로 낮춰 잡았다.
+ * - **글자가 사라지는 모양을 GRIT 심볼로 바꿨다** — 아래 logoField 참고.
+ * - 다가오는 폭을 줄였다. 원본은 4배까지 확대되는데 그러면 정작 심볼 모양으로
+ *   뚫리는 순간에 글자가 화면 밖으로 나가 모양이 안 보인다.
+ * - 문단을 주장 한 줄 + 본문으로 나눠 받는다. 원본은 통글이라 긴 원고가 안 읽힌다.
  */
+export interface ManifestoSection {
+  /** 문단의 주장. 한 줄로 굵게 선다 */
+  lead: string;
+  /** 그 근거. 주장 아래에 작고 가볍게 붙는다 */
+  body: string;
+}
+
 export interface ScrollBurnTextProps {
   /** 읽히는 순서대로의 문단들 */
-  sections: string[];
+  sections: ManifestoSection[];
   /** 첫 문단이 읽힐 만큼 다가오기 전 화면에 뜨는 안내. 스크롤 시작하면 사라진다 */
   hint?: ReactNode;
   /** 문단 하나에 배정되는 스크롤 거리. 길수록 느리다 */
@@ -29,24 +36,27 @@ const BURN_AT = 0.62;
 /** 다 타는 데 쓰는 구간 길이 */
 const BURN_SPAN = 0.38;
 /** 첫 문단이 앞에 닿기 전까지의 접근 구간 */
-const LEAD = 0.7;
+const LEAD_IN = 0.7;
 /** 앞 문단 뒤에 서 있는 문단의 투명도 */
 const DIM = 0.3;
 /** 첫 화면에서 첫 문단이 이미 들어와 있는 정도 — 0이면 빈 화면으로 시작한다 */
 const OPEN = 0.22;
 /** 문단이 태어나는 거리(읽히는 거리를 1로 봤을 때) */
-const FAR = 4;
-/** 사라질 때의 거리 */
-const NEAR = 0.25;
+const FAR = 1.8;
+/**
+ * 사라질 때의 거리. 원본은 0.25라 마지막에 4배까지 확대되는데,
+ * 그러면 심볼 모양으로 뚫리는 순간 글자가 화면 밖으로 나가 모양이 안 보인다.
+ */
+const NEAR = 0.75;
 /** 글자 하나가 사그라드는 구간. 아래 opacity 클래스의 0.09와 짝이다 */
 const RAMP = 0.09;
 
 /** 심볼을 구워 넣을 판의 한 변(px). 글자 수백 개를 찍어보는 용도라 이 정도면 충분하다 */
 const FIELD = 128;
-/** 판 안에서 심볼이 차지하는 비율. 나머지는 바깥으로 번져 나갈 여지 */
-const LOGO_PAD = 0.72;
+/** 심볼이 문단의 짧은 변에서 차지하는 비율. 1에 가까울수록 크게 보인다 */
+const LOGO_FIT = 0.94;
 /** 번짐 반경 — 심볼 경계에서 바깥으로 얼마나 부드럽게 이어질지 */
-const BLUR = 7;
+const BLUR = 6;
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 
@@ -83,6 +93,8 @@ function blurPass(src: Float32Array, n: number, r: number) {
   return out;
 }
 
+const fieldCache = new Map<number, Float32Array>();
+
 /**
  * GRIT 심볼을 "언제 타는지"의 지도로 굽는다.
  *
@@ -93,40 +105,42 @@ function blurPass(src: Float32Array, n: number, r: number) {
  *
  * SVG 마스크가 아니라 판을 굽는 이유 — 마스크는 글자를 잘라내지만,
  * 여기서는 글자 하나하나가 제 차례에 사그라들어야 한다.
+ *
+ * `pad`는 판 안에서 심볼이 차지하는 비율이다. 문단의 가로세로비에 맞춰
+ * 심볼을 줄여 넣어야 위아래가 안 잘리므로, 판을 비율별로 캐시한다.
  */
-let cachedField: Float32Array | null = null;
+function logoField(pad: number) {
+  const key = Math.round(pad * 100);
+  const hit = fieldCache.get(key);
+  if (hit) return hit;
 
-function logoField() {
-  if (cachedField) return cachedField;
-  {
-    const canvas = document.createElement("canvas");
-    canvas.width = FIELD;
-    canvas.height = FIELD;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return null;
+  const canvas = document.createElement("canvas");
+  canvas.width = FIELD;
+  canvas.height = FIELD;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
 
-    const [, , vbW, vbH] = SYMBOL_VIEW_BOX.split(" ").map(Number);
-    const box = FIELD * LOGO_PAD;
-    const scale = box / Math.max(vbW, vbH);
-    const inset = (FIELD - box) / 2;
+  const [, , vbW, vbH] = SYMBOL_VIEW_BOX.split(" ").map(Number);
+  const box = FIELD * pad;
+  const scale = box / Math.max(vbW, vbH);
+  const inset = (FIELD - box) / 2;
 
-    ctx.setTransform(scale, 0, 0, scale, inset, inset);
-    ctx.fillStyle = "#000";
-    ctx.fill(new Path2D(SYMBOL_PATH));
+  ctx.setTransform(scale, 0, 0, scale, inset, inset);
+  ctx.fillStyle = "#000";
+  ctx.fill(new Path2D(SYMBOL_PATH));
 
-    const { data } = ctx.getImageData(0, 0, FIELD, FIELD);
-    let f = new Float32Array(FIELD * FIELD);
-    for (let i = 0; i < f.length; i++) f[i] = data[i * 4 + 3] / 255;
+  const { data } = ctx.getImageData(0, 0, FIELD, FIELD);
+  let f = new Float32Array(FIELD * FIELD);
+  for (let i = 0; i < f.length; i++) f[i] = data[i * 4 + 3] / 255;
 
-    for (let pass = 0; pass < 3; pass++) f = blurPass(f, FIELD, BLUR);
+  for (let pass = 0; pass < 3; pass++) f = blurPass(f, FIELD, BLUR);
 
-    let max = 0;
-    for (const v of f) if (v > max) max = v;
-    if (max > 0) for (let i = 0; i < f.length; i++) f[i] /= max;
+  let max = 0;
+  for (const v of f) if (v > max) max = v;
+  if (max > 0) for (let i = 0; i < f.length; i++) f[i] /= max;
 
-    cachedField = f;
-    return f;
-  }
+  fieldCache.set(key, f);
+  return f;
 }
 
 /** 애니메이션을 원하지 않는 사용자에게는 문단을 그대로 쌓아 보여준다 */
@@ -141,6 +155,26 @@ function useReducedMotion() {
   }, []);
   return reduce;
 }
+
+/** 글자 하나하나를 따로 그린다 — 각자 제 차례에 사그라들어야 하므로 */
+function glyphs(text: string) {
+  return Array.from(text).map((ch, k) =>
+    ch === " " ? (
+      " "
+    ) : (
+      // 비교는 전부 CSS가 한다 — 문단에 값 하나만 써주면 글자마다 박아둔
+      // 문턱값과 대조해 엔진이 수백 개를 처리한다
+      <span key={k} data-g className="opacity-[calc((var(--t,1)_+_0.09_-_var(--b,0))*11)]">
+        {ch}
+      </span>
+    ),
+  );
+}
+
+/** 주장 한 줄 — 굵게, 크게 */
+const LEAD_CLASS = "block text-[clamp(1.15rem,2.6vw,1.75rem)] leading-[1.2] font-bold";
+/** 본문 — 작고 가볍게, 줄간격 넉넉히. 긴 글이라 굵기로 밀어붙이면 안 읽힌다 */
+const BODY_CLASS = "mt-4 block text-[clamp(0.9rem,1.3vw,1.05rem)] leading-[1.7] font-light";
 
 export function ScrollBurnText({
   sections,
@@ -161,8 +195,6 @@ export function ScrollBurnText({
     if (reduced) return;
     const el = runwayRef.current;
     if (!el) return;
-    const field = logoField();
-    if (!field) return;
 
     /**
      * 글자가 언제 타는지는 줄바꿈이 끝난 뒤에야 정해진다.
@@ -174,12 +206,17 @@ export function ScrollBurnText({
         if (!block) return;
         const w = block.offsetWidth || 1;
         const h = block.offsetHeight || 1;
-        // 문단 전체가 판 안에 들어오도록 긴 변을 기준으로 잡는다
+        // 문단 전체가 판 안에 들어오도록 긴 변을 기준으로 잡고,
+        // 심볼은 짧은 변에 맞춰 넣는다 — 그래야 위아래가 안 잘린다
         const size = Math.max(w, h);
+        const field = logoField((LOGO_FIT * Math.min(w, h)) / size);
+        if (!field) return;
         const cx = w / 2;
         const cy = h / 2;
 
-        (Array.from(block.children) as HTMLElement[]).forEach((node) => {
+        // 주장·본문이 감싸는 span 안에 들어 있어 자식 순회로는 못 잡는다.
+        // offsetLeft/Top은 relative인 문단 기준으로 나오므로 중첩돼도 값은 맞다
+        block.querySelectorAll<HTMLElement>("[data-g]").forEach((node) => {
           const px = node.offsetLeft + node.offsetWidth / 2;
           const py = node.offsetTop + node.offsetHeight / 2;
           const u = (px - cx) / size + 0.5;
@@ -210,19 +247,18 @@ export function ScrollBurnText({
       const viewport = window.innerHeight;
       const p = clamp01(-rect.top / (rect.height - viewport || 1));
 
-      const n = count;
       // 마지막 문단은 타기 직전에 멈춘다 — 재만 남은 화면으로 끝나지 않게
-      const t = -LEAD + p * (n - 1 + LEAD + BURN_AT);
+      const t = -LEAD_IN + p * (count - 1 + LEAD_IN + BURN_AT);
       let front = 0;
 
       blockRefs.current.forEach((block, i) => {
         const wrap = block?.parentElement;
         if (!block || !wrap) return;
         const q = t - i;
-        if (q > 1) front = Math.min(i + 1, n - 1);
+        if (q > 1) front = Math.min(i + 1, count - 1);
 
         const alpha =
-          clamp01((q + LEAD + OPEN) / 0.45) * (DIM + (1 - DIM) * clamp01(q / 0.45));
+          clamp01((q + LEAD_IN + OPEN) / 0.45) * (DIM + (1 - DIM) * clamp01(q / 0.45));
 
         if (alpha <= 0 || q > 1) {
           wrap.style.visibility = "hidden";
@@ -232,7 +268,7 @@ export function ScrollBurnText({
         wrap.style.opacity = `${alpha}`;
         // 렌즈다. 거리가 일정하게 줄고 크기는 그 역수라, 멀 때는 천천히
         // 가까울수록 훅 다가온다 — 실제로 다가오는 물체가 그리는 곡선이다
-        const depth = Math.max(FAR - ((FAR - NEAR) * (q + LEAD)) / (1 + LEAD), NEAR);
+        const depth = Math.max(FAR - ((FAR - NEAR) * (q + LEAD_IN)) / (1 + LEAD_IN), NEAR);
         wrap.style.transform = `scale(${1 / depth})`;
 
         const burn = clamp01((q - BURN_AT) / BURN_SPAN) * (1 + RAMP);
@@ -247,7 +283,7 @@ export function ScrollBurnText({
       if (active !== front) {
         active = front;
         if (counterRef.current) {
-          counterRef.current.textContent = `${String(front + 1).padStart(2, "0")} / ${String(n).padStart(2, "0")}`;
+          counterRef.current.textContent = `${String(front + 1).padStart(2, "0")} / ${String(count).padStart(2, "0")}`;
         }
       }
     };
@@ -273,19 +309,19 @@ export function ScrollBurnText({
 
   /**
    * relative — 글자 위치를 화면이 아니라 문단 기준으로 재기 위해서.
-   * 크기는 화면에서 뽑는다. 브레이크포인트로 끊으면 칸이 부드럽게 커지는 사이
+   * 폭은 화면에서 뽑는다. 브레이크포인트로 끊으면 칸이 부드럽게 커지는 사이
    * 글씨만 계단처럼 남는다.
    */
-  const column =
-    "text-ink relative w-[min(84vw,36rem)] text-center text-[clamp(1.25rem,5.5vw,2.5rem)] leading-[1.1] font-bold tracking-tight";
+  const column = "text-ink relative w-[min(84vw,34rem)] text-center tracking-tight";
 
   if (reduced) {
     return (
       <div className={`w-full ${className}`}>
-        <div className="mx-auto grid max-w-2xl gap-10">
-          {sections.map((body, i) => (
-            <p key={i} className={`${column} w-full text-left`}>
-              {body}
+        <div className="mx-auto grid max-w-2xl gap-16">
+          {sections.map((s, i) => (
+            <p key={i} className="text-ink w-full">
+              <span className={LEAD_CLASS}>{s.lead}</span>
+              <span className={BODY_CLASS}>{s.body}</span>
             </p>
           ))}
         </div>
@@ -313,7 +349,7 @@ export function ScrollBurnText({
             </div>
           ) : null}
 
-          {sections.map((body, i) => (
+          {sections.map((s, i) => (
             <div
               key={i}
               // 첫 프레임이 자리를 잡기 전에는 감춰둔다 — 문단이 겹쳐 번쩍이지 않게
@@ -337,23 +373,18 @@ export function ScrollBurnText({
                   } as CSSProperties
                 }
               >
-                {Array.from(body).map((ch, k) =>
-                  ch === " " ? (
-                    " "
-                  ) : (
-                    // 비교는 전부 CSS가 한다 — 문단에 값 하나만 써주면
-                    // 글자마다 박아둔 문턱값과 대조해 엔진이 수백 개를 처리한다
-                    <span key={k} className="opacity-[calc((var(--t,1)_+_0.09_-_var(--b,0))*11)]">
-                      {ch}
-                    </span>
-                  ),
-                )}
+                <span className={LEAD_CLASS}>{glyphs(s.lead)}</span>
+                <span className={BODY_CLASS}>{glyphs(s.body)}</span>
               </p>
             </div>
           ))}
 
           {/* 글자 단위로 쪼개져 있어 스크린리더가 낱글자로 읽는다. 원문을 한 번 더 둔다 */}
-          <p className="sr-only">{sections.join(" ")}</p>
+          <div className="sr-only">
+            {sections.map((s, i) => (
+              <p key={i}>{`${s.lead} ${s.body}`}</p>
+            ))}
+          </div>
         </div>
       </div>
     </div>
