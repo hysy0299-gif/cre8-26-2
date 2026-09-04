@@ -116,6 +116,14 @@ async function centroid(file, region) {
 
 async function centeredCrop(file) {
   const meta = await sharp(file).metadata();
+  /*
+   * 원본 가로세로비를 지킨다.
+   *
+   * 무게중심을 중심으로 하는 "가장 큰 사각형"을 그냥 취하면 사진마다 비율이
+   * 제각각으로 벌어진다(0.49 / 0.54 / 0.75까지 벌어졌다). 세 칸이 같은 비율이라야
+   * 칸 하나하나가 사진 폭과 맞아떨어지므로, 비율은 그대로 두고 창만 옮긴다.
+   */
+  const aspect = meta.width / meta.height;
   let region = { left: 0, top: 0, width: meta.width, height: meta.height };
   let last = null;
 
@@ -123,17 +131,24 @@ async function centeredCrop(file) {
    * 한 번에 안 맞는다 — 잘라내고 나면 남은 배경의 분포가 바뀌어서
    * 무게중심도 따라 움직인다. 몇 번 되풀이하면 가운데로 수렴한다.
    */
-  for (let pass = 0; pass < 4; pass++) {
+  for (let pass = 0; pass < 5; pass++) {
     const c = await centroid(file, region);
     if (!c) return null;
     last = c;
-    if (Math.abs(c.fx - 0.5) < 0.005 && Math.abs(c.fy - 0.5) < 0.005) break;
+    if (Math.abs(c.fx - 0.5) < 0.004 && Math.abs(c.fy - 0.5) < 0.004) break;
 
-    const halfW = Math.min(c.fx, 1 - c.fx) * region.width;
-    const halfH = Math.min(c.fy, 1 - c.fy) * region.height;
+    // 무게중심을 중심에 두면서 원본 비율을 지키는 가장 큰 창
+    const cx = region.left + c.fx * region.width;
+    const cy = region.top + c.fy * region.height;
+    const halfW = Math.min(
+      Math.min(cx - region.left, region.left + region.width - cx),
+      Math.min(cy - region.top, region.top + region.height - cy) * aspect,
+    );
+    const halfH = halfW / aspect;
+
     region = {
-      left: Math.round(region.left + c.fx * region.width - halfW),
-      top: Math.round(region.top + c.fy * region.height - halfH),
+      left: Math.round(cx - halfW),
+      top: Math.round(cy - halfH),
       width: Math.max(1, Math.round(halfW * 2)),
       height: Math.max(1, Math.round(halfH * 2)),
     };

@@ -70,15 +70,22 @@
 }
 
 /*
- * cover다. 열린 칸의 폭 자체를 사진 원본 비율에 맞춰 잡으므로(컴포넌트의 fitOpen),
- * 펼쳐진 사진은 cover여도 잘리는 데 없이 칸을 정확히 채운다.
- * 접힌 칸에서만 좌우가 잘린다 — 거긴 사진을 보여주는 자리가 아니다.
+ * 사진은 높이에만 맞추고 폭은 비율대로 둔다. 크기가 절대 안 변한다.
+ *
+ * cover로 채우면 칸이 넓어질 때 사진도 같이 확대된다 — 커서를 올릴 때마다
+ * 사진이 줌인되는 그 움직임이다. 여기선 사진을 세워두고 **칸이 창처럼**
+ * 넓어졌다 좁아진다. 칸 폭은 사진 폭에 맞춰 잡으므로(컴포넌트의 fitOpen)
+ * 열린 칸에서는 사진이 정확히 딱 맞고, 접힌 칸에서만 좌우가 가려진다.
  */
 .ag-panel__media img {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
   display: block;
-  width: 100%;
   height: 100%;
-  object-fit: cover;
+  width: auto;
+  max-width: none;
   user-select: none;
   -webkit-user-drag: none;
 }
