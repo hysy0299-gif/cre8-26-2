@@ -1,0 +1,10 @@
+.posters-stage {
+  position: sticky;
+  overflow: hidden;
+}
+
+.posters-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}

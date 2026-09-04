@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { SYMBOL_PATH, SYMBOL_VIEW_BOX } from "@/components/logo";
+import { Logo, SYMBOL_PATH, SYMBOL_VIEW_BOX } from "@/components/logo";
 
 /**
  * 스크롤을 내리면 문단이 앞으로 다가와 읽히고, 타들어가듯 사라지며
@@ -19,6 +19,11 @@ export interface ScrollBurnTextProps {
   sections: string[];
   /** 첫 문단이 읽힐 만큼 다가오기 전 화면에 뜨는 안내. 스크롤 시작하면 사라진다 */
   hint?: ReactNode;
+  /**
+   * 마지막 문단이 타고 난 자리에 로고를 같은 방식으로 올린다.
+   * 문단과 똑같이 다가와 서고, 마지막 칸이라 타지 않고 남는다.
+   */
+  logoOutro?: boolean;
   /** 문단 하나에 배정되는 스크롤 거리. 길수록 느리다 */
   runway?: string;
   className?: string;
@@ -144,6 +149,7 @@ function useReducedMotion() {
 
 export function ScrollBurnText({
   sections,
+  logoOutro = false,
   hint = "scroll",
   runway = "170vh",
   className = "",
@@ -155,7 +161,8 @@ export function ScrollBurnText({
   const hintRef = useRef<HTMLDivElement>(null);
   const blockRefs = useRef<(HTMLParagraphElement | null)[]>([]);
 
-  const count = sections.length;
+  /** 로고도 한 칸을 차지한다 — 문단과 같은 슬롯 위에서 움직인다 */
+  const count = sections.length + (logoOutro ? 1 : 0);
 
   useEffect(() => {
     if (reduced) return;
@@ -351,6 +358,27 @@ export function ScrollBurnText({
               </p>
             </div>
           ))}
+
+          {/*
+            마지막 칸은 로고다. 문단과 똑같은 슬롯 위에 놓여 같은 방식으로 다가오고,
+            마지막이라 타지 않고 그대로 남는다 — 마지막 문단이 타서 사라진 자리에 선다.
+          */}
+          {logoOutro ? (
+            <div
+              style={{ visibility: "hidden" }}
+              className="absolute inset-0 grid place-items-center will-change-transform"
+              aria-hidden
+            >
+              <p
+                ref={(node) => {
+                  blockRefs.current[sections.length] = node;
+                }}
+                className="text-ink relative flex w-[min(52vw,20rem)] justify-center"
+              >
+                <Logo variant="symbol" className="h-auto w-[62%]" />
+              </p>
+            </div>
+          ) : null}
 
           {/* 글자 단위로 쪼개져 있어 스크린리더가 낱글자로 읽는다. 원문을 한 번 더 둔다 */}
           <p className="sr-only">{sections.join(" ")}</p>
