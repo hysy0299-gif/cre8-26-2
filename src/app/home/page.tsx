@@ -21,7 +21,7 @@ export default function MainPage() {
           href: s.href,
           image: s.image,
         }))}
-        defaultIndex={0}
+        defaultIndex={1}
         orientation="horizontal"
         height="100%"
         gap={GAP}

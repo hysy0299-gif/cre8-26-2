@@ -140,7 +140,16 @@ export function AccordionGallery({
         const isActive = i === active;
         const media = mediaRefs.current[i];
 
-        const rot = isActive ? 0 : i < active ? tilt : -tilt;
+        /*
+         * 기울기는 **칸의 자리**에서 나온다. 어느 칸이 열렸는지와 무관하다.
+         *
+         * 원본은 열린 칸을 기준으로 좌우를 갈라 눕히는데, 그러면 끝 칸이 열릴 때
+         * 나머지 둘이 같은 쪽으로 누워 화면이 한쪽으로 쏠려 보인다.
+         * 여기선 가운데 칸이 정면으로 서고 양옆이 안쪽으로 접힌 상태를 고정해 둔다 —
+         * 삼면 병풍처럼. 커서를 옮겨도 이 형태는 그대로고 폭과 색만 바뀐다.
+         */
+        const mid = (count - 1) / 2;
+        const rot = mid === 0 ? 0 : ((mid - i) / mid) * tilt;
         const rotProp = vertical ? { rotateX: -rot } : { rotateY: rot };
 
         tl.to(panel, { flexGrow: isActive ? grow : 1, ...rotProp, duration: dur, ease }, 0);
