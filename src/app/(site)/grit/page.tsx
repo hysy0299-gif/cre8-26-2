@@ -1,6 +1,4 @@
-import { FlyingPosters } from "@/components/flying-posters";
 import { ScrollBurnText } from "@/components/scroll-burn-text";
-import { visuals } from "@/data/visuals";
 
 /**
  * GRIT — 매니페스토.
@@ -21,7 +19,6 @@ export default function GritPage() {
     <section data-block="manifesto">
       <h1 className="sr-only">GRIT — Manifesto</h1>
       <ScrollBurnText sections={MANIFESTO} logoOutro hint="scroll" />
-      <FlyingPosters items={visuals} />
     </section>
   );
 }

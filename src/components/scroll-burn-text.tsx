@@ -43,6 +43,12 @@ const OPEN = 0.22;
 const FAR = 4;
 /** 사라질 때의 거리 */
 const NEAR = 0.25;
+/**
+ * 로고 칸이 멈추는 지점.
+ * 문단은 타기 직전(BURN_AT)에 멈추지만 로고는 탈 게 없으니 조금 더 다가오게 둔다 —
+ * 마지막에 한 뼘 커지면서 끝난다. 1을 넘기면 칸이 숨겨지므로 그 아래로 잡는다.
+ */
+const LOGO_END = 0.79;
 /** 글자 하나가 사그라드는 구간. 아래 opacity 클래스의 0.09와 짝이다 */
 const RAMP = 0.09;
 
@@ -219,7 +225,7 @@ export function ScrollBurnText({
 
       const n = count;
       // 마지막 문단은 타기 직전에 멈춘다 — 재만 남은 화면으로 끝나지 않게
-      const t = -LEAD + p * (n - 1 + LEAD + BURN_AT);
+      const t = -LEAD + p * (n - 1 + LEAD + (logoOutro ? LOGO_END : BURN_AT));
       let front = 0;
 
       blockRefs.current.forEach((block, i) => {
@@ -276,7 +282,7 @@ export function ScrollBurnText({
       window.removeEventListener("resize", onResize);
       if (raf) window.cancelAnimationFrame(raf);
     };
-  }, [reduced, count]);
+  }, [reduced, count, logoOutro]);
 
   /**
    * relative — 글자 위치를 화면이 아니라 문단 기준으로 재기 위해서.
