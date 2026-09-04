@@ -323,7 +323,8 @@ export function PageFlip({ pages, className = "" }: PageFlipProps) {
                   alt={leaf.front.alt}
                   width={leaf.front.width}
                   height={leaf.front.height}
-                  sizes="(max-width: 768px) 45vw, 32vw"
+                  sizes="62vh"
+                  quality={90}
                   priority={i === 0}
                   draggable={false}
                 />
@@ -336,7 +337,8 @@ export function PageFlip({ pages, className = "" }: PageFlipProps) {
                   alt={leaf.back.alt}
                   width={leaf.back.width}
                   height={leaf.back.height}
-                  sizes="(max-width: 768px) 45vw, 32vw"
+                  sizes="62vh"
+                  quality={90}
                   draggable={false}
                 />
               ) : null}

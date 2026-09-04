@@ -18,9 +18,13 @@ import { BOOK_SOURCES, SPREAD_ASPECT } from "./book-pages.mjs";
 
 const SRC = "process book";
 const OUT = "public/img/book";
-/** 한 쪽의 폭. 책은 화면 가운데 크게 펼쳐지므로 2배 화면까지 감당할 만큼 둔다 */
-const WIDTH = 1200;
-const QUALITY = 86;
+/**
+ * 한 쪽의 폭.
+ * 책이 화면 높이의 88%까지 커져서 한 쪽이 62vh다 — 1440 높이 2배 화면이면 1786px가 필요하다.
+ * 그보다 작게 구우면 브라우저가 늘려 쓰면서 뭉갠다.
+ */
+const WIDTH = 1800;
+const QUALITY = 88;
 
 await mkdir(OUT, { recursive: true });
 
