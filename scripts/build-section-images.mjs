@@ -12,6 +12,7 @@
  * 칸은 화면의 25~50% 폭이라 한 벌만 구우면 저해상 화면에선 과하고
  * 레티나에선 모자란다 — 그 사이를 브라우저가 고르게 둔다.
  *
+ * 사진은 자르지 않는다. 넣어준 그대로의 가로세로비로 굽고, 칸이 그 비율에 맞춘다.
  * 파일명에 내용 해시를 붙여 사진을 갈아끼워도 캐시가 옛 그림을 안 내주게 한다.
  */
 import { createHash } from "node:crypto";
@@ -66,97 +67,6 @@ async function newestSource(slug) {
   return stamped[0].f;
 }
 
-/**
- * 피사체가 사진 한가운데 오도록 잘라낼 영역을 구한다.
- *
- * 칸은 cover로 채워지므로 좌우(또는 위아래)가 똑같이 잘려나간다.
- * 그래서 원본에서 피사체가 치우쳐 있으면 칸에서도 그대로 치우쳐 보인다.
- * 밝은 배경에서 어두운 쪽을 피사체로 보고 그 무게중심을 잡은 뒤,
- * 그 점을 중심으로 하는 가장 큰 직사각형을 남긴다 — 잘려나가는 건 빈 배경뿐이다.
- */
-/** 잘라낸 영역 안에서 피사체 무게중심을 0~1 비율로 구한다 */
-async function centroid(file, region) {
-  const pipe = sharp(file);
-  if (region) pipe.extract(region);
-  const { data, info } = await pipe
-    .greyscale()
-    .resize(400, null, { fit: "inside" })
-    .raw()
-    .toBuffer({ resolveWithObject: true });
-
-  // 밝기 상위 25% 지점을 배경으로 보고, 그보다 충분히 어두우면 피사체
-  const hist = new Array(256).fill(0);
-  for (const v of data) hist[v]++;
-  let acc = 0;
-  let bg = 255;
-  for (let v = 255; v >= 0; v--) {
-    acc += hist[v];
-    if (acc > data.length * 0.25) {
-      bg = v;
-      break;
-    }
-  }
-  const th = bg - 28;
-
-  let sx = 0;
-  let sy = 0;
-  let n = 0;
-  for (let y = 0; y < info.height; y++) {
-    for (let x = 0; x < info.width; x++) {
-      if (data[y * info.width + x] < th) {
-        sx += x;
-        sy += y;
-        n++;
-      }
-    }
-  }
-  if (!n) return null;
-  return { fx: sx / n / info.width, fy: sy / n / info.height };
-}
-
-async function centeredCrop(file) {
-  const meta = await sharp(file).metadata();
-  /*
-   * 원본 가로세로비를 지킨다.
-   *
-   * 무게중심을 중심으로 하는 "가장 큰 사각형"을 그냥 취하면 사진마다 비율이
-   * 제각각으로 벌어진다(0.49 / 0.54 / 0.75까지 벌어졌다). 세 칸이 같은 비율이라야
-   * 칸 하나하나가 사진 폭과 맞아떨어지므로, 비율은 그대로 두고 창만 옮긴다.
-   */
-  const aspect = meta.width / meta.height;
-  let region = { left: 0, top: 0, width: meta.width, height: meta.height };
-  let last = null;
-
-  /*
-   * 한 번에 안 맞는다 — 잘라내고 나면 남은 배경의 분포가 바뀌어서
-   * 무게중심도 따라 움직인다. 몇 번 되풀이하면 가운데로 수렴한다.
-   */
-  for (let pass = 0; pass < 5; pass++) {
-    const c = await centroid(file, region);
-    if (!c) return null;
-    last = c;
-    if (Math.abs(c.fx - 0.5) < 0.004 && Math.abs(c.fy - 0.5) < 0.004) break;
-
-    // 무게중심을 중심에 두면서 원본 비율을 지키는 가장 큰 창
-    const cx = region.left + c.fx * region.width;
-    const cy = region.top + c.fy * region.height;
-    const halfW = Math.min(
-      Math.min(cx - region.left, region.left + region.width - cx),
-      Math.min(cy - region.top, region.top + region.height - cy) * aspect,
-    );
-    const halfH = halfW / aspect;
-
-    region = {
-      left: Math.round(cx - halfW),
-      top: Math.round(cy - halfH),
-      width: Math.max(1, Math.round(halfW * 2)),
-      height: Math.max(1, Math.round(halfH * 2)),
-    };
-  }
-
-  return { fx: last.fx, fy: last.fy, region };
-}
-
 await mkdir(OUT, { recursive: true });
 
 for (const f of await readdir(OUT)) {
@@ -174,14 +84,10 @@ for (const slug of SLUGS) {
   }
 
   const meta = await sharp(`${SRC}/${file}`).metadata();
-  const crop = await centeredCrop(`${SRC}/${file}`);
   const variants = [];
 
   for (const w of WIDTHS) {
-    const pipeline = sharp(`${SRC}/${file}`);
-    if (crop) pipeline.extract(crop.region);
-
-    const { data, info } = await pipeline
+    const { data, info } = await sharp(`${SRC}/${file}`)
       .resize(w, MAX_HEIGHT, {
         fit: "inside",
         withoutEnlargement: true,
@@ -202,11 +108,7 @@ for (const slug of SLUGS) {
   manifest.push({ slug, file, variants });
 
   console.log(
-    `${slug.padEnd(8)} ${file.padEnd(20)} ${meta.width}x${meta.height}` +
-      (crop
-        ? ` 중심 ${(crop.fx * 100).toFixed(0)}%,${(crop.fy * 100).toFixed(0)}% → ${crop.region.width}x${crop.region.height}`
-        : "") +
-      ` →  ` +
+    `${slug.padEnd(8)} ${file.padEnd(20)} ${meta.width}x${meta.height} →  ` +
       variants
         .map((v) => `${v.width}x${v.height} ${(v.bytes / 1024).toFixed(0)}KB`)
         .join("  |  "),
