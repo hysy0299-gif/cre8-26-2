@@ -19,7 +19,10 @@ const VIEW_BOX: Record<LogoVariant, string> = {
   wordmark: "352 6.5 778.75 248.5",
 };
 
-const SYMBOL_PATH =
+/** 심볼 path와 viewBox는 다른 곳에서도 쓴다 — scroll-burn-text가 이 모양을 굽는다 */
+export const SYMBOL_VIEW_BOX = VIEW_BOX.symbol;
+
+export const SYMBOL_PATH =
   "M258.63,32.33c0,17.86-14.48,32.33-32.33,32.33h-64.66c-17.85,0-32.33,14.48-32.33,32.33v64.66c0,17.85-14.47,32.33-32.33,32.33s-32.33,14.47-32.33,32.33-14.47,32.33-32.33,32.33S0,244.16,0,226.31V96.99c0-17.85,14.47-32.33,32.32-32.33s32.33-14.47,32.33-32.33S79.13,0,96.98,0h129.32c17.85,0,32.33,14.48,32.33,32.33Z";
 
 const WORDMARK_PATHS = [
