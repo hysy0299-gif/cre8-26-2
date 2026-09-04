@@ -1,9 +1,10 @@
 /**
- * 브랜드북 페이지를 웹용으로 굽는다.
+ * 프로세스 북 페이지를 웹용으로 굽는다.
  *
  *   npm run book-images
  *
  * 순서는 scripts/book-pages.mjs에 명시돼 있다 — 파일명 정렬을 믿으면 안 된다.
+ * 펼침면 원본은 반으로 갈라 왼쪽·오른쪽 두 쪽으로 만든다.
  * 원본은 저장소에 넣지 않고 여기서 나온 public/img/book/*.webp만 올라간다.
  *
  * 파일명에 내용 해시를 붙인다.
@@ -11,14 +12,15 @@
  * 예전 그림을 계속 내준다 — 실제로 한 번 당했다.
  */
 import { createHash } from "node:crypto";
-import { mkdir, readdir, rm, access } from "node:fs/promises";
-import { writeFile } from "node:fs/promises";
+import { access, mkdir, readdir, rm, writeFile } from "node:fs/promises";
 import sharp from "sharp";
-import { BOOK_PAGES } from "./book-pages.mjs";
+import { BOOK_SOURCES, SPREAD_ASPECT } from "./book-pages.mjs";
 
-const SRC = "books/8";
+const SRC = "process book";
 const OUT = "public/img/book";
-const WIDTH = 1000;
+/** 한 쪽의 폭. 책은 화면 가운데 크게 펼쳐지므로 2배 화면까지 감당할 만큼 둔다 */
+const WIDTH = 1200;
+const QUALITY = 86;
 
 await mkdir(OUT, { recursive: true });
 
@@ -27,10 +29,8 @@ for (const f of await readdir(OUT)) {
   if (f.endsWith(".webp")) await rm(`${OUT}/${f}`);
 }
 
-let total = 0;
-const manifest = [];
-
-for (const [i, file] of BOOK_PAGES.entries()) {
+/** 원본 한 장에서 나올 쪽들. 펼침면이면 왼쪽·오른쪽 두 개 */
+async function pagesOf(file) {
   const path = `${SRC}/${file}`;
   try {
     await access(path);
@@ -39,25 +39,54 @@ for (const [i, file] of BOOK_PAGES.entries()) {
     process.exit(1);
   }
 
-  const { data, info } = await sharp(path)
-    .resize(WIDTH, null, { withoutEnlargement: true })
-    .flatten({ background: "#ffffff" })
-    .webp({ quality: 84 })
-    .toBuffer({ resolveWithObject: true });
+  const meta = await sharp(path).metadata();
+  if (meta.width / meta.height < SPREAD_ASPECT) {
+    return [{ file, region: null, half: "" }];
+  }
 
-  const hash = createHash("sha1").update(data).digest("hex").slice(0, 8);
-  const name = `p${String(i + 1).padStart(2, "0")}-${hash}.webp`;
-  await writeFile(`${OUT}/${name}`, data);
+  const half = Math.floor(meta.width / 2);
+  return [
+    { file, region: { left: 0, top: 0, width: half, height: meta.height }, half: "L" },
+    {
+      file,
+      region: { left: meta.width - half, top: 0, width: half, height: meta.height },
+      half: "R",
+    },
+  ];
+}
 
-  total += data.length;
-  manifest.push({ page: i + 1, name, width: info.width, height: info.height });
-  console.log(`${name}  ${file.padEnd(26)} ${info.width}x${info.height}  ${(data.length / 1024).toFixed(0)}KB`);
+let total = 0;
+const manifest = [];
+let page = 0;
+
+for (const file of BOOK_SOURCES) {
+  for (const { region, half } of await pagesOf(file)) {
+    const pipeline = sharp(`${SRC}/${file}`);
+    if (region) pipeline.extract(region);
+
+    const { data, info } = await pipeline
+      .resize(WIDTH, null, { withoutEnlargement: true, kernel: "lanczos3" })
+      .flatten({ background: "#ffffff" })
+      .webp({ quality: QUALITY, effort: 6 })
+      .toBuffer({ resolveWithObject: true });
+
+    page += 1;
+    const hash = createHash("sha1").update(data).digest("hex").slice(0, 8);
+    const name = `p${String(page).padStart(2, "0")}-${hash}.webp`;
+    await writeFile(`${OUT}/${name}`, data);
+
+    total += data.length;
+    manifest.push({ page, name, width: info.width, height: info.height });
+    console.log(
+      `${name}  ${(file + (half ? ` ${half}` : "")).padEnd(12)} ${info.width}x${info.height}  ${(data.length / 1024).toFixed(0)}KB`,
+    );
+  }
 }
 
 // 데이터 파일도 같이 만든다 — 손으로 옮겨 적다 틀릴 일을 없앤다
 const rows = manifest.map(
   (m) =>
-    `  { src: "/img/book/${m.name}", alt: "GRIT brand book page ${String(m.page).padStart(2, "0")}", width: ${m.width}, height: ${m.height} },`,
+    `  { src: "/img/book/${m.name}", alt: "GRIT process book page ${String(m.page).padStart(2, "0")}", width: ${m.width}, height: ${m.height} },`,
 );
 
 await writeFile(
@@ -66,8 +95,9 @@ await writeFile(
     'import type { MediaItem } from "@/types/hold";',
     "",
     "/**",
-    " * 브랜드북 페이지. 순서는 scripts/book-pages.mjs에 명시돼 있다.",
-    " * 펼침면은 1 / 2·3 / 4·5 … 18·19 로 떨어진다.",
+    " * 프로세스 북 페이지. 순서는 scripts/book-pages.mjs에 명시돼 있다.",
+    " * 펼침면 원본을 반으로 갈라 만들었으므로, 종이 한 장이 앞뒤 두 쪽을 갖는",
+    " * 구조에 그대로 맞는다 — 표지 / 면지·1쪽 / 2쪽·3쪽 …",
     " *",
     " * 이 파일은 `npm run book-images`가 생성한다 — 직접 고치지 말 것.",
     " */",
@@ -78,5 +108,5 @@ await writeFile(
   ].join("\n"),
 );
 
-console.log(`\n${BOOK_PAGES.length}쪽, 합계 ${(total / 1024 / 1024).toFixed(2)}MB`);
+console.log(`\n${manifest.length}쪽, 합계 ${(total / 1024 / 1024).toFixed(2)}MB`);
 console.log("src/data/book.ts 갱신됨");

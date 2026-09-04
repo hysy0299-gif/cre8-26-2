@@ -1,34 +1,56 @@
 /**
- * 브랜드북 페이지 순서.
+ * 프로세스 북 원본 순서.
  *
- * 파일명 정렬로는 순서가 안 나온다 —
- * 표지가 `grit_brandbook 20.png`이고, 빈 회색 페이지 세 장이 전부 `grit_brandbook3 *`이라
- * 자연 정렬하면 마지막 회색 한 장이 앞쪽에 끼어든다.
+ * `process book/` 안에 번호로 들어 있고, 번호순이 곧 책 순서다.
+ * 1번이 앞표지, 29번이 뒷표지이며 1.5와 28.5는 그 안쪽 면지다.
  *
- * 파일명 숫자가 곧 쪽번호라는 규칙(2→2쪽, 5→5쪽 … 19→19쪽)이 있고,
- * 빠진 번호 4·16과 표지 1쪽을 회색 세 장과 `20`이 메운다.
- * 헷갈릴 여지를 없애려고 여기 순서를 그대로 적어둔다.
+ * 원본은 두 종류다
+ * - 낱장(4096×5794, 비율 0.707) — 표지 두 장뿐
+ * - 펼침면(8192×5792, 비율 1.414) — 나머지 전부. A판 두 쪽이 붙어 있다
  *
- * 펼침면은 1 / 2·3 / 4·5 … 18·19 로 떨어진다.
+ * 그래서 펼침면은 반으로 갈라 왼쪽·오른쪽 두 쪽으로 만든다.
+ * 그렇게 하면 쪽수가 1 + 29×2 + 1 = 60쪽으로 딱 떨어지고,
+ * 종이 한 장이 앞뒤 두 쪽을 갖는 구조에 정확히 맞는다 —
+ * 표지 / 면지·1쪽 / 2쪽·3쪽 … 으로 펼침면이 한 화면에 제대로 붙어 나온다.
  */
-export const BOOK_PAGES = [
-  "grit_brandbook 20.png", // 01  표지 — 보드 위 홀드 6개
-  "grit_brandbook2 1.png", // 02  Be Experimental, GRIT
-  "grit_brandbook3 1.png", // 03  여백
-  "grit_brandbook3 2.png", // 04  여백
-  "grit_brandbook5 1.png", // 05  GRIT 로고 + 서문
-  "grit_brandbook6 1.png", // 06  여백(도트)
-  "grit_brandbook7 1.png", // 07  손
-  "grit_brandbook8 1.png", // 08  00
-  "grit_brandbook9 1.png", // 09  암면 텍스처
-  "grit_brandbook10 1.png", // 10  01
-  "grit_brandbook11 1.png", // 11  홀드 컬럼
-  "grit_brandbook12 1.png", // 12  02
-  "grit_brandbook13 1.png", // 13  손 + 홀드
-  "grit_brandbook14 1.png", // 14  03
-  "grit_brandbook15 1.png", // 15  드로잉
-  "grit_brandbook3 3.png", // 16  여백
-  "grit_brandbook17 1.png", // 17  클라이머
-  "grit_brandbook18 1.png", // 18  GRIT 로고 + (a)(b)(c)
-  "grit_brandbook19 1.png", // 19  오브제
+
+/** 번호순. 소수점 번호는 그 사이에 들어간다 */
+export const BOOK_SOURCES = [
+  "1.png",
+  "1.5.png",
+  "2.png",
+  "3.png",
+  "4.png",
+  "5.png",
+  "6.png",
+  "7.png",
+  "8.png",
+  "9.png",
+  "10.png",
+  "11.png",
+  "12.png",
+  "13.png",
+  "14.png",
+  "15.png",
+  "16.png",
+  "17.png",
+  "18.png",
+  "19.png",
+  "20.png",
+  "21.png",
+  "22.png",
+  "23.png",
+  "24.png",
+  "25.png",
+  "26.png",
+  "27.png",
+  "28.png",
+  "28.5.png",
+  "29.png",
 ];
+
+/**
+ * 이 비율보다 넓으면 펼침면으로 보고 반으로 가른다.
+ * 낱장은 0.707, 펼침면은 1.414라 그 사이 어디를 잡아도 갈린다.
+ */
+export const SPREAD_ASPECT = 1.0;

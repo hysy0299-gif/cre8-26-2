@@ -73,11 +73,13 @@ export function PageFlip({ pages, className = "" }: PageFlipProps) {
   /**
    * 책 전체를 반쪽만큼 밀어주는 양(반쪽 단위).
    *
-   * 닫혀 있을 때는 오른쪽 한 장뿐이라 그대로 두면 왼쪽이 빈 채로 펼쳐진 것처럼 보인다.
-   * 그래서 닫힘(+1) → 펼침(0)으로 밀어서 책이 실제로 열리는 것처럼 만든다.
+   * 장은 책 상자의 오른쪽 절반에 놓인다. 닫혀 있으면 그 한 장뿐이라
+   * 그대로 두면 책이 오른쪽으로 치우쳐 보인다 — 반쪽만큼 왼쪽으로 당겨야 가운데 온다.
+   * 다 넘기면 반대로 왼쪽 절반에만 남으므로 반쪽만큼 오른쪽으로 민다.
+   * 펼쳐져 있는 동안(0)은 양쪽이 다 차 있으니 그대로 둔다.
    */
   const offsetFor = useCallback(
-    (count: number) => (count === 0 ? 1 : count >= leaves.length ? -1 : 0),
+    (count: number) => (count === 0 ? -1 : count >= leaves.length ? 1 : 0),
     [leaves.length],
   );
 
