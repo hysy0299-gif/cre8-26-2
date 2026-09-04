@@ -34,6 +34,8 @@ const COMMIT_AT = 0.4;
 /** 이보다 적게 움직였으면 드래그가 아니라 클릭으로 본다 */
 const CLICK_SLOP = 6;
 const TURN_DURATION = 0.5;
+/** 지금 장 앞뒤로 몇 장을 미리 받아둘지 */
+const LOAD_AHEAD = 3;
 
 export function PageFlip({ pages, className = "" }: PageFlipProps) {
   const leaves = useMemo<Leaf[]>(() => {
@@ -54,12 +56,10 @@ export function PageFlip({ pages, className = "" }: PageFlipProps) {
   const leafRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   /**
-   * 넘긴 장수. 핸들러가 즉시 읽어야 해서 ref가 진실이다.
-   * 아래 쪽수 표시를 뺀 뒤로 값을 읽는 곳이 없어져서 state는 이름을 버렸다 —
-   * 그래도 남겨두는 건 넘길 때마다 리렌더가 한 번 돌아야 커서 상태가 제때 갱신되기 때문이다.
+   * 넘긴 장수. 핸들러가 즉시 읽어야 해서 ref가 진실이고, state는 어느 장을 미리 받아둘지 정하는 데 쓴다.
    */
   const turnedRef = useRef(0);
-  const [, setTurned] = useState(0);
+  const [turned, setTurned] = useState(0);
 
   /** 지금 돌고 있는 장 — 새 입력이 들어오면 이걸 먼저 앉힌다 */
   const flyingRef = useRef<{ leaf: number; to: number } | null>(null);
@@ -308,7 +308,16 @@ export function PageFlip({ pages, className = "" }: PageFlipProps) {
         onPointerCancel={finishDrag}
         onKeyDown={handleKeyDown}
       >
-        {leaves.map((leaf, i) => (
+        {leaves.map((leaf, i) => {
+          /*
+           * 지금 보는 장 주변만 그린다.
+           *
+           * 60쪽을 전부 걸어두면 브라우저가 한 쪽에 281KB짜리를 60개 동시에 물어와서,
+           * 정작 넘긴 장이 뒤로 밀려 빈 종이가 보인다. 앞뒤 세 장씩만 두면
+           * 요청이 일곱 개로 줄고 넘기기 전에 이미 받아둔 상태가 된다.
+           */
+          const near = Math.abs(i - turned) <= LOAD_AHEAD;
+          return (
           <div
             key={i}
             ref={(el) => {
@@ -317,7 +326,7 @@ export function PageFlip({ pages, className = "" }: PageFlipProps) {
             className="book__leaf"
           >
             <div className="book__face book__face--front">
-              {leaf.front ? (
+              {leaf.front && near ? (
                 <Image
                   src={leaf.front.src}
                   alt={leaf.front.alt}
@@ -326,12 +335,13 @@ export function PageFlip({ pages, className = "" }: PageFlipProps) {
                   sizes="62vh"
                   quality={90}
                   priority={i === 0}
+                  loading={i === 0 ? undefined : "eager"}
                   draggable={false}
                 />
               ) : null}
             </div>
             <div className="book__face book__face--back">
-              {leaf.back ? (
+              {leaf.back && near ? (
                 <Image
                   src={leaf.back.src}
                   alt={leaf.back.alt}
@@ -339,12 +349,14 @@ export function PageFlip({ pages, className = "" }: PageFlipProps) {
                   height={leaf.back.height}
                   sizes="62vh"
                   quality={90}
+                  loading="eager"
                   draggable={false}
                 />
               ) : null}
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
 
     </div>

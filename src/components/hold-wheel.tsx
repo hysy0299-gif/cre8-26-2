@@ -3,9 +3,9 @@
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import OptionWheel from "@/components/option-wheel";
-import type { Hold } from "@/types/hold";
+import type { Hold, MediaItem } from "@/types/hold";
 
 /**
  * three는 1MB에 가깝다. 3D가 있는 홀드를 고를 때만 받아오게 해서
@@ -124,9 +124,27 @@ export function HoldWheel({ holds }: { holds: Hold[] }) {
   );
 
   const active = holds[index];
-  /** 썸네일이 걸리는 건 뷰가 두 장 이상일 때뿐 */
-  const views = active?.views ?? [];
+  /**
+   * 썸네일이 걸리는 건 뷰가 두 장 이상일 때뿐.
+   * useMemo로 감싸는 건 아래 preload가 이걸 의존성으로 잡기 때문 —
+   * 매 렌더마다 새 빈 배열이 나오면 preload도 매번 다시 계산된다.
+   */
+  const views = useMemo(() => active?.views ?? [], [active]);
   const shown = views[view] ?? active?.hero;
+
+  /**
+   * 미리 받아둘 그림 — 바로 옆 홀드 둘과, 지금 홀드의 나머지 뷰.
+   * 전부 걸면 17종 수백 KB씩이라 첫 진입이 무거워진다. 곧 볼 것만 담는다.
+   */
+  const preload = useMemo(() => {
+    const out: MediaItem[] = [];
+    for (const step of [1, -1]) {
+      const hero = holds[index + step]?.hero;
+      if (hero) out.push(hero);
+    }
+    for (const [i, v] of views.entries()) if (i !== view) out.push(v);
+    return out;
+  }, [holds, index, views, view]);
 
   return (
     <div className="relative grid grid-cols-12 gap-[var(--grid-gutter)]">
@@ -245,6 +263,26 @@ export function HoldWheel({ holds }: { holds: Hold[] }) {
             ))}
           </div>
         ) : null}
+
+        {/*
+          다음에 볼 그림을 미리 받아둔다.
+          홀드 한 장이 수백 KB라, 휠을 돌린 뒤에야 요청하면 빈 화면이 먼저 보인다.
+          바로 옆 홀드와 지금 홀드의 나머지 뷰를 같은 크기로 미리 걸어두면
+          브라우저가 캐시에서 바로 꺼내 쓴다. 눈에는 안 보이고 읽히지도 않는다.
+        */}
+        <div aria-hidden className="pointer-events-none absolute h-0 w-0 overflow-hidden">
+          {preload.map((m) => (
+            <Image
+              key={m.src}
+              src={m.src}
+              alt=""
+              width={m.width}
+              height={m.height}
+              quality={90}
+              sizes="(max-width: 768px) 100vw, 62vw"
+            />
+          ))}
+        </div>
 
         {/*
           설명은 흐름에서 빼서 고정 위치에 건다.
