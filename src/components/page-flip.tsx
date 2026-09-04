@@ -53,9 +53,13 @@ export function PageFlip({ pages, className = "" }: PageFlipProps) {
   const bookRef = useRef<HTMLDivElement | null>(null);
   const leafRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  /** 넘긴 장수. 핸들러가 즉시 읽어야 해서 ref가 진실이고 state는 표시용이다 */
+  /**
+   * 넘긴 장수. 핸들러가 즉시 읽어야 해서 ref가 진실이다.
+   * 아래 쪽수 표시를 뺀 뒤로 값을 읽는 곳이 없어져서 state는 이름을 버렸다 —
+   * 그래도 남겨두는 건 넘길 때마다 리렌더가 한 번 돌아야 커서 상태가 제때 갱신되기 때문이다.
+   */
   const turnedRef = useRef(0);
-  const [turned, setTurned] = useState(0);
+  const [, setTurned] = useState(0);
 
   /** 지금 돌고 있는 장 — 새 입력이 들어오면 이걸 먼저 앉힌다 */
   const flyingRef = useRef<{ leaf: number; to: number } | null>(null);
@@ -290,10 +294,6 @@ export function PageFlip({ pages, className = "" }: PageFlipProps) {
     };
   }, []);
 
-  /** 표지는 혼자, 그 뒤로는 두 쪽씩 */
-  const spreadLabel =
-    turned === 0 ? "1" : `${turned * 2}–${Math.min(turned * 2 + 1, pages.length)}`;
-
   return (
     <div className={className}>
       <div
@@ -345,12 +345,6 @@ export function PageFlip({ pages, className = "" }: PageFlipProps) {
         ))}
       </div>
 
-      <p className="text-label text-ink-muted mt-6 flex justify-center gap-6 uppercase">
-        <span>Drag to turn</span>
-        <span>
-          {spreadLabel} / {pages.length}
-        </span>
-      </p>
     </div>
   );
 }

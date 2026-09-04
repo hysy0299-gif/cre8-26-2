@@ -2,7 +2,7 @@
   /* 페이지 비율 1000:1415 */
   --page-ratio: 0.7067;
   /* 펼침면(2쪽)이 폭·높이 모두에 들어가도록 둘 중 작은 쪽을 택한다 */
-  --page-h: min(78vh, 66vw);
+  --page-h: min(88vh, 74vw);
   --page-w: calc(var(--page-h) * var(--page-ratio));
 
   position: relative;
