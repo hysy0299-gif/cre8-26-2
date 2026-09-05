@@ -73,7 +73,7 @@ uniform float uContact;    // 0..1 contact
 uniform float uResidue;    // 0..1 decaying trace
 uniform float uEnergy;     // 0..1 pointer speed
 uniform float uHold;       // 0..1 scroll progress
-uniform vec3  uSeed;       // this visitor's hold: lobes, axis, surface
+uniform vec4  uSeed;       // this visitor's hold: layout, axis, surface, family
 uniform float uSize;       // 0..1, how much material ends up in it
 
 mat2 rot(float a){ float s = sin(a), c = cos(a); return mat2(c, -s, s, c); }
@@ -109,6 +109,8 @@ float sdArm(vec3 p, vec3 b, float r1, float r2){
   return length(p - b * t) - mix(r1, r2, t);
 }
 
+float smax(float a, float b, float k){ return -smin(-a, -b, k); }
+
 float holdSDF(vec3 pos, float h)
 {
   float loose = 1.0 - h;
@@ -117,8 +119,8 @@ float holdSDF(vec3 pos, float h)
   pos.yz *= rot(uRot.y);
 
   vec3 q = pos;
-  q.x *= 1.0 + max(-uSeed.y, 0.0) * 0.55;   // SPROUT and GLIDER run long
-  q.y *= 1.0 + max( uSeed.y, 0.0) * 0.48;   // RAY and SLOPE run wide
+  q.x *= 1.0 + max(-uSeed.y, 0.0) * 0.55;   // runs long
+  q.y *= 1.0 + max( uSeed.y, 0.0) * 0.48;   // runs wide
   q.z *= mix(1.45, 2.20, h);                // relief, it bolts to a wall
 
   // still finding its body while the fist is closing
@@ -126,31 +128,65 @@ float holdSDF(vec3 pos, float h)
             cos(q.z * 2.3 - iTime * 0.5),
             sin(q.x * 2.1 + iTime * 0.4)) * loose * 0.42;
 
-  float lobes = floor(1.0 + uSeed.x * 3.999);
+  float base = uSeed.x * 6.28318530;
+  float sd;
 
-  // a hub the arms grow out of, so the result is one cast body rather
-  // than a bundle of parts
-  float sd = length(q) - mix(0.28, 0.38, fract(uSeed.x * 5.1));
+  // Four families, because the archive has four. Varying arm counts
+  // inside one family only ever produced variations on one object.
+  float kind = floor(uSeed.w * 3.999);
 
-  for (float i = 0.0; i < 4.0; i++) {
-    if (i >= lobes) break;
-    float s1 = hash11(i * 7.3 + uSeed.x * 17.0);
-    float s2 = hash11(i * 3.9 + uSeed.x * 11.0);
+  if (kind < 0.5) {
+    // RADIAL — a hub with tapered arms. CLOVER, FIN, BUBBLE.
+    // The fusion radius stays well under the arm radius; go near it and
+    // the arms dissolve and the whole thing collapses to a ball.
+    float lobes = floor(2.0 + fract(uSeed.x * 5.1) * 2.999);
+    sd = length(q) - mix(0.26, 0.36, fract(uSeed.x * 3.3));
+    for (float i = 0.0; i < 4.0; i++) {
+      if (i >= lobes) break;
+      float s1 = hash11(i * 7.3 + uSeed.x * 17.0);
+      float s2 = hash11(i * 3.9 + uSeed.x * 11.0);
+      float ang = 6.28318530 * (i / lobes) + base + (s1 - 0.5) * 1.15;
+      vec3  dir = vec3(cos(ang), sin(ang), (s1 - 0.5) * 0.34) * mix(0.56, 1.06, s2);
+      sd = smin(sd, sdArm(q, dir, mix(0.24, 0.34, s2), mix(0.06, 0.19, s1)), 0.16);
+    }
 
-    // even spacing and equal lengths would read as a flower. Only
-    // CLOVER is symmetric; the other sixteen are not.
-    float ang = 6.28318530 * (i / lobes) + uSeed.x * 3.1 + (s1 - 0.5) * 1.15;
-    vec3  dir = vec3(cos(ang), sin(ang), (s1 - 0.5) * 0.34) * mix(0.54, 1.04, s2);
+  } else if (kind < 1.5) {
+    // BLADE — one long body, thick at the middle, thin at the ends.
+    // SPROUT, GLIDER, SLOPE. The most directional silhouette there is.
+    vec3 dir = vec3(cos(base), sin(base), 0.0);
+    float hub  = mix(0.28, 0.40, fract(uSeed.x * 5.1));
+    float back = mix(0.30, 0.95, fract(uSeed.x * 7.3));   // asymmetric on purpose
+    sd = sdArm(q,  dir * mix(0.80, 1.25, fract(uSeed.x * 9.7)), hub, mix(0.04, 0.13, uSeed.z));
+    sd = smin(sd, sdArm(q, -dir * back, hub, mix(0.07, 0.22, fract(uSeed.x * 2.9))), 0.20);
 
-    // fat where it leaves the hub, thin at the tip. The fusion radius
-    // has to stay well under the arm radius or the arms dissolve and it
-    // collapses back into a ball — that was the whole problem before.
-    sd = smin(sd, sdArm(q, dir, mix(0.24, 0.34, s2), mix(0.06, 0.19, s1)), 0.16);
+  } else if (kind < 2.5) {
+    // SCOOP — a body with a bite taken out. SHELL, VALLEY, CUSHION.
+    // The concave face is what your hand actually catches on.
+    float rb = mix(0.60, 0.84, fract(uSeed.x * 3.3));
+    vec3  e  = vec3(1.0, mix(0.74, 1.26, fract(uSeed.x * 6.1)), 1.0);
+    float body = length(q / e) - rb;
+    vec3  c = vec3(cos(base), sin(base), -0.62) * mix(0.46, 0.86, fract(uSeed.x * 9.1));
+    float bite = length(q - c) - rb * mix(0.70, 1.02, fract(uSeed.x * 4.3));
+    sd = smax(body, -bite, 0.13);
+
+  } else {
+    // STACK — two or three lumps resting on each other. KNOT, MELT,
+    // RIPPLE. Fused just enough to be one object, not enough to merge.
+    float count = 2.0 + step(0.55, fract(uSeed.x * 4.7));
+    sd = 1e9;
+    for (float i = 0.0; i < 3.0; i++) {
+      if (i >= count) break;
+      float s1 = hash11(i * 5.7 + uSeed.x * 13.0);
+      float s2 = hash11(i * 2.3 + uSeed.x * 19.0);
+      float ang = base + i * 2.4 + (s1 - 0.5);
+      vec3  c = vec3(cos(ang), sin(ang), (s2 - 0.5) * 0.5) * mix(0.20, 0.62, s2);
+      sd = smin(sd, length(q - c) - mix(0.32, 0.54, s1), 0.10);
+    }
   }
 
   // one feature, not a texture. VEIL stays smooth, CRUMPLE keeps a crease.
-  float feature = sin(q.x * 4.1 + uSeed.x * 6.0) * sin(q.y * 3.5 - uSeed.x * 4.2)
-                + sin(q.z * 5.2 + uSeed.x * 2.0) * 0.4;
+  float feature = sin(q.x * 4.1 + base) * sin(q.y * 3.5 - base * 0.7)
+                + sin(q.z * 5.2 + base * 0.3) * 0.4;
   sd -= feature * mix(0.008, 0.055, uSeed.z) * h;
 
   return sd;
@@ -360,7 +396,7 @@ if (!gl) {
     residue:0,
     energy:0,
     down:0, hold:0,
-    seed:[0, 0, 0], armed:true, size:0.5,
+    seed:[0, 0, 0, 0], armed:true, size:0.5,
     lastX:0, lastY:0, seen:false,
     lastInput: performance.now(),
     label:"IDLE"
@@ -373,6 +409,7 @@ if (!gl) {
     S.seed[0] = Math.random();
     S.seed[1] = Math.random() * 2 - 1;
     S.seed[2] = Math.random();
+    S.seed[3] = Math.random();
   }
   rollSeed();
 
@@ -782,7 +819,7 @@ if (!gl) {
     gl.uniform1f(uResidue, S.residue);
     gl.uniform1f(uEnergy, S.energy);
     gl.uniform1f(uHold, S.hold);
-    gl.uniform3f(uSeed, S.seed[0], S.seed[1], S.seed[2]);
+    gl.uniform4f(uSeed, S.seed[0], S.seed[1], S.seed[2], S.seed[3]);
     gl.uniform1f(uSize, S.size);
 
     gl.bindVertexArray(vao);
