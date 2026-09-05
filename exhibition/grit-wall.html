@@ -1168,7 +1168,9 @@ if (!gl) {
   let radius = MIN_RADIUS;
 
   function layout(){
-    radius = Math.max(MIN_RADIUS, Math.min(cssW, cssH) * 0.85);
+    // read the window, not the canvas: the dome lays out before the
+    // renderer has measured anything
+    radius = Math.max(MIN_RADIUS, Math.min(innerWidth, innerHeight) * 0.85);
     const step = 360 / SEGMENTS;
     const tiles = [...domeInner.children];
     const rows = Math.max(1, Math.ceil(tiles.length / SEGMENTS));
