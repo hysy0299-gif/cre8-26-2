@@ -293,7 +293,9 @@ float hash21(vec2 p){
 float silhouette(float th){
   float s = uForm.z < 0.0 ? -1.0 : 1.0;
   float u = (s * th + uForm.w) / 6.28318530;
-  return texture(uProfile, vec2(u, (uForm.x + 0.5) / 17.0)).r * 2.5;
+  float a = texture(uProfile, vec2(u, (uForm.x + 0.5) / 17.0)).r * 2.5;
+  float b = texture(uProfile, vec2(u, (uForm.y + 0.5) / 17.0)).r * 2.5;
+  return mix(a, b, abs(uForm.z));
 }
 
 // The photo's own shading inside the outline: what caught the key light
@@ -305,7 +307,8 @@ float reliefAt(float row, float phi, float rn){
 }
 float relief(float th, float rn){
   float s = uForm.z < 0.0 ? -1.0 : 1.0;
-  return reliefAt(uForm.x, s * th + uForm.w, rn);
+  float phi = s * th + uForm.w;
+  return mix(reliefAt(uForm.x, phi, rn), reliefAt(uForm.y, phi, rn), abs(uForm.z));
 }
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord)
@@ -398,7 +401,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
     // and gathers into the outline of a real hold. Same warp as the
     // stretch above, just shaped by the archive instead of an ellipse.
     float tone = 1.0;
-    if (h > 0.002) {
+    {
       float th  = atan(p.y, p.x);
       float sil = silhouette(th);
       // how far out toward the outline this point sits: 0 centre, 1 edge
