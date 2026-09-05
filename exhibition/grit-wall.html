@@ -97,8 +97,24 @@
     opacity:1; transition:opacity .6s;
     pointer-events:none;
   }
-  #wall { display:none; }
-  body.wall #wall { display:grid; }
+  #wall {
+    opacity:0; visibility:hidden;
+    transition:opacity .9s ease, visibility 0s .9s;
+  }
+  body.wall #wall, body.handover #wall {
+    opacity:1; visibility:visible;
+    transition:opacity .9s ease;
+  }
+
+  /* the field steps back while the wall is up */
+  #field, #guide, #camview { transition:opacity .9s ease; }
+  body.wall #field, body.handover #field,
+  body.wall #guide, body.handover #guide,
+  body.wall #camview, body.handover #camview { opacity:0; }
+
+  /* the one just added arrives a beat later than the rest */
+  #wall figure.fresh { animation:land .9s ease .35s both; }
+  @keyframes land { from { opacity:0; } to { opacity:1; } }
   #wall figure {
     margin:0; display:grid; place-items:center;
   }
@@ -382,6 +398,7 @@ const HAND_CENTER_Y = 0.44;
 
 const SETTLE_AFTER  = 2.0;                         // s of no movement before the count starts
 const STILL_AFTER   = 1.0;                         // s of counting, then the frame is taken
+const HANDOVER_FOR  = 4200;                        // ms the wall stays up after a hold joins it
 const NOTE_AFTER    = 45;                          // s of silence before the note goes up as is
 
 // silhouettes of the archive's holds, from the photos in HOLDER (C):
@@ -1029,6 +1046,7 @@ if (!gl) {
     })
     .catch(() => {});
   let bakePending = false, noteT = 0, lastGuide = null, lastCount = null;
+  let freshId = null, handoverT = 0;
 
   function saveWall(){
     if (remote) return;        // the server holds it
@@ -1061,6 +1079,7 @@ if (!gl) {
     wallEl.replaceChildren(...wall.slice(start, start + PAGE).map(en => {
       const f  = document.createElement("figure");
       const im = new Image(); im.src = en.img; im.alt = "";
+      if (en.id === freshId) f.className = "fresh";
       f.append(im);
       return f;
     }));
@@ -1131,9 +1150,15 @@ if (!gl) {
       hold: HOLD_NAMES[S.form[0]], form: S.form.slice(), size: S.size,
       img: S.baked
     });
-    sendHold(wall[wall.length - 1]);
+    const added = wall[wall.length - 1];
+    freshId = added.id;
+    sendHold(added);
     saveWall(); renderWall();
     noteEl.hidden = true;
+
+    // the handover: field out, wall in, and back again for the next visitor
+    document.body.classList.add("handover");
+    handoverT = performance.now() + HANDOVER_FOR;
     noteName.blur(); noteText.blur();
 
     // RESET — the field lets go; the next visitor gets a fresh hold
@@ -1264,6 +1289,13 @@ if (!gl) {
       frameEl.style.opacity = show ? (0.18 + t * 0.42).toFixed(3) : 0;
       const c = S.fixed ? "" : String(Math.max(1, Math.ceil(STILL_AFTER - S.stillT)));
       if (c !== lastCount) { countEl.textContent = c; lastCount = c; }
+    }
+
+    if (handoverT && now > handoverT) {
+      handoverT = 0; freshId = null;
+      document.body.classList.remove("handover");
+      renderWall();
+      S.lastInput = now;
     }
 
     if (now - S.lastInput > RESET_AFTER) resetAll();
