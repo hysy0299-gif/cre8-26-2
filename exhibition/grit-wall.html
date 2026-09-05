@@ -213,12 +213,15 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
   // FIT sets the margin once it has gathered: the furthest point of any
   // hold, at default size, sits at packed * FIT from the centre
   const float FIT = 0.75;
-  float packed = mix(1.30, 5.20, uSize) * uTuneB.x;
+  float packed = mix(2.05, 3.60, uSize) * uTuneB.x;
   // the fit wraps the contact and residue terms too. Added after it,
   // they were multiplied back up by each hold's reach, and the long
   // holds came out a third larger than the round ones.
   float loose  = 6.6    + uContact * 1.15 + uResidue * 0.30;
-  float gather = (packed + uContact * 1.15 + uResidue * 0.30) * uFit * FIT;
+  // the pinch also moves the whole body toward and away from the camera,
+  // which is what actually reads as size — the shell radius alone barely does
+  float gather = (packed + uContact * 1.15 + uResidue * 0.30) * uFit * FIT
+                 * mix(0.66, 1.24, uSize);
   float radius = mix(loose, gather, h);
   // the churn has to die down as it sets, or it never reads as a thing
   float agit  = (uEnergy * 2.2 + uResidue * 0.9 + uProx * 0.5) * mix(1.0, uTuneA.w, h);
