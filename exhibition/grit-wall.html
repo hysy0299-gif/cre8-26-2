@@ -75,6 +75,7 @@ uniform float uEnergy;     // 0..1 pointer speed
 uniform float uHold;       // 0..1 scroll progress
 uniform vec3  uSeed;       // this visitor's hold: lobes, axis, surface
 uniform float uSize;       // 0..1, how much material ends up in it
+uniform vec4  uSeed2;      // -1..1 each: lobe scale, shell stretch, twin amount, twin angle
 uniform vec4  uTuneA;      // gathered: exposure, fold lo, fold hi, churn left
 uniform vec4  uTuneB;      // gathered: radius scale, y squash, z squash, -
 
@@ -137,6 +138,23 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
   // keep their relief. Above 0.4 it stops reading as one hold.
   float fold  = mix(1.62, mix(uTuneA.y, uTuneA.z, uSeed.z), h);
 
+  // --- the rest of the seed. Zero on every axis is the look that was
+  // signed off; these only push away from it, and only so far.
+
+  // which scale of lobe carries the fold. Positive moves weight into the
+  // middle harmonics (a few clear lobes, CLOVER / FIN); negative leaves
+  // one big body with fine relief on it (VEIL / CRUMPLE).
+  vec4 wk = vec4(1.0) + uSeed2.x * vec4(-0.55, 0.95, 0.95, -0.55);
+
+  // the shell itself stretched, on top of the frame squash. This is what
+  // separates SPROUT from BUBBLE more than anything else does.
+  vec3 an = vec3(1.0) + vec3(uSeed2.y, -uSeed2.y, 0.0) * 0.38;
+
+  // a second, smaller shell alongside the first. KNOT, BUBBLE, MELT are
+  // all two bodies that never quite merged. Off below |0.35|.
+  float twin = smoothstep(0.35, 0.90, abs(uSeed2.z));
+  vec3  toff = vec3(cos(uSeed2.w * 3.14159), sin(uSeed2.w * 3.14159), 0.0) * sign(uSeed2.z);
+
   for (float i = 0.0; i < 100.0; i++)
   {
     p = z * dir;
@@ -147,9 +165,14 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
     p.z *= mix(1.0, uTuneB.z, h);   // and shallower, so it sits like relief
     a = a * dot(a, p) - cross(a, p);
     for (float k = 1.0; k < 5.0; k += 1.0) {
-      a += sin(a * k + t + agit * 0.8).yzx / k * fold;
+      float w = k < 1.5 ? wk.x : k < 2.5 ? wk.y : k < 3.5 ? wk.z : wk.w;
+      a += sin(a * k + t + agit * 0.8).yzx / k * fold * w;
     }
-    d = abs(length(a) - radius) / 6.0;
+    d = abs(length(a * an) - radius) / 6.0;
+    if (twin > 0.0) {
+      float d2 = abs(length((a - toff * radius * 0.55) * an) - radius * 0.72) / 6.0;
+      d = mix(d, min(d, d2), twin);
+    }
     z += d;
     o += vec4(3.0, 8.0, z, 0.0) / max(d, 1e-4) / 9e4;
   }
@@ -229,7 +252,7 @@ if (!gl) {
         uProx = U("uProx"), uContact = U("uContact"),
         uResidue = U("uResidue"), uEnergy = U("uEnergy"),
         uHold = U("uHold"), uSeed = U("uSeed"), uSize = U("uSize"),
-        uTuneA = U("uTuneA"), uTuneB = U("uTuneB");
+        uTuneA = U("uTuneA"), uTuneB = U("uTuneB"), uSeed2 = U("uSeed2");
 
 
   // ---- state -------------------------------------------------------
@@ -244,7 +267,7 @@ if (!gl) {
     residue:0,
     energy:0,
     down:0, hold:0,
-    seed:[0, 0, 0], armed:true, size:0.5,
+    seed:[0, 0, 0], seed2:[0, 0, 0, 0], armed:true, size:0.5,
     lastX:0, lastY:0, seen:false,
     lastInput: performance.now(),
     label:"IDLE"
@@ -257,6 +280,7 @@ if (!gl) {
     S.seed[0] = Math.random();
     S.seed[1] = Math.random() * 2 - 1;
     S.seed[2] = Math.random();
+    for (let i = 0; i < 4; i++) S.seed2[i] = Math.random() * 2 - 1;
   }
   rollSeed();
 
@@ -512,7 +536,7 @@ if (!gl) {
     dbgCtx.fillStyle = "#010101";
     dbgCtx.fillText(
       "hold " + S.hold.toFixed(2) + "  size " + S.size.toFixed(2) +
-      "  seed " + S.seed.map(v => v.toFixed(2)).join("/"), 5, DH - 5);
+      "  seed " + S.seed.map(v => v.toFixed(2)).join("/") + " " + S.seed2.map(v => v.toFixed(1)).join("/"), 5, DH - 5);
     drawKnobs();
   }
 
@@ -606,7 +630,7 @@ if (!gl) {
     dbgCtx.fillText(
       "grip " + Sense.grip.toFixed(2) + "  pinch " + Sense.pinch.toFixed(2) +
       "  hands " + Sense.hands.map(h => h.side).join("") +
-      "  seed " + S.seed.map(v => v.toFixed(2)).join("/"), 5, DH - 5);
+      "  seed " + S.seed.map(v => v.toFixed(2)).join("/") + " " + S.seed2.map(v => v.toFixed(1)).join("/"), 5, DH - 5);
     drawKnobs();
   }
 
@@ -715,6 +739,7 @@ if (!gl) {
     gl.uniform1f(uEnergy, S.energy);
     gl.uniform1f(uHold, S.hold);
     gl.uniform3f(uSeed, S.seed[0], S.seed[1], S.seed[2]);
+    gl.uniform4f(uSeed2, S.seed2[0], S.seed2[1], S.seed2[2], S.seed2[3]);
     gl.uniform1f(uSize, S.size);
     gl.uniform4f(uTuneA, T.expo, T.foldLo, T.foldHi, T.agit);
     gl.uniform4f(uTuneB, T.radius, T.py, T.pz, 0);
