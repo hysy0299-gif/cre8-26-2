@@ -67,6 +67,7 @@ uniform float uContact;    // 0..1 contact
 uniform float uResidue;    // 0..1 decaying trace
 uniform float uEnergy;     // 0..1 pointer speed
 uniform float uHold;       // 0..1 scroll progress
+uniform vec3  uSeed;       // this visitor's hold: lobes, axis, surface
 
 mat2 rot(float a){ float s = sin(a), c = cos(a); return mat2(c, -s, s, c); }
 
@@ -104,17 +105,33 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
   float radius = mix(6.6, 2.8, h) + uContact * 1.15 + uResidue * 0.30;
   float agit  = uEnergy * 2.2 + uResidue * 0.9 + uProx * 0.5;
 
+  // --- SEED. The archive's own seventeen set the range, nothing wider:
+  // one to four rounded lobes, a single dominant axis, one surface
+  // feature, and a back that flattens because it mounts to a wall.
+
+  // where the lobes sit. This is the whole silhouette — CLOVER's four
+  // arms and KNOT's two crossing lumps differ only here.
+  vec3 axis = vec3(4.0, 2.0, 0.0) + uSeed.x * vec3(2.7, 1.9, 3.3);
+
+  // scaling a coordinate up compresses the mass along it. Negative seed
+  // runs it long like SPROUT, positive runs it flat and wide like RAY.
+  float stretchX = mix(1.0, 1.0  + max(-uSeed.y, 0.0) * 0.55, h);
+  float stretchY = mix(1.0, 1.12 + max( uSeed.y, 0.0) * 0.42, h);
+
   // this is what does the gathering. Over 1.0 the folding overwhelms the
   // shell and it breaks into separate scattered lobes; dropping toward 0.2
   // merges them into one mass, with just enough relief left to read as a hold.
-  float fold  = mix(1.62, 0.18, h);
+  // VEIL and CUSHION settle almost smooth; CRUMPLE, WHORL and RIPPLE
+  // keep their relief. Above 0.4 it stops reading as one hold.
+  float fold  = mix(1.62, mix(0.07, 0.36, uSeed.z), h);
 
   for (float i = 0.0; i < 100.0; i++)
   {
     p = z * dir;
-    a = normalize(cos(vec3(4.0, 2.0, 0.0) + t - d * 10.0 + agit));
+    a = normalize(cos(axis + t - d * 10.0 + agit));
     p.z += 8.0 - pull;
-    p.y *= mix(1.0, 1.12, h);   // settles wider than tall
+    p.x *= stretchX;
+    p.y *= stretchY;            // settles wider than tall
     p.z *= mix(1.0, 1.22, h);   // and shallower, so it sits like relief
     a = a * dot(a, p) - cross(a, p);
     for (float k = 1.0; k < 5.0; k += 1.0) {
@@ -210,7 +227,7 @@ if (!gl) {
         uPointPx = U("uPointPx"), uAnchorPx = U("uAnchorPx"),
         uProx = U("uProx"), uContact = U("uContact"),
         uResidue = U("uResidue"), uEnergy = U("uEnergy"),
-        uHold = U("uHold");
+        uHold = U("uHold"), uSeed = U("uSeed");
 
 
   // ---- state -------------------------------------------------------
@@ -225,10 +242,21 @@ if (!gl) {
     residue:0,
     energy:0,
     down:0, hold:0,
+    seed:[0, 0, 0], armed:true,
     lastX:0, lastY:0, seen:false,
     lastInput: performance.now(),
     label:"IDLE"
   };
+
+  // One hold per visitor. Rolled when the field goes from empty to
+  // occupied, never while a mass is still on screen — nobody watches
+  // their own hold change shape under them.
+  function rollSeed(){
+    S.seed[0] = Math.random();
+    S.seed[1] = Math.random() * 2 - 1;
+    S.seed[2] = Math.random();
+  }
+  rollSeed();
 
   // radial bands, in units of frame height, measured from the centre
   const R_PROX = 0.80, R_CONTACT = 0.42, R_CORE = 0.20;
@@ -431,7 +459,8 @@ if (!gl) {
       dbgCtx.fillStyle = "#010101";
       dbgCtx.font = "11px monospace";
       dbgCtx.fillText(
-        "a" + Sense.area.toFixed(3) + "  e" + Sense.energy.toFixed(2) + "  s" + Sense.spread.toFixed(2), 5, DH - 5);
+        "a" + Sense.area.toFixed(3) + "  e" + Sense.energy.toFixed(2) + "  s" + Sense.spread.toFixed(2)
+        + "   seed " + S.seed.map(v => v.toFixed(2)).join("/"), 5, DH - 5);
     }
   }
 
@@ -494,6 +523,9 @@ if (!gl) {
       senseIdle();
     }
 
+    if (S.prox < 0.02) S.armed = true;
+    else if (S.armed && S.prox > 0.05 && S.hold < 0.05) { rollSeed(); S.armed = false; }
+
     if (now - S.lastInput > RESET_AFTER) resetAll();
 
     const k  = 1 - Math.pow(0.001, sec);
@@ -534,6 +566,7 @@ if (!gl) {
     gl.uniform1f(uResidue, S.residue);
     gl.uniform1f(uEnergy, S.energy);
     gl.uniform1f(uHold, S.hold);
+    gl.uniform3f(uSeed, S.seed[0], S.seed[1], S.seed[2]);
 
     gl.bindVertexArray(vao);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
