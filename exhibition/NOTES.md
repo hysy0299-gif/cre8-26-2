@@ -160,13 +160,20 @@ PROXIMITY와 RESIDUE에 도달할 수 없었다 — 실질 1상태. 반경 방�
 `?mouse` 카메라 건너뜀 · `?fix` 입력 없이 완전히 뭉친 상태 고정 ·
 `?pick=CLOVER` 그 홀드만 · `?rot=1.2` 회전 · `?exhibition` 오버레이 끄고 45초 리셋
 
-헤드리스 확인:
-```
-chrome --headless=new --use-angle=swiftshader --enable-unsafe-swiftshader \
-  --window-size=900,700 --virtual-time-budget=6000 --screenshot=out.png \
-  "http://localhost:4321/?fix&pick=CLOVER&mouse&exhibition"
-```
-SwiftShader라 느려서 렌더 스케일이 0.55까지 떨어진다. 형태 판단용이지 화질 판단용은 아니다.
+**모델이 죽던 원인 (해결).** 캔버스 id가 `dbg`였다. 브라우저는 id 있는 요소를
+`window.dbg`로 노출하고, MediaPipe wasm 로더는 전역 `dbg()` 함수를 부른다 →
+`dbg is not a function`으로 GPU·CPU 전부 실패. id를 `camview`로 바꿨다. 이 페이지에
+`dbg`라는 id·전역은 다시 만들지 말 것.
+
+오른쪽 아래 캠은 카메라가 열리는 즉시 뜬다(`body.cam`). 모델이 아직이면 그 위에
+상태 문구(`LOADING MODEL`, `GPU FAILED / …`)가 보이고, 돌기 시작하면 사라진다.
+`D`는 손잡이·수치 오버레이(개발용), 기본 꺼짐.
+
+확인은 디버그 프로토콜로 한다 — 타임아웃 기반 `--screenshot`은 로딩 중에 찍혀서
+믿을 수 없다. 스크래치패드의 `cdp.mjs`: Chrome을 `--remote-debugging-port=9222`
+(+ `--use-fake-device-for-media-stream --use-fake-ui-for-media-stream`로 가짜 카메라)
+로 띄우고, 페이지를 열어 N초간 콘솔·예외를 모은 뒤 스크린샷. 콘솔에
+`hand model running on GPU`가 찍히면 손 추적 경로 전체가 산 것이다.
 
 ## 작업 방식
 
