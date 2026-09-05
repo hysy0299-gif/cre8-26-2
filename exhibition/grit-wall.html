@@ -118,10 +118,15 @@ float holdSDF(vec3 pos, float h)
   pos.xz *= rot(uRot.x);
   pos.yz *= rot(uRot.y);
 
+  // Scaling a coordinate stretches the field along it, which makes every
+  // distance below an overestimate. Keep the factors — the march has to
+  // divide them back out or it steps straight through the body.
+  float sx = 1.0 + max(-uSeed.y, 0.0) * 0.55;   // runs long
+  float sy = 1.0 + max( uSeed.y, 0.0) * 0.48;   // runs wide
+  float sz = mix(1.45, 2.20, h);                // relief, it bolts to a wall
+
   vec3 q = pos;
-  q.x *= 1.0 + max(-uSeed.y, 0.0) * 0.55;   // runs long
-  q.y *= 1.0 + max( uSeed.y, 0.0) * 0.48;   // runs wide
-  q.z *= mix(1.45, 2.20, h);                // relief, it bolts to a wall
+  q.x *= sx; q.y *= sy; q.z *= sz;
 
   // still finding its body while the fist is closing
   q += vec3(sin(q.y * 2.7 + iTime * 0.6),
@@ -189,7 +194,10 @@ float holdSDF(vec3 pos, float h)
                 + sin(q.z * 5.2 + base * 0.3) * 0.4;
   sd -= feature * mix(0.008, 0.055, uSeed.z) * h;
 
-  return sd;
+  // and here is the division. The view looks straight down the squashed
+  // axis, so without it the body is invisible exactly when it is most
+  // flattened — which is when it has finished gathering.
+  return sd / max(max(sx, sy), sz);
 }
 
 vec3 holdNormal(vec3 pos, float h)
@@ -305,7 +313,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
     for (int i = 0; i < 80; i++) {
       sdist = holdSDF((sro + srd * sz) * bulk, h) / bulk;
       if (sdist < 0.0013) { shit = true; break; }
-      sz += sdist * 0.70;
+      sz += sdist * 0.78;
       if (sz > 7.0) break;
     }
 
