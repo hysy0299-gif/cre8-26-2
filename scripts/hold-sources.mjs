@@ -202,15 +202,6 @@ export const HOLD_SOURCES = [
     description: [],
   },
   {
-    slug: "chalk",
-    file: "CHALK.png",
-    name: "Chalk",
-    description: [
-      "CHALK is shaped like a mass carved from climbing chalk, with irregular folds",
-      "and a powdery white surface that emphasizes its dry, porous tactility.",
-    ],
-  },
-  {
     slug: "crumple",
     file: "CRUMPLE.png",
     name: "Crumple",

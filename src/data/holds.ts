@@ -200,21 +200,6 @@ export const holds: Hold[] = [
   },
   {
     index: "HOLD 14",
-    slug: "chalk",
-    name: "Chalk",
-    description: [
-      "CHALK is shaped like a mass carved from climbing chalk, with irregular folds",
-      "and a powdery white surface that emphasizes its dry, porous tactility.",
-    ],
-    spec: { form: "—", material: "—", surface: "—", interaction: "—" },
-    hero: {"src":"/img/holds/chalk-67f77150.webp","alt":"Chalk hold","width":2200,"height":2165},
-
-    sections: [],
-    processRefs: [],
-    order: 14,
-  },
-  {
-    index: "HOLD 15",
     slug: "crumple",
     name: "Crumple",
     description: [
@@ -226,10 +211,10 @@ export const holds: Hold[] = [
     views: [{"src":"/img/holds/crumple-f79df5e8.webp","alt":"Crumple hold","width":1868,"height":2200},{"src":"/img/holds/views/crumple-01-0216d98a.webp","alt":"Crumple hold, view 1","width":1600,"height":1600},{"src":"/img/holds/views/crumple-02-9835c301.webp","alt":"Crumple hold, view 2","width":1600,"height":1600},{"src":"/img/holds/views/crumple-03-1aac7cf4.webp","alt":"Crumple hold, view 3","width":1600,"height":1600}],
     sections: [],
     processRefs: [],
-    order: 15,
+    order: 14,
   },
   {
-    index: "HOLD 16",
+    index: "HOLD 15",
     slug: "melt",
     name: "Melt",
     description: [
@@ -241,10 +226,10 @@ export const holds: Hold[] = [
     views: [{"src":"/img/holds/melt-a6f43caa.webp","alt":"Melt hold","width":1654,"height":2200},{"src":"/img/holds/views/melt-01-62f79dca.webp","alt":"Melt hold, view 1","width":1600,"height":1600},{"src":"/img/holds/views/melt-02-c9472102.webp","alt":"Melt hold, view 2","width":1600,"height":1600},{"src":"/img/holds/views/melt-03-313e5803.webp","alt":"Melt hold, view 3","width":1600,"height":1600}],
     sections: [],
     processRefs: [],
-    order: 16,
+    order: 15,
   },
   {
-    index: "HOLD 17",
+    index: "HOLD 16",
     slug: "veil",
     name: "Veil",
     description: [
@@ -256,7 +241,7 @@ export const holds: Hold[] = [
     views: [{"src":"/img/holds/veil-72c87d0e.webp","alt":"Veil hold","width":2200,"height":1504},{"src":"/img/holds/views/veil-01-8952b23e.webp","alt":"Veil hold, view 1","width":1600,"height":1600},{"src":"/img/holds/views/veil-02-32859fea.webp","alt":"Veil hold, view 2","width":1600,"height":1600},{"src":"/img/holds/views/veil-03-f4dc0287.webp","alt":"Veil hold, view 3","width":1600,"height":1600}],
     sections: [],
     processRefs: [],
-    order: 17,
+    order: 16,
   },
 ];
 

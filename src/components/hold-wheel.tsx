@@ -85,6 +85,16 @@ const MAX_VH = 68;
  */
 const TEXT_TOP_VH = 50 + MAX_VH / 2 + 2.5;
 
+/**
+ * 상세 뷰 사진의 높이(vh).
+ *
+ * 대표 이미지는 배경을 딴 컷아웃이라 홀드가 프레임을 꽉 채우지만,
+ * 뷰는 배경이 살아 있는 사진이라 같은 높이로 놓으면 그 안의 홀드가 절반으로 보인다.
+ * 사진을 자르지 않기로 했으므로 대신 사진 자체를 한계까지 키운다 —
+ * 그 한계가 곧 MAX_VH다(그보다 크면 아래 설명 글에 닿는다).
+ */
+const VIEW_VH = MAX_VH;
+
 function holdHeightVh(width: number, height: number) {
   const r = width / height;
   return Math.min(MAX_VH, SQUARE_VH / Math.sqrt(r));
@@ -212,7 +222,8 @@ export function HoldWheel({ holds }: { holds: Hold[] }) {
                   sizes="(max-width: 768px) 100vw, 62vw"
                   className="w-auto object-contain"
                   style={{
-                    maxHeight: `min(100%, ${holdHeightVh(shown.width, shown.height)}vh)`,
+                    // 0번은 대표 이미지(컷아웃), 그 뒤는 사진 — 크기 기준이 다르다
+                    maxHeight: `min(100%, ${view > 0 ? VIEW_VH : holdHeightVh(shown.width, shown.height)}vh)`,
                   }}
                 />
               ) : null}
