@@ -28,6 +28,13 @@
     opacity:0; pointer-events:none;
   }
   body.tune #dbg { opacity:1; }
+  #dump {
+    position:fixed; left:68px; top:68px; width:520px; height:60vh;
+    font:11px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    color:#010101; background:#F5F5F5; border:1px solid #010101;
+    padding:10px; resize:none; outline:none;
+  }
+  #dump[hidden] { display:none; }
   #num {
     position:fixed; left:68px; top:38px;
     font:12px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -41,6 +48,7 @@
   <video  id="cam" playsinline muted></video>
   <canvas id="dbg" width="360" height="270"></canvas>
   <div id="num"></div>
+  <textarea id="dump" hidden spellcheck="false"></textarea>
 
 <script type="module">
 // Loaded only after a camera opens. Nothing is fetched on a machine
@@ -636,19 +644,25 @@ if (!gl) {
     } else if (e.key >= "0" && e.key <= "9") {
       knob = (e.key === "0" ? 10 : Number(e.key)) - 1;
       if (knob >= KNOBS.length) return;
-    } else if (e.key === "e" || e.key === "E") {
-      const out = {};
-      for (const i in TUNES) out[HOLD_NAMES[i] || i] = TUNES[i];
-      const json = JSON.stringify(out, null, 1);
-      console.log(json);
-      if (navigator.clipboard) navigator.clipboard.writeText(json).catch(() => {});
-      numEl.textContent = String(S.pick + 1) + "  copied";
-      setTimeout(() => { numEl.textContent = String(S.pick + 1); }, 1500);
-      return;
     } else if (e.key === "Backspace") {
       for (const [k, v] of KNOBS) T[k] = v;
     } else return;
     try { localStorage.setItem("grit-tune-holds", JSON.stringify(TUNES)); } catch (err) {}
+  });
+
+  const dumpEl = document.getElementById("dump");
+  addEventListener("keydown", e => {
+    if (e.target === dumpEl) { if (e.key === "Escape") { dumpEl.hidden = true; canvas.focus(); } return; }
+    if (e.key !== "e" && e.key !== "E") return;
+    if (!dumpEl.hidden) { dumpEl.hidden = true; return; }
+    const out = {};
+    for (const i in TUNES) out[HOLD_NAMES[i] || i] = TUNES[i];
+    const json = JSON.stringify(out, null, 1);
+    console.log(json);
+    if (navigator.clipboard) navigator.clipboard.writeText(json).catch(() => {});
+    dumpEl.value = json;
+    dumpEl.hidden = false;
+    dumpEl.focus(); dumpEl.select();
   });
 
   function drawKnobs(){
