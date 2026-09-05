@@ -97,7 +97,8 @@
     opacity:1; transition:opacity .6s;
     pointer-events:none;
   }
-  body.making #wall { opacity:0; }
+  #wall { display:none; }
+  body.wall #wall { display:grid; }
   #wall figure {
     margin:0; display:grid; place-items:center;
   }
@@ -1013,6 +1014,7 @@ if (!gl) {
   let remote = false;          // set once the server answers
   let wall = [];
 
+  if (QS.has("wall")) document.body.classList.add("wall");
   if (QS.has("clear")) { try { localStorage.removeItem(WALL_KEY); } catch (e) {} }
   else { try { wall = JSON.parse(localStorage.getItem(WALL_KEY) || "[]"); } catch (e) { wall = []; } }
 
@@ -1026,7 +1028,7 @@ if (!gl) {
       renderWall();
     })
     .catch(() => {});
-  let bakePending = false, noteT = 0, making = false, lastGuide = null, lastCount = null;
+  let bakePending = false, noteT = 0, lastGuide = null, lastCount = null;
 
   function saveWall(){
     if (remote) return;        // the server holds it
@@ -1046,7 +1048,11 @@ if (!gl) {
     })
       .then(r => r.ok ? r.json() : Promise.reject(new Error("HTTP " + r.status)))
       .then(d => { if (d.entry && d.entry.url) entry.img = d.entry.url; })
-      .catch(err => console.error("hold not saved to the wall:", err));
+      .catch(err => {
+        console.error("hold not saved to the wall:", err);
+        guideEl.textContent = "NOT SAVED — THE WALL IS UNREACHABLE";
+        lastGuide = null;
+      });
   }
 
   // only the latest page is up. Earlier pages are kept, not shown yet.
@@ -1259,10 +1265,6 @@ if (!gl) {
       const c = S.fixed ? "" : String(Math.max(1, Math.ceil(STILL_AFTER - S.stillT)));
       if (c !== lastCount) { countEl.textContent = c; lastCount = c; }
     }
-
-    // the wall only shows itself when nobody is at it
-    const nowMaking = S.prox > 0.05 || S.hold > 0.05 || S.fixed;
-    if (nowMaking !== making) { making = nowMaking; document.body.classList.toggle("making", making); }
 
     if (now - S.lastInput > RESET_AFTER) resetAll();
 
