@@ -613,7 +613,8 @@ if (!gl) {
   //
   // The labels come back assuming a mirrored image. If the two hands
   // turn out swapped in the room, flip this and nothing else.
-  const HAND_FLIP = true;
+  let handSwap = false;
+  try { handSwap = localStorage.getItem("grit-hand-swap") === "1"; } catch (e) {}
 
   // measured in hand widths (wrist to middle knuckle), so they hold at
   // any distance. Read the live numbers off the D overlay to retune.
@@ -715,6 +716,13 @@ if (!gl) {
 
   addEventListener("keydown", e => {
     if (S.phase === "NOTE") return;
+    if (e.key === "h" || e.key === "H") {
+      handSwap = !handSwap;
+      try { localStorage.setItem("grit-hand-swap", handSwap ? "1" : "0"); } catch (err) {}
+      guideEl.textContent = handSwap ? "HANDS SWAPPED" : "HANDS NORMAL";
+      lastGuide = null;
+      return;
+    }
     if (e.key === "d" || e.key === "D") {
       tune = !tune;
       document.body.classList.toggle("tune", tune);
@@ -870,12 +878,13 @@ if (!gl) {
       return { lm, label, mx: 1 - lm[9].x };   // mirrored screen x
     });
     if (found.length >= 2) {
-      // position decides. Rightmost on screen is the right hand.
       found.sort((a, b) => b.mx - a.mx);
       found.forEach((h, i) => { h.side = i === 0 ? "R" : "L"; });
     } else {
-      for (const h of found) h.side = (h.label === "Right") !== HAND_FLIP ? "R" : "L";
+      // a raised right hand rests right of centre; HAND_CENTER_X is where
+      for (const h of found) h.side = h.mx >= HAND_CENTER_X - 0.10 ? "R" : "L";
     }
+    if (handSwap) for (const h of found) h.side = h.side === "R" ? "L" : "R";
     Sense.hands = found;
 
     const right = found.find(h => h.side === "R");
