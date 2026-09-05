@@ -28,12 +28,19 @@
     opacity:0; pointer-events:none;
   }
   body.tune #dbg { opacity:1; }
+  #num {
+    position:fixed; left:68px; top:38px;
+    font:12px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    letter-spacing:.08em; color:#010101; opacity:.55;
+    white-space:pre; pointer-events:none;
+  }
 </style>
 </head>
 <body>
   <div id="field"><canvas id="c"></canvas></div>
   <video  id="cam" playsinline muted></video>
   <canvas id="dbg" width="360" height="270"></canvas>
+  <div id="num"></div>
 
 <script type="module">
 // Loaded only after a camera opens. Nothing is fetched on a machine
@@ -247,7 +254,13 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
 void main(){ mainImage(fragColor, gl_FragCoord.xy); }
 `;
 
-const EXHIBITION = new URLSearchParams(location.search).has("exhibition");
+const QS = new URLSearchParams(location.search);
+const EXHIBITION = QS.has("exhibition");
+// dev only, for screenshots: ?fix holds the mass gathered with no input,
+// ?pick=CLOVER names the hold unblended, ?rot=1.2 turns it
+const DEV_FIX  = QS.has("fix");
+const DEV_PICK = QS.get("pick");
+const DEV_ROT  = parseFloat(QS.get("rot") || "0");
 if (EXHIBITION) document.body.classList.add("exhibition");
 
 const RESET_AFTER   = EXHIBITION ? 45000 : 90000;  // ms of no input before reset
@@ -280,6 +293,7 @@ const PROFILES = [
 
 const canvas  = document.getElementById("c");
 const fieldEl = document.getElementById("field");
+const numEl   = document.getElementById("num");
 const stateEl = document.getElementById("state");
 const gl = canvas.getContext("webgl2", { premultipliedAlpha: false, antialias: false });
 
@@ -362,7 +376,7 @@ if (!gl) {
     residue:0,
     energy:0,
     down:0, hold:0,
-    seed:[0, 0, 0], seed2:[0, 0, 0, 0], form:[0, 1, 0, 0], armed:true, size:0.5,
+    seed:[0, 0, 0], seed2:[0, 0, 0, 0], form:[0, 1, 0, 0], pick:-1, armed:true, size:0.5,
     lastX:0, lastY:0, seen:false,
     lastInput: performance.now(),
     label:"IDLE"
@@ -384,6 +398,14 @@ if (!gl) {
     S.form[0] = a; S.form[1] = b;
     S.form[2] = (Math.random() < 0.5 ? -1 : 1) * Math.random() * 0.6;
     S.form[3] = Math.random() * 6.28318;
+    // tuning pass: one hold at a time, unblended, unturned, numbered
+    S.pick = (S.pick + 1) % PROFILES.length;
+    S.form[0] = S.pick; S.form[1] = S.pick; S.form[2] = 0; S.form[3] = 0;
+    numEl.textContent = String(S.pick + 1);
+    if (DEV_PICK) {
+      const i = Math.max(0, HOLD_NAMES.indexOf(DEV_PICK.toUpperCase()));
+      S.form[0] = i; S.form[1] = i; S.form[2] = 0; S.form[3] = DEV_ROT;
+    }
   }
   rollSeed();
 
@@ -578,9 +600,17 @@ if (!gl) {
     ["relief", 0.30, 0.05, "the photo's light and dark, as depth"],
     ["dome",   0.35, 0.05, "back rounds off toward the edge"]
   ];
-  const T = {};
-  for (const [k, v] of KNOBS) T[k] = v;
-  try { Object.assign(T, JSON.parse(localStorage.getItem("grit-tune") || "{}")); } catch (e) {}
+  const HOLD_TUNE = {};
+  let TUNES = {};
+  try { TUNES = JSON.parse(localStorage.getItem("grit-tune-holds") || "{}"); } catch (e) {}
+  function tuneFor(i){
+    if (!TUNES[i]) {
+      TUNES[i] = {};
+      for (const [k, v] of KNOBS) TUNES[i][k] = (HOLD_TUNE[i] || {})[k] ?? v;
+    }
+    return TUNES[i];
+  }
+  let T = tuneFor(0);
   let knob = 0;
 
   addEventListener("keydown", e => {
@@ -592,10 +622,19 @@ if (!gl) {
       T[k] = Math.round((T[k] + d * step * (e.shiftKey ? 5 : 1)) * 1000) / 1000;
     } else if (e.key >= "1" && e.key <= String(KNOBS.length)) {
       knob = Number(e.key) - 1;
+    } else if (e.key === "e" || e.key === "E") {
+      const out = {};
+      for (const i in TUNES) out[HOLD_NAMES[i] || i] = TUNES[i];
+      const json = JSON.stringify(out, null, 1);
+      console.log(json);
+      if (navigator.clipboard) navigator.clipboard.writeText(json).catch(() => {});
+      numEl.textContent = String(S.pick + 1) + "  copied";
+      setTimeout(() => { numEl.textContent = String(S.pick + 1); }, 1500);
+      return;
     } else if (e.key === "0") {
       for (const [k, v] of KNOBS) T[k] = v;
     } else return;
-    try { localStorage.setItem("grit-tune", JSON.stringify(T)); } catch (err) {}
+    try { localStorage.setItem("grit-tune-holds", JSON.stringify(TUNES)); } catch (err) {}
   });
 
   function drawKnobs(){
@@ -803,6 +842,8 @@ if (!gl) {
     if (S.prox < 0.02) S.armed = true;
     else if (S.armed && S.prox > 0.05 && S.hold < 0.05) { rollSeed(); S.armed = false; }
 
+    if (DEV_FIX) { S.down = 1; S.hold = 1; S.tprox = 1; S.lastInput = now; }
+
     if (now - S.lastInput > RESET_AFTER) resetAll();
 
     const k  = 1 - Math.pow(0.001, sec);
@@ -848,6 +889,7 @@ if (!gl) {
     gl.uniform4f(uForm, S.form[0], S.form[1], S.form[2], S.form[3]);
     gl.uniform4f(uTuneC, T.relief, T.dome, 0, 0);
     gl.uniform1f(uSize, S.size);
+    T = tuneFor(S.form[0]);
     gl.uniform4f(uTuneA, T.expo, T.foldLo, T.foldHi, T.agit);
     gl.uniform4f(uTuneB, T.radius, T.py, T.pz, 0);
 
