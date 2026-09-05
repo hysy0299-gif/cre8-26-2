@@ -1,10 +1,15 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // 이 배포는 게스트 인터랙션만 내보낸다. 첫 화면이 곧 전시 화면이고,
-  // 사이트는 여기 없다 — 사이트는 사이트대로 따로 배포한다.
-  async rewrites() {
-    return [{ source: "/", destination: "/exhibition/grit-wall.html" }];
+  // 이 배포는 게스트 인터랙션만 내보낸다. 사이트 파일은 저장소에 그대로
+  // 있지만 주소로는 안 나온다.
+  //
+  // rewrite가 아니라 redirect다. rewrite는 app 라우터의 페이지보다 나중에
+  // 걸려서 루트가 계속 사이트 메인으로 잡혔다.
+  async redirects() {
+    return [
+      { source: "/", destination: "/exhibition/grit-wall.html", permanent: false },
+    ];
   },
   images: {
     // 홀드 사진은 화면 높이에 맞춰 커진다. 기본 목록에는 2048 위가 없어서
