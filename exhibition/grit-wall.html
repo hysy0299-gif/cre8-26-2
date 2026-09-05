@@ -35,7 +35,14 @@
   <video  id="cam" playsinline muted></video>
   <canvas id="dbg" width="360" height="270"></canvas>
 
-<script>
+<script type="module">
+import { FilesetResolver, HandLandmarker } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/vision_bundle.mjs";
+
+// the gallery machine needs to reach these, or they get vendored into
+// exhibition/vendor/ before the show. Nothing else is fetched.
+const WASM_BASE = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm";
+const MODEL_URL = "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task";
+
 /* ------------------------------------------------------------------
    MG-N01-S04 — magnetic axis, speculative.
 
@@ -68,6 +75,7 @@ uniform float uResidue;    // 0..1 decaying trace
 uniform float uEnergy;     // 0..1 pointer speed
 uniform float uHold;       // 0..1 scroll progress
 uniform vec3  uSeed;       // this visitor's hold: lobes, axis, surface
+uniform float uSize;       // 0..1, how much material ends up in it
 
 mat2 rot(float a){ float s = sin(a), c = cos(a); return mat2(c, -s, s, c); }
 
@@ -102,7 +110,9 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
 
   // the extent is what makes the gathering readable: loose material spans
   // most of the frame, the packed mass is about a third of it
-  float radius = mix(6.6, 2.8, h) + uContact * 1.15 + uResidue * 0.30;
+  // the left hand's pinch decides how much material the hold keeps
+  float packed = mix(2.10, 3.75, uSize);
+  float radius = mix(6.6, packed, h) + uContact * 1.15 + uResidue * 0.30;
   float agit  = uEnergy * 2.2 + uResidue * 0.9 + uProx * 0.5;
 
   // --- SEED. The archive's own seventeen set the range, nothing wider:
@@ -180,14 +190,6 @@ if (EXHIBITION) document.body.classList.add("exhibition");
 const RESET_AFTER   = EXHIBITION ? 45000 : 90000;  // ms of no input before reset
 const RESIDUE_DECAY = 0.16;                        // per second, ~7s tail
 
-// share of the camera frame that has to be moving for each band.
-// A hand is a small part of the frame — the earlier numbers were sized
-// for a whole body, so CONTACT sat out of reach and nothing ever
-// gathered. Read them off the D overlay, do not guess them.
-const A_PRESENT = 0.002;   // a hand is in frame
-const A_NEAR    = 0.010;   // it is reaching
-const A_CLOSE   = 0.055;   // it has hold
-
 const canvas  = document.getElementById("c");
 const fieldEl = document.getElementById("field");
 const stateEl = document.getElementById("state");
@@ -227,7 +229,7 @@ if (!gl) {
         uPointPx = U("uPointPx"), uAnchorPx = U("uAnchorPx"),
         uProx = U("uProx"), uContact = U("uContact"),
         uResidue = U("uResidue"), uEnergy = U("uEnergy"),
-        uHold = U("uHold"), uSeed = U("uSeed");
+        uHold = U("uHold"), uSeed = U("uSeed"), uSize = U("uSize");
 
 
   // ---- state -------------------------------------------------------
@@ -242,7 +244,7 @@ if (!gl) {
     residue:0,
     energy:0,
     down:0, hold:0,
-    seed:[0, 0, 0], armed:true,
+    seed:[0, 0, 0], armed:true, size:0.5,
     lastX:0, lastY:0, seen:false,
     lastInput: performance.now(),
     label:"IDLE"
@@ -305,64 +307,94 @@ if (!gl) {
   });
   canvas.addEventListener("contextmenu", e => e.preventDefault());
 
-  // ---- camera ------------------------------------------------------
-  // No hand model and no library. A slowly-adapting background frame is
-  // subtracted from the live one; what is left over is the visitor. The
-  // threshold is derived from the frame itself every tick, so a dim room
-  // and a lit room both work and there is no calibration step on site.
+  // ---- hands -------------------------------------------------------
+  // MediaPipe HandLandmarker: 21 joints per hand, up to two, each with a
+  // left/right label. Every reading below is a joint distance divided by
+  // the hand's own width, so none of it shifts when the visitor stands
+  // closer to or further from the camera — only the gesture moves it.
   //
-  //   cx, cy   centre of movement, 0..1, mirrored to match the room
-  //   area     share of the frame moving  -> nearness, stands in for depth
-  //   energy   how hard it is moving      -> material character
-  //   spread   how scattered it is        -> fingertip vs upper body
+  //   grip    right hand, fingertips drawn toward the palm  -> gathering
+  //   pinch   left hand, thumb tip to index tip             -> size
+  //   x, y    right hand centre, mirrored to match the room
+  //   energy  how fast that hand is travelling
   //
-  // getUserMedia needs a secure context: Firefox refuses the camera on
-  // file:// and Chrome re-prompts every launch. Serve it over localhost.
-  // ?mouse skips the camera entirely and falls back to the pointer.
+  // The labels come back assuming a mirrored image. If the two hands
+  // turn out swapped in the room, flip this and nothing else.
+  const HAND_FLIP = false;
 
-  const SW = 160, SH = 120, SN = SW * SH;
+  // measured in hand widths (wrist to middle knuckle), so they hold at
+  // any distance. Read the live numbers off the D overlay to retune.
+  const GRIP_OPEN  = 2.30, GRIP_SHUT = 1.20;
+  const PINCH_SHUT = 0.30, PINCH_OPEN = 1.40;
 
   const Sense = {
-    on:false, denied:false,
-    cx:0.5, cy:0.5, area:0, energy:0, spread:0,
-    lum:new Float32Array(SN), bg:null
+    on:false, denied:false, note:"OPENING CAMERA",
+    grip:0, pinch:0.5, x:0.5, y:0.5, energy:0, present:0,
+    lastX:0.5, lastY:0.5, seen:false, lastFrame:-1,
+    hands:[]
   };
 
   const camEl = document.getElementById("cam");
   const dbgEl = document.getElementById("dbg");
   const DW = 360, DH = 270;
   const dbgCtx = dbgEl.getContext("2d");
-  dbgCtx.imageSmoothingEnabled = false;   // show the sensor's own pixels
-  const sctx = document.createElement("canvas").getContext("2d", { willReadFrequently:true });
-  sctx.canvas.width = SW; sctx.canvas.height = SH;
-  const mctx = document.createElement("canvas").getContext("2d");
-  mctx.canvas.width = SW; mctx.canvas.height = SH;
 
-  // three ways this ends, and the overlay has to be able to tell them
-  // apart: asked for, refused, or never offered in the first place. An
-  // embedding frame without a camera permission removes the API outright,
-  // so there is no rejection to catch and nothing prompts the visitor.
-  const media = navigator.mediaDevices;
-  if (new URLSearchParams(location.search).has("mouse")) {
-    Sense.denied = true;
-  } else if (!media || !media.getUserMedia) {
-    Sense.denied = true;
-    console.warn("no camera API here — pointer fallback. Needs a secure context and a frame that allows the camera.");
-  } else {
-    media.getUserMedia({ video:{ width:320, height:240, facingMode:"user" }, audio:false })
-      .then(stream => { camEl.srcObject = stream; return camEl.play(); })
-      .then(() => { Sense.on = true; })
-      .catch(err => {
-        Sense.denied = true;
-        console.warn("camera unavailable, pointer fallback:", err.name);
-      });
+  let landmarker = null;
+
+  const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
+  const norm = (v, lo, hi) => Math.min(1, Math.max(0, (v - lo) / (hi - lo)));
+
+  // wrist to middle knuckle. The one length on a hand that barely moves
+  // whatever the fingers are doing, so it is the unit for everything else.
+  const handWidth = L => Math.max(1e-4, dist(L[0], L[9]));
+
+  // open hand holds its fingertips about two hand widths from the wrist;
+  // a closed fist brings them to roughly one
+  function gripOf(L){
+    const w = handWidth(L);
+    const reach = (dist(L[8], L[0]) + dist(L[12], L[0]) + dist(L[16], L[0]) + dist(L[20], L[0])) / (4 * w);
+    return 1 - norm(reach, GRIP_SHUT, GRIP_OPEN);
   }
 
-  // the sensor's own noise. Under this nothing is moving, whatever the maths says
-  const DIFF_FLOOR = 0.035;
+  const pinchOf = L => norm(dist(L[4], L[8]) / handWidth(L), PINCH_SHUT, PINCH_OPEN);
+
+  async function startHands(){
+    if (new URLSearchParams(location.search).has("mouse")) {
+      Sense.denied = true; Sense.note = "POINTER"; return;
+    }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      Sense.denied = true; Sense.note = "NO CAMERA API"; return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video:{ width:640, height:480, facingMode:"user" }, audio:false
+      });
+      camEl.srcObject = stream;
+      await camEl.play();
+    } catch (err) {
+      Sense.denied = true; Sense.note = "NO CAMERA / " + err.name;
+      console.warn("camera unavailable, pointer fallback:", err.name);
+      return;
+    }
+    try {
+      Sense.note = "LOADING MODEL";
+      const fileset = await FilesetResolver.forVisionTasks(WASM_BASE);
+      landmarker = await HandLandmarker.createFromOptions(fileset, {
+        baseOptions:{ modelAssetPath: MODEL_URL, delegate:"GPU" },
+        numHands: 2,
+        runningMode: "VIDEO"
+      });
+      Sense.on = true;
+    } catch (err) {
+      Sense.denied = true; Sense.note = "MODEL FAILED";
+      console.warn("hand model failed, pointer fallback:", err);
+    }
+  }
+  startHands();
+
+  const DIFF_FLOOR = 0;      // kept out of the way; nothing reads it now
   let tune = !EXHIBITION;
   document.body.classList.toggle("tune", tune);
-  let maskData = null;
 
   addEventListener("keydown", e => {
     if (e.key === "d" || e.key === "D") {
@@ -371,97 +403,109 @@ if (!gl) {
     }
   });
 
-  // a blocked camera and a broken overlay look identical if the panel
-  // just stays empty, so say which one it is. Tuning overlay only —
-  // this never reaches the exhibition screen.
+  // the overlay has to say which of the several ways this can fail
+  // happened, or a blocked camera and a broken page look the same.
+  // Tuning overlay only — it never reaches the exhibition screen.
   function senseIdle(){
     if (!tune) return;
     dbgCtx.fillStyle = "#F5F5F5";
     dbgCtx.fillRect(0, 0, DW, DH);
     dbgCtx.fillStyle = "#010101";
     dbgCtx.font = "11px monospace";
-    dbgCtx.fillText(Sense.denied ? "NO CAMERA / POINTER" : "OPENING CAMERA", 8, 20);
+    dbgCtx.fillText(Sense.note, 8, 20);
   }
 
   function sense(sec){
-    if (!Sense.on || camEl.readyState < 2) return;
+    if (!landmarker || camEl.readyState < 2) return;
 
-    // mirrored, so moving right in the room moves right on the wall
-    sctx.setTransform(-1, 0, 0, 1, SW, 0);
-    sctx.drawImage(camEl, 0, 0, SW, SH);
-    const px = sctx.getImageData(0, 0, SW, SH).data;
+    // detectForVideo wants one call per decoded frame and a rising clock
+    if (camEl.currentTime === Sense.lastFrame) { drawTune(); return; }
+    Sense.lastFrame = camEl.currentTime;
 
-    const lum = Sense.lum;
-    for (let i = 0, j = 0; i < SN; i++, j += 4) {
-      lum[i] = (px[j] * 0.299 + px[j+1] * 0.587 + px[j+2] * 0.114) / 255;
+    let result;
+    try {
+      result = landmarker.detectForVideo(camEl, performance.now());
+    } catch (err) { return; }
+
+    const found = [];
+    for (let i = 0; i < result.landmarks.length; i++) {
+      const label = result.handedness[i] && result.handedness[i][0]
+        ? result.handedness[i][0].categoryName : "Right";
+      const side = (label === "Right") !== HAND_FLIP ? "R" : "L";
+      found.push({ side, lm: result.landmarks[i] });
     }
+    Sense.hands = found;
 
-    // first frame seeds the background, it is not movement
-    if (!Sense.bg) { Sense.bg = Float32Array.from(lum); return; }
-    const bg = Sense.bg;
+    const right = found.find(h => h.side === "R");
+    const left  = found.find(h => h.side === "L");
 
-    // mean difference sets the threshold, so it rides on whatever the
-    // room actually looks like rather than on a number picked at a desk
-    let mean = 0;
-    for (let i = 0; i < SN; i++) mean += Math.abs(lum[i] - bg[i]);
-    mean /= SN;
-    const thr = Math.max(DIFF_FLOOR, mean * 2.4);
+    const k = 1 - Math.pow(0.02, sec);
+    const kp = 1 - Math.pow(0.05, sec);
 
-    // moments of everything over the threshold
-    let cnt = 0, sx = 0, sy = 0, sxx = 0, syy = 0, sd = 0;
-    if (tune && !maskData) maskData = dbgCtx.createImageData(SW, SH);
-    const mask = tune ? maskData : null;
+    // the right hand does the gathering and carries the position
+    if (right) {
+      const target = gripOf(right.lm);
+      Sense.grip += (target - Sense.grip) * k;
 
-    // a visitor who stops moving dissolves into the background over ~4s.
-    // that is deliberate: standing still is how you let the hold go.
-    const decay = Math.min(1, sec * 0.25);
-
-    for (let i = 0; i < SN; i++) {
-      const d = Math.abs(lum[i] - bg[i]);
-      if (d > thr) {
-        const x = (i % SW) / SW, y = ((i / SW) | 0) / SH;
-        cnt++; sx += x; sy += y; sxx += x * x; syy += y * y; sd += d;
-        if (mask) {
-          const j = i * 4;
-          mask.data[j] = 203; mask.data[j+1] = 215; mask.data[j+2] = 212; mask.data[j+3] = 170;
-        }
-      } else if (mask) {
-        mask.data[i * 4 + 3] = 0;
+      const c = right.lm[9];
+      const sx = 1 - c.x, sy = c.y;        // mirrored, so right means right
+      if (Sense.seen) {
+        const speed = Math.hypot(sx - Sense.lastX, sy - Sense.lastY) / Math.max(sec, 1e-3);
+        Sense.energy = Math.min(1, Sense.energy * 0.82 + speed * 0.35);
       }
-      bg[i] += (lum[i] - bg[i]) * decay;
+      Sense.lastX = sx; Sense.lastY = sy; Sense.seen = true;
+      Sense.x += (sx - Sense.x) * k;
+      Sense.y += (sy - Sense.y) * k;
+    } else {
+      Sense.grip += (0 - Sense.grip) * k;
+      Sense.energy *= Math.pow(0.2, sec);
+      Sense.seen = false;
     }
 
-    const area = cnt / SN;
-    const ka = 1 - Math.pow(0.05, sec);
-    Sense.area   += (area - Sense.area) * ka;
-    Sense.energy  = Math.min(1, (sd / SN) * 26);
-
-    // the centroid only moves while there is something to average.
-    // otherwise it would drift to the middle every time the room stills.
-    if (cnt > SN * 0.002) {
-      const mx = sx / cnt, my = sy / cnt;
-      const k = 1 - Math.pow(0.02, sec);
-      Sense.cx += (mx - Sense.cx) * k;
-      Sense.cy += (my - Sense.cy) * k;
-      const vx = Math.max(0, sxx / cnt - mx * mx);
-      const vy = Math.max(0, syy / cnt - my * my);
-      Sense.spread += (Math.sqrt(vx + vy) - Sense.spread) * k;
+    // the left hand only sets the size, and holds it when it drops out
+    if (left) {
+      const target = pinchOf(left.lm);
+      Sense.pinch += (target - Sense.pinch) * k;
     }
 
-    if (mask) {
-      dbgCtx.drawImage(sctx.canvas, 0, 0, DW, DH);   // what the camera sees
-      mctx.putImageData(mask, 0, 0);
-      dbgCtx.drawImage(mctx.canvas, 0, 0, DW, DH);   // what counts as movement, over it
-      dbgCtx.fillStyle = "#010101";
-      dbgCtx.fillRect(Sense.cx * DW - 4, Sense.cy * DH - 4, 8, 8);
-      dbgCtx.fillStyle = "#F5F5F5";
-      dbgCtx.fillRect(0, DH - 16, DW, 16);
-      dbgCtx.fillStyle = "#010101";
-      dbgCtx.font = "11px monospace";
-      dbgCtx.fillText(
-        "a" + Sense.area.toFixed(3) + "  e" + Sense.energy.toFixed(2) + "  s" + Sense.spread.toFixed(2)
-        + "   seed " + S.seed.map(v => v.toFixed(2)).join("/"), 5, DH - 5);
+    Sense.present += ((found.length ? 1 : 0) - Sense.present) * kp;
+    drawTune();
+  }
+
+  const BONES = [[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],
+                 [9,13],[13,14],[14,15],[15,16],[13,17],[17,18],[18,19],[19,20],[0,17]];
+
+  function drawTune(){
+    if (!tune) return;
+    dbgCtx.save();
+    dbgCtx.setTransform(-1, 0, 0, 1, DW, 0);
+    dbgCtx.drawImage(camEl, 0, 0, DW, DH);
+    dbgCtx.restore();
+
+    for (const h of Sense.hands) {
+      const P = i => [(1 - h.lm[i].x) * DW, h.lm[i].y * DH];
+      dbgCtx.strokeStyle = h.side === "R" ? "#010101" : "#CBD7D4";
+      dbgCtx.lineWidth = 1.5;
+      dbgCtx.beginPath();
+      for (const [a, b] of BONES) {
+        const p = P(a), q = P(b);
+        dbgCtx.moveTo(p[0], p[1]); dbgCtx.lineTo(q[0], q[1]);
+      }
+      dbgCtx.stroke();
+      dbgCtx.fillStyle = dbgCtx.strokeStyle;
+      const w = P(0);
+      dbgCtx.font = "10px monospace";
+      dbgCtx.fillText(h.side, w[0] + 4, w[1] + 12);
     }
+
+    dbgCtx.fillStyle = "#F5F5F5";
+    dbgCtx.fillRect(0, DH - 16, DW, 16);
+    dbgCtx.fillStyle = "#010101";
+    dbgCtx.font = "11px monospace";
+    dbgCtx.fillText(
+      "grip " + Sense.grip.toFixed(2) + "  pinch " + Sense.pinch.toFixed(2) +
+      "  hands " + Sense.hands.map(h => h.side).join("") +
+      "  seed " + S.seed.map(v => v.toFixed(2)).join("/"), 5, DH - 5);
   }
 
   function resetAll(){
@@ -500,25 +544,26 @@ if (!gl) {
     if (Sense.on) {
       sense(sec);
 
-      // area is the only depth cue there is: the visitor's silhouette
-      // grows as they come toward the camera
-      S.tprox    = smoothstep(A_PRESENT, A_NEAR,  Sense.area);
-      S.tcontact = smoothstep(A_NEAR,    A_CLOSE, Sense.area);
+      // a hand in frame is the approach. Closing it is the hold —
+      // there is no button, the fist is the button.
+      S.tprox    = Sense.present;
+      S.tcontact = Sense.grip;
+      S.down     = Sense.grip;
 
-      S.tnx = Sense.cx * 2 - 1;
-      S.tny = Sense.cy * 2 - 1;
-      S.tpx = Sense.cx * cssW;
-      S.tpy = (1 - Sense.cy) * cssH;   // the shader wants y up
+      S.tnx = Sense.x * 2 - 1;
+      S.tny = Sense.y * 2 - 1;
+      S.tpx = Sense.x * cssW;
+      S.tpy = (1 - Sense.y) * cssH;   // the shader wants y up
       S.energy = Sense.energy;
 
-      // there is no button to hold down. Staying close is the holding.
-      S.down = S.tcontact > 0.5 ? 1 : 0;
+      // the left hand keeps its last size when it leaves the frame
+      S.size += (Sense.pinch - S.size) * (1 - Math.pow(0.05, sec));
 
-      if (S.tcontact > 0.5) {
+      if (Sense.grip > 0.5) {
         S.ax = S.tpx; S.ay = S.tpy;
         S.residue = Math.max(S.residue, 0.85);
       }
-      if (S.tprox > 0.02) S.lastInput = now;
+      if (Sense.present > 0.02) S.lastInput = now;
     } else {
       senseIdle();
     }
@@ -539,7 +584,7 @@ if (!gl) {
     if (!Sense.on) S.energy *= Math.pow(0.12, sec);
 
     // asymmetric: ~1s to gather, ~0.6s to break apart again
-    S.hold += (S.down - S.hold) * (1 - Math.pow(S.down ? 0.07 : 0.004, sec));
+    S.hold += (S.down - S.hold) * (1 - Math.pow(S.down > S.hold ? 0.07 : 0.004, sec));
 
     // the field's own clock slows as it settles, so the churn winds down
     // instead of being cut off
@@ -567,6 +612,7 @@ if (!gl) {
     gl.uniform1f(uEnergy, S.energy);
     gl.uniform1f(uHold, S.hold);
     gl.uniform3f(uSeed, S.seed[0], S.seed[1], S.seed[2]);
+    gl.uniform1f(uSize, S.size);
 
     gl.bindVertexArray(vao);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
