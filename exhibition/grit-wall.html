@@ -213,7 +213,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
   // FIT sets the margin once it has gathered: the furthest point of any
   // hold, at default size, sits at packed * FIT from the centre
   const float FIT = 0.75;
-  float packed = mix(2.10, 3.75, uSize) * uTuneB.x;
+  float packed = mix(1.30, 5.20, uSize) * uTuneB.x;
   // the fit wraps the contact and residue terms too. Added after it,
   // they were multiplied back up by each hold's reach, and the long
   // holds came out a third larger than the round ones.
@@ -569,8 +569,8 @@ if (!gl) {
 
   // measured in hand widths (wrist to middle knuckle), so they hold at
   // any distance. Read the live numbers off the D overlay to retune.
-  const GRIP_OPEN  = 1.90, GRIP_SHUT = 1.05;
-  const PINCH_SHUT = 0.30, PINCH_OPEN = 1.40;
+  const GRIP_OPEN  = 1.62, GRIP_SHUT = 1.02;
+  const PINCH_SHUT = 0.34, PINCH_OPEN = 1.15;
 
   const Sense = {
     on:false, denied:false, note:"OPENING CAMERA",
@@ -598,10 +598,13 @@ if (!gl) {
   function gripOf(L){
     const w = handWidth(L);
     const reach = (dist(L[8], L[0]) + dist(L[12], L[0]) + dist(L[16], L[0]) + dist(L[20], L[0])) / (4 * w);
-    return 1 - norm(reach, GRIP_SHUT, GRIP_OPEN);
+    // pull the ends out so a flat hand reads as 0 and a fist as 1,
+    // instead of both stopping short
+    const t = norm(reach, GRIP_SHUT, GRIP_OPEN);
+    return 1 - norm(t, 0.12, 0.88);
   }
 
-  const pinchOf = L => norm(dist(L[4], L[8]) / handWidth(L), PINCH_SHUT, PINCH_OPEN);
+  const pinchOf = L => norm(norm(dist(L[4], L[8]) / handWidth(L), PINCH_SHUT, PINCH_OPEN), 0.08, 0.92);
 
   async function startHands(){
     if (new URLSearchParams(location.search).has("mouse")) {
