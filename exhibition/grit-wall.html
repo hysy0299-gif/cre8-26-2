@@ -92,6 +92,7 @@
     display:grid;
     grid-template-columns:repeat(auto-fill, var(--dot));
     grid-auto-rows:var(--dot);
+    padding:var(--dot) 0 0 var(--dot);
     align-content:start; justify-content:start;
     opacity:1; transition:opacity .6s;
     pointer-events:none;
@@ -101,7 +102,7 @@
     margin:0; display:grid; place-items:center;
   }
   /* square, centred on its dot, and well inside the spacing */
-  #wall img { display:block; width:72%; aspect-ratio:1; object-fit:contain; mix-blend-mode:multiply; }
+  #wall img { display:block; width:72%; aspect-ratio:1; object-fit:contain; }
 
   #dump {
     position:fixed; left:68px; top:68px; width:520px; height:60vh;
@@ -1035,11 +1036,25 @@ if (!gl) {
     const c = document.createElement("canvas");
     c.width = BAKE; c.height = BAKE;
     const cx = c.getContext("2d");
-    cx.fillStyle = "#F5F5F5"; cx.fillRect(0, 0, BAKE, BAKE);
     cx.drawImage(canvas, sx, sy, side, side, 0, 0, BAKE, BAKE);
-    let url = c.toDataURL("image/webp", 0.86);
-    if (!url.startsWith("data:image/webp")) url = c.toDataURL("image/jpeg", 0.86);
-    return url;
+
+    // Turn the paper into transparency. Alpha is how far a pixel sits
+    // below GRIT WHITE, and the colour is un-composited from it, so
+    // laying this back on GRIT WHITE reproduces the frame exactly while
+    // it leaves no square behind on the grid.
+    const P = 245;
+    const im = cx.getImageData(0, 0, BAKE, BAKE), d = im.data;
+    for (let i = 0; i < d.length; i += 4) {
+      const lum = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+      const a = Math.min(1, Math.max(0, (P - lum) / P));
+      if (a < 0.004) { d[i + 3] = 0; continue; }
+      for (let k = 0; k < 3; k++) {
+        d[i + k] = Math.min(255, Math.max(0, Math.round((d[i + k] - P * (1 - a)) / a)));
+      }
+      d[i + 3] = Math.round(a * 255);
+    }
+    cx.putImageData(im, 0, 0);
+    return c.toDataURL("image/png");
   }
 
   function fix(){
