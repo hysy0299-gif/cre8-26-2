@@ -73,6 +73,14 @@
     font:inherit; letter-spacing:inherit; color:#010101; text-transform:uppercase;
   }
   #note input::placeholder { color:#010101; opacity:.32; }
+  #retake {
+    align-self:start;
+    padding:0; border:0; background:none;
+    font:inherit; letter-spacing:inherit; color:#010101; opacity:.55;
+    text-decoration:underline; text-underline-offset:4px;
+    cursor:pointer;
+  }
+  #retake:hover, #retake:focus-visible { opacity:1; outline:none; }
 
   /* the wall: what the room sees when nobody is making anything */
   #wall {
@@ -122,6 +130,7 @@
   <form id="note" hidden autocomplete="off">
     <input id="noteName" placeholder="NAME" maxlength="24">
     <input id="noteText" placeholder="NOTE" maxlength="60">
+    <button type="button" id="retake">TAKE IT AGAIN</button>
   </form>
 
 <script type="module">
@@ -970,6 +979,7 @@ if (!gl) {
   const noteEl   = document.getElementById("note");
   const noteName = document.getElementById("noteName");
   const noteText = document.getElementById("noteText");
+  const retakeEl = document.getElementById("retake");
 
   const WALL_KEY = "grit-wall";
   const PAGE     = 24;          // 8 across, 3 down. A full page turns over.
@@ -1029,6 +1039,16 @@ if (!gl) {
   });
   noteEl.addEventListener("submit", e => { e.preventDefault(); commit(); });
   noteEl.addEventListener("input", () => { noteT = 0; S.lastInput = performance.now(); });
+
+  // back to making, keeping nothing: same hold, same size, still loose
+  function retake(){
+    noteEl.hidden = true;
+    noteName.blur(); noteText.blur();
+    S.fixed = false; S.stillT = 0; S.phase = "MAKE"; S.baked = null;
+    S.down = 0; S.armed = false;
+    S.lastInput = performance.now();
+  }
+  retakeEl.addEventListener("click", retake);
 
   function commit(){
     wall.push({
