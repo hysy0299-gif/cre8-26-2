@@ -51,7 +51,7 @@
   #capnote {
     position:fixed; right:0; bottom:270px; width:360px;
     padding:0 0 8px 0;
-    font:700 10px/1.5 "HN", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font:700 13px/1.5 "HN", "Helvetica Neue", Helvetica, Arial, sans-serif;
     letter-spacing:.1em; text-align:center;
     color:#010101; opacity:0; transition:opacity .4s;
     pointer-events:none;
@@ -130,7 +130,7 @@
   <textarea id="dump" hidden spellcheck="false"></textarea>
   <div id="wall"></div>
   <div id="guide"></div>
-  <div id="capnote">HOLD STILL FOR 3 SECONDS TO SAVE</div>
+  <div id="capnote">HOLD STILL TO SAVE</div>
   <div id="frame"><span id="count"></span></div>
   <form id="note" hidden autocomplete="off">
     <input id="noteName" placeholder="NAME" maxlength="24">
@@ -389,7 +389,7 @@ const HAND_CENTER_X = 0.64;
 const HAND_CENTER_Y = 0.44;
 
 const SETTLE_AFTER  = 2.0;                         // s of no movement before the count starts
-const STILL_AFTER   = 3.0;                         // s of counting, then the frame is taken
+const STILL_AFTER   = 1.0;                         // s of counting, then the frame is taken
 const NOTE_AFTER    = 45;                          // s of silence before the note goes up as is
 
 // silhouettes of the archive's holds, from the photos in HOLDER (C):
