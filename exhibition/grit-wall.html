@@ -1112,9 +1112,8 @@ if (!gl) {
     if (S.phase === "NOTE") g = "YOUR NAME  /  A NOTE  —  ENTER";
     else if (S.hold > 0.9) g = "HOLD STILL  " + Math.max(1, Math.ceil(STILL_AFTER - S.stillT));
     else if (Sense.on && Sense.present < 0.05) g = "RAISE YOUR RIGHT HAND";
-    else if (Sense.on && S.hold < 0.25) g = "MAKE A FIST TO GATHER  ·  OPEN TO SCATTER";
-    else if (Sense.on && !Sense.hands.some(h => h.side === "L")) g = "RAISE YOUR LEFT HAND\nPINCH THUMB AND INDEX TO RESIZE";
-    else if (Sense.on) g = "PINCH TO RESIZE  ·  TWIST YOUR RIGHT WRIST FOR ANOTHER HOLD";
+    else if (Sense.on && S.hold < 0.5) g = "MAKE A FIST WITH YOUR RIGHT HAND TO GATHER";
+    else if (Sense.on) g = "LEFT HAND — PINCH THUMB AND INDEX TO RESIZE\nTWIST YOUR RIGHT WRIST FOR ANOTHER HOLD";
     if (g !== lastGuide) { guideEl.textContent = g; lastGuide = g; }
 
     // the wall only shows itself when nobody is at it
