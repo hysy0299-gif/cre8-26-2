@@ -388,7 +388,8 @@ const CROP          = 0.82;                        // saved square, as a share o
 const HAND_CENTER_X = 0.64;
 const HAND_CENTER_Y = 0.44;
 
-const STILL_AFTER   = 3.0;                         // s gathered and still before it is captured
+const SETTLE_AFTER  = 2.0;                         // s of no movement before the count starts
+const STILL_AFTER   = 3.0;                         // s of counting, then the frame is taken
 const NOTE_AFTER    = 45;                          // s of silence before the note goes up as is
 
 // silhouettes of the archive's holds, from the photos in HOLDER (C):
@@ -513,7 +514,7 @@ if (!gl) {
     energy:0,
     down:0, hold:0,
     seed:[0, 0, 0], seed2:[0, 0, 0, 0], form:[0, 1, 0, 0], pick:-1, armed:true, size:0.5,
-    fixed:false, stillT:0, phase:"MAKE", baked:null,
+    fixed:false, settleT:0, stillT:0, phase:"MAKE", baked:null,
     lastX:0, lastY:0, seen:false,
     lastInput: performance.now(),
     label:"IDLE"
@@ -1075,7 +1076,7 @@ if (!gl) {
   function retake(){
     noteEl.hidden = true;
     noteName.blur(); noteText.blur();
-    S.fixed = false; S.stillT = 0; S.phase = "MAKE"; S.baked = null;
+    S.fixed = false; S.settleT = 0; S.stillT = 0; S.phase = "MAKE"; S.baked = null;
     S.down = 0; S.armed = false;
     S.lastInput = performance.now();
   }
@@ -1094,7 +1095,7 @@ if (!gl) {
     noteName.blur(); noteText.blur();
 
     // RESET — the field lets go; the next visitor gets a fresh hold
-    S.fixed = false; S.stillT = 0; S.phase = "MAKE"; S.baked = null;
+    S.fixed = false; S.settleT = 0; S.stillT = 0; S.phase = "MAKE"; S.baked = null;
     S.down = 0; S.armed = false;
     rollSeed();
   }
@@ -1137,6 +1138,11 @@ if (!gl) {
     if (Sense.on) {
       sense(sec);
 
+      // the camera keeps reading — the overlay stays live — but nothing
+      // it sees reaches the field once the hold has been taken
+      if (S.fixed) { S.lastInput = now; }
+      else {
+
       // a hand in frame is the approach. Closing it is the hold —
       // there is no button, the fist is the button.
       S.tprox    = Sense.present;
@@ -1158,6 +1164,7 @@ if (!gl) {
         S.residue = Math.max(S.residue, 0.85);
       }
       if (Sense.present > 0.02) S.lastInput = now;
+      }
     } else {
       senseIdle();
     }
@@ -1180,7 +1187,10 @@ if (!gl) {
     // gathered and not moving for STILL_AFTER: that is the decision
     const moving = (Sense.on ? Sense.energy : S.energy) > 0.08;
     if (!S.fixed) {
-      S.stillT = (S.hold > 0.9 && !moving) ? S.stillT + sec : 0;
+      const held = S.hold > 0.9 && !moving;
+      // two seconds of stillness first, then the three-second count
+      S.settleT = held ? S.settleT + sec : 0;
+      S.stillT  = (held && S.settleT >= SETTLE_AFTER) ? S.stillT + sec : 0;
       if (S.stillT >= STILL_AFTER) fix();
     } else if (S.phase === "NOTE") {
       noteT += sec;
@@ -1192,7 +1202,7 @@ if (!gl) {
     if (S.phase === "NOTE") g = "NAME  ·  NOTE  —  ENTER TO SAVE";
     else if (Sense.on && Sense.present < 0.05) g = "RAISE YOUR RIGHT HAND";
     else if (Sense.on && S.hold < 0.5) g = "RIGHT HAND — GRIP TO GATHER  ·  RELEASE TO SCATTER";
-    else if (Sense.on) g = "LEFT HAND — PINCH TO RESIZE  ·  CROSS THUMB TO CHANGE\nRIGHT HAND — RELEASE TO SCATTER";
+    else if (Sense.on) g = "LEFT HAND — PINCH TO RESIZE  ·  TWIST TO CHANGE\nRIGHT HAND — RELEASE TO SCATTER";
     if (g !== lastGuide) { guideEl.textContent = g; lastGuide = g; }
 
     // the crop appears with the count and firms up as it closes
