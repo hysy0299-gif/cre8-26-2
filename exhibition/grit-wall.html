@@ -36,11 +36,11 @@
   <canvas id="dbg" width="360" height="270"></canvas>
 
 <script type="module">
-import { FilesetResolver, HandLandmarker } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/vision_bundle.mjs";
+import { FilesetResolver, HandLandmarker } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.21/vision_bundle.mjs";
 
 // the gallery machine needs to reach these, or they get vendored into
 // exhibition/vendor/ before the show. Nothing else is fetched.
-const WASM_BASE = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm";
+const WASM_BASE = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.21/wasm";
 const MODEL_URL = "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task";
 
 /* ------------------------------------------------------------------
@@ -426,8 +426,17 @@ if (!gl) {
   // Tuning overlay only — it never reaches the exhibition screen.
   function senseIdle(){
     if (!tune) return;
-    dbgCtx.fillStyle = "#F5F5F5";
-    dbgCtx.fillRect(0, 0, DW, DH);
+    if (camEl.readyState >= 2) {
+      dbgCtx.save();
+      dbgCtx.setTransform(-1, 0, 0, 1, DW, 0);
+      dbgCtx.drawImage(camEl, 0, 0, DW, DH);
+      dbgCtx.restore();
+      dbgCtx.fillStyle = "#F5F5F5";
+      dbgCtx.fillRect(0, 0, DW, 40);
+    } else {
+      dbgCtx.fillStyle = "#F5F5F5";
+      dbgCtx.fillRect(0, 0, DW, DH);
+    }
     dbgCtx.fillStyle = "#010101";
     dbgCtx.font = "11px monospace";
     const words = String(Sense.note).split(" ");
