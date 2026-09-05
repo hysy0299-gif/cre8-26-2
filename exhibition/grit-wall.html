@@ -293,9 +293,7 @@ float hash21(vec2 p){
 float silhouette(float th){
   float s = uForm.z < 0.0 ? -1.0 : 1.0;
   float u = (s * th + uForm.w) / 6.28318530;
-  float a = texture(uProfile, vec2(u, (uForm.x + 0.5) / 17.0)).r * 2.5;
-  float b = texture(uProfile, vec2(u, (uForm.y + 0.5) / 17.0)).r * 2.5;
-  return mix(a, b, abs(uForm.z));
+  return texture(uProfile, vec2(u, (uForm.x + 0.5) / 17.0)).r * 2.5;
 }
 
 // The photo's own shading inside the outline: what caught the key light
@@ -307,8 +305,7 @@ float reliefAt(float row, float phi, float rn){
 }
 float relief(float th, float rn){
   float s = uForm.z < 0.0 ? -1.0 : 1.0;
-  float phi = s * th + uForm.w;
-  return mix(reliefAt(uForm.x, phi, rn), reliefAt(uForm.y, phi, rn), abs(uForm.z));
+  return reliefAt(uForm.x, s * th + uForm.w, rn);
 }
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord)
@@ -401,7 +398,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
     // and gathers into the outline of a real hold. Same warp as the
     // stretch above, just shaped by the archive instead of an ellipse.
     float tone = 1.0;
-    {
+    if (h > 0.002) {
       float th  = atan(p.y, p.x);
       float sil = silhouette(th);
       // how far out toward the outline this point sits: 0 centre, 1 edge
@@ -422,6 +419,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
       float w = k < 1.5 ? wk.x : k < 2.5 ? wk.y : k < 3.5 ? wk.z : wk.w;
       a += sin(a * k + t + agit * 0.8).yzx / k * fold * w;
     }
+    if (z > 24.0) break;   // past the mass; nothing left to gather
     d = abs(length(a * an) - radius) / 6.0;
     if (twin > 0.0) {
       float d2 = abs(length((a - toff * radius * 0.55) * an) - radius * 0.72) / 6.0;
@@ -959,7 +957,10 @@ if (!gl) {
     if (!landmarker || camEl.readyState < 2) return;
 
     // detectForVideo wants one call per decoded frame and a rising clock
-    if (camEl.currentTime === Sense.lastFrame) { drawTune(); return; }
+    // The camera runs at 30fps and the field at whatever it can manage.
+    // Repainting the preview on frames the camera has not advanced is
+    // work for a picture that cannot have changed.
+    if (camEl.currentTime === Sense.lastFrame) return;
     Sense.lastFrame = camEl.currentTime;
 
     let result;
