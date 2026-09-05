@@ -336,6 +336,7 @@ const EXHIBITION = QS.has("exhibition");
 const DEV_FIX  = QS.has("fix");
 const DEV_PICK = QS.get("pick");
 const DEV_ROT  = parseFloat(QS.get("rot") || "0");
+const DEV_SIZE = QS.has("size") ? parseFloat(QS.get("size")) : null;   // pin the pinch
 if (EXHIBITION) document.body.classList.add("exhibition");
 
 const RESET_AFTER   = EXHIBITION ? 45000 : 90000;  // ms of no input before reset
@@ -1037,6 +1038,7 @@ if (!gl) {
       S.tcontact = Sense.grip;
       S.down     = Sense.grip;
 
+      if (DEV_SIZE !== null) Sense.pinch = DEV_SIZE;
       S.tnx = Sense.x * 2 - 1;
       S.tny = Sense.y * 2 - 1;
       S.tpx = Sense.x * cssW;
@@ -1063,6 +1065,7 @@ if (!gl) {
 
     if (DEV_FIX) {
       S.down = 1; S.hold = 1; S.lastInput = now;
+      if (DEV_SIZE !== null) S.size = DEV_SIZE;
       S.tprox = S.prox = 1; S.tcontact = S.contact = 1;
       S.tnx = S.nx = 0; S.tny = S.ny = 0;
     }
