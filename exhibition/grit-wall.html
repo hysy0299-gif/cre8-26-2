@@ -101,10 +101,18 @@
   #wall {
     position:fixed; inset:0;
     --dot:96px;
-    background-color:#F5F5F5;   /* opaque, or the live field shows through */
+    background-color:#F5F5F5;   /* opaque, or the live field shows through the grid */
     background-image:radial-gradient(circle at center, rgba(1,1,1,.5) 1.1px, transparent 1.6px);
     background-size:var(--dot) var(--dot);
+    display:grid;
+    grid-template-columns:repeat(auto-fill, var(--dot));
+    grid-auto-rows:var(--dot);
+    padding:var(--dot) 0 0 var(--dot);
+    align-content:start; justify-content:start;
+    opacity:1; transition:opacity .6s;
     pointer-events:none;
+  }
+  #wall {
     opacity:0; visibility:hidden;
     transition:opacity .9s ease, visibility 0s .9s;
   }
@@ -122,37 +130,19 @@
   body.wall #capnote, body.handover #capnote { opacity:0; }
 
   /* the one just added arrives a beat later than the rest */
+  #wall figure.fresh { animation:land .9s ease .35s both; }
   @keyframes land { from { opacity:0; } to { opacity:1; } }
-  /* The wall as a dome: the holds sit on the inside of a sphere and you
-     turn it. Same idea as the React component, written directly here —
-     this page has no framework and is not going to grow one. */
-  #dome { position:absolute; inset:0; perspective:1100px; overflow:hidden; }
-  #domeInner {
-    position:absolute; left:50%; top:50%;
-    transform-style:preserve-3d;
-    will-change:transform;
+  #wall figure {
+    margin:0; display:grid; place-items:center;
   }
-  .tile {
-    position:absolute; left:0; top:0;
-    width:var(--tile); height:var(--tile);
-    margin:calc(var(--tile) / -2) 0 0 calc(var(--tile) / -2);
-    transform-style:preserve-3d;
-    cursor:pointer;
-  }
-  .tile img {
-    display:block; width:100%; height:100%;
-    object-fit:contain;
-    pointer-events:none;
-    transition:opacity .3s;
-  }
-  .tile.fresh img { animation:land .9s ease .35s both; }
-  @keyframes land { from { opacity:0; } to { opacity:1; } }
-  body.dragging #dome { cursor:grabbing; }
+  body.wall #wall figure { cursor:pointer; }
+  body.wall #wall figure img { transition:opacity .2s; }
+  body.wall #wall figure:hover img { opacity:.5; }
 
   /* one hold, opened */
   #detail {
     position:fixed; inset:0; z-index:4;
-    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:24px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:26px;
     background:#F5F5F5;
     opacity:0; visibility:hidden;
     transition:opacity .35s ease, visibility 0s .35s;
@@ -166,8 +156,10 @@
     font:700 11px/1.9 "HN", "Helvetica Neue", Helvetica, Arial, sans-serif;
     letter-spacing:.12em; text-align:center; color:#010101;
   }
-  #detailText .who { opacity:1; }
   #detailText .what { opacity:.55; }
+
+  /* square, centred on its dot, and well inside the spacing */
+  #wall img { display:block; width:72%; aspect-ratio:1; object-fit:contain; }
 
   #dump {
     position:fixed; left:68px; top:68px; width:520px; height:60vh;
@@ -184,7 +176,7 @@
   <canvas id="camview" width="360" height="270"></canvas>
 
   <textarea id="dump" hidden spellcheck="false"></textarea>
-  <div id="wall"><div id="dome"><div id="domeInner"></div></div></div>
+  <div id="wall"></div>
   <div id="detail">
     <img id="detailImg" alt="">
     <div id="detailText"></div>
@@ -1074,7 +1066,6 @@ if (!gl) {
   // the same square bake() takes, in css pixels
   function frameSide(){ return Math.min(cssW, cssH) * CROP; }
   const wallEl   = document.getElementById("wall");
-  const domeEl   = document.getElementById("dome");
   const noteEl   = document.getElementById("note");
   const noteName = document.getElementById("noteName");
   const noteText = document.getElementById("noteText");
@@ -1085,10 +1076,12 @@ if (!gl) {
   // the wall is a place you can look at any time, not only after saving
   toWallEl.addEventListener("click", () => {
     const on = document.body.classList.toggle("wall");
+    if (!on) document.body.classList.remove("detail");
     toWallEl.textContent = on ? "BACK" : "WALL";
   });
 
   const WALL_KEY = "grit-wall";
+  const PAGE     = 240;         // a screen of dots. A full one turns over.
   const BAKE     = 360;         // px, square
 
   const API = "/api/holds";
@@ -1136,138 +1129,41 @@ if (!gl) {
       });
   }
 
+  // only the latest page is up. Earlier pages are kept, not shown yet.
   function renderWall(){
-    domeInner.replaceChildren(...wall.map((en, i) => {
-      const t = document.createElement("div");
-      t.className = en.id === freshId ? "tile fresh" : "tile";
-      t.dataset.i = String(i);
+    const start = wall.length ? Math.floor((wall.length - 1) / PAGE) * PAGE : 0;
+    wallEl.replaceChildren(...wall.slice(start, start + PAGE).map(en => {
+      const f  = document.createElement("figure");
       const im = new Image(); im.src = en.img; im.alt = "";
-      t.append(im);
-      return t;
+      f.dataset.id = String(en.id);
+      if (en.id === freshId) f.className = "fresh";
+      f.append(im);
+      return f;
     }));
-    layout();
   }
+  renderWall();
 
-  // ---- the dome ------------------------------------------------------
-  // Holds sit on the inside of a sphere; dragging turns it. Each row is
-  // centred on the front, so the first hold is in view from the start
-  // and the wall grows outward from there rather than off behind you.
-
-  const SEGMENTS   = 32;     // columns around the full turn
-  const MIN_RADIUS = 550;
-  const MAX_TILT   = 8;      // degrees, how far it can be tipped
-  const DAMPENING  = 1.8;    // how quickly a throw runs down
-  const ROW_STEP   = 16;     // degrees between rows
-
-  const domeInner = document.getElementById("domeInner");
   const detailEl  = document.getElementById("detail");
   const detailImg = document.getElementById("detailImg");
   const detailTxt = document.getElementById("detailText");
 
-  const view = { yaw:0, pitch:0, vYaw:0, vPitch:0 };
-  let radius = MIN_RADIUS;
-
-  function layout(){
-    // read the window, not the canvas: the dome lays out before the
-    // renderer has measured anything
-    radius = Math.max(MIN_RADIUS, Math.min(innerWidth, innerHeight) * 0.85);
-    const step = 360 / SEGMENTS;
-    const tiles = [...domeInner.children];
-    const rows = Math.max(1, Math.ceil(tiles.length / SEGMENTS));
-
-    tiles.forEach((el, i) => {
-      const row = Math.floor(i / SEGMENTS);
-      const col = i % SEGMENTS;
-      // how many are actually on this row, so short rows stay centred
-      const onRow = Math.min(SEGMENTS, tiles.length - row * SEGMENTS);
-      const yaw = (col - (onRow - 1) / 2) * step;
-      const pitch = ((rows - 1) / 2 - row) * ROW_STEP;
-      el.style.transform =
-        "rotateY(" + yaw + "deg) rotateX(" + pitch + "deg) translateZ(" + -radius + "px)";
-    });
-
-    // an arc of one column, so neighbours nearly touch and never overlap
-    const tile = Math.round(2 * radius * Math.sin((step / 2) * Math.PI / 180) * 0.92);
-    domeInner.style.setProperty("--tile", tile + "px");
-  }
-
-  function applyView(){
-    domeInner.style.transform =
-      "rotateX(" + view.pitch + "deg) rotateY(" + view.yaw + "deg)";
-  }
-
-  function stepView(sec){
-    if (!document.body.classList.contains("wall") &&
-        !document.body.classList.contains("handover")) return;
-    if (dragging) return;
-    if (Math.abs(view.vYaw) < 0.01 && Math.abs(view.vPitch) < 0.01) return;
-    // frame-rate independent run-down, same as everything else here
-    const k = Math.pow(1 / (1 + DAMPENING), sec * 60 / 60);
-    view.yaw += view.vYaw * sec * 60;
-    view.pitch = Math.max(-MAX_TILT, Math.min(MAX_TILT, view.pitch + view.vPitch * sec * 60));
-    view.vYaw *= Math.pow(0.02, sec);
-    view.vPitch *= Math.pow(0.02, sec);
-    void k;
-    applyView();
-  }
-
-  let dragging = false, dragId = null, lastX = 0, lastY = 0, moved = 0;
-
-  domeEl.addEventListener("pointerdown", e => {
-    if (!document.body.classList.contains("wall")) return;
-    dragging = true; dragId = e.pointerId;
-    lastX = e.clientX; lastY = e.clientY; moved = 0;
-    view.vYaw = view.vPitch = 0;
-    document.body.classList.add("dragging");
-    domeEl.setPointerCapture(e.pointerId);
-  });
-
-  domeEl.addEventListener("pointermove", e => {
-    if (!dragging || e.pointerId !== dragId) return;
-    const dx = e.clientX - lastX, dy = e.clientY - lastY;
-    lastX = e.clientX; lastY = e.clientY;
-    moved += Math.abs(dx) + Math.abs(dy);
-    const sens = 0.18;
-    view.yaw += dx * sens;
-    view.pitch = Math.max(-MAX_TILT, Math.min(MAX_TILT, view.pitch - dy * sens * 0.5));
-    view.vYaw = dx * sens;
-    view.vPitch = -dy * sens * 0.5;
-    applyView();
-  });
-
-  function endDrag(e){
-    if (!dragging || (e && e.pointerId !== dragId)) return;
-    dragging = false; dragId = null;
-    document.body.classList.remove("dragging");
-  }
-  domeEl.addEventListener("pointerup", endDrag);
-  domeEl.addEventListener("pointercancel", endDrag);
-
-  // a press that did not travel is a press, not a throw
-  domeEl.addEventListener("click", e => {
-    if (moved > 6) return;
-    const tile = e.target.closest(".tile");
-    if (!tile) return;
-    const en = wall[Number(tile.dataset.i)];
+  wallEl.addEventListener("click", e => {
+    const f = e.target.closest("figure");
+    if (!f) return;
+    const en = wall.find(h => String(h.id) === f.dataset.id);
     if (!en) return;
     detailImg.src = en.img;
     detailTxt.replaceChildren();
-    if (en.name) {
-      const a = document.createElement("div");
-      a.className = "who"; a.textContent = en.name;
-      detailTxt.append(a);
-    }
-    if (en.note) {
-      const b = document.createElement("div");
-      b.className = "what"; b.textContent = en.note;
-      detailTxt.append(b);
+    for (const [cls, text] of [["who", en.name], ["what", en.note]]) {
+      if (!text) continue;
+      const d = document.createElement("div");
+      d.className = cls; d.textContent = text;
+      detailTxt.append(d);
     }
     document.body.classList.add("detail");
   });
 
   detailEl.addEventListener("click", () => document.body.classList.remove("detail"));
-
-  renderWall();
 
   function bake(){
     const side = Math.min(canvas.width, canvas.height) * CROP;
@@ -1398,7 +1294,7 @@ if (!gl) {
       gl.viewport(0, 0, w, h);
     }
   }
-  new ResizeObserver(() => { applySize(); if (typeof layout === "function") layout(); }).observe(canvas);
+  new ResizeObserver(applySize).observe(canvas);
   applySize();
   S.px = S.tpx = S.ax = cssW / 2;
   S.py = S.tpy = S.ay = cssH / 2;
@@ -1502,8 +1398,6 @@ if (!gl) {
       const c = S.fixed ? "" : String(Math.max(1, Math.ceil(STILL_AFTER - S.stillT)));
       if (c !== lastCount) { countEl.textContent = c; lastCount = c; }
     }
-
-    stepView(sec);
 
     if (handoverT && now > handoverT) {
       handoverT = 0; freshId = null;
