@@ -593,7 +593,7 @@ if (!gl) {
     on:false, denied:false, note:"OPENING CAMERA",
     grip:0, pinch:0.5, x:0.5, y:0.5, energy:0, present:0,
     lastX:0.5, lastY:0.5, seen:false, lastFrame:-1,
-    hands:[], leftFist:false, roll:0, rollArmed:true
+    hands:[], leftFist:false, roll:0, rollRest:null, twist:0, rollArmed:true
   };
 
   const camEl = document.getElementById("cam");
@@ -817,7 +817,7 @@ if (!gl) {
     dbgCtx.fillStyle = "#010101";
     dbgCtx.fillText(
       "hold " + S.hold.toFixed(2) + "  size " + S.size.toFixed(2) +
-      "  " + HOLD_NAMES[S.form[0]] + (S.form[2] < 0 ? " (mirror) " : " ") + Math.round(Math.abs(S.form[2]) * 100) + "% " + HOLD_NAMES[S.form[1]], 5, DH - 5);
+      "", 5, DH - 5);
     drawKnobs();
   }
 
@@ -865,9 +865,20 @@ if (!gl) {
       // it is the one gesture that does not fight gathering or sizing.
       const k5 = right.lm[5], k17 = right.lm[17];
       const roll = Math.atan2(k17.y - k5.y, k17.x - k5.x);
+      if (Sense.rollRest === null) { Sense.rollRest = roll; Sense.roll = roll; }
       Sense.roll += (roll - Sense.roll) * k;
-      if (Math.abs(Sense.roll) < 0.35) Sense.rollArmed = true;
-      else if (Sense.rollArmed && Math.abs(Sense.roll) > 0.85) {
+
+      // shortest signed angle from the resting orientation
+      let d = Sense.roll - Sense.rollRest;
+      while (d >  Math.PI) d -= 6.28318530718;
+      while (d < -Math.PI) d += 6.28318530718;
+      Sense.twist = d;
+
+      if (Math.abs(d) < 0.30) {
+        Sense.rollArmed = true;
+        // only re-learn the rest angle while the hand is near it
+        Sense.rollRest += (Sense.roll - Sense.rollRest) * (1 - Math.pow(0.6, sec));
+      } else if (Sense.rollArmed && Math.abs(d) > 0.70) {
         Sense.rollArmed = false;
         if (!S.fixed) rollSeed();
       }
@@ -876,6 +887,7 @@ if (!gl) {
       Sense.y += (sy - Sense.y) * k;
     } else {
       Sense.grip += (0 - Sense.grip) * k;
+      Sense.rollRest = null;   // a new hand brings its own resting angle
       Sense.energy *= Math.pow(0.2, sec);
       Sense.seen = false;
     }
@@ -926,8 +938,8 @@ if (!gl) {
     dbgCtx.font = "11px monospace";
     dbgCtx.fillText(
       "grip " + Sense.grip.toFixed(2) + "  pinch " + Sense.pinch.toFixed(2) +
-      "  hands " + Sense.hands.map(h => h.side).join("") +
-      "  " + HOLD_NAMES[S.form[0]] + (S.form[2] < 0 ? " (mirror) " : " ") + Math.round(Math.abs(S.form[2]) * 100) + "% " + HOLD_NAMES[S.form[1]], 5, DH - 5);
+      "  twist " + Sense.twist.toFixed(2) + "  hands " + Sense.hands.map(h => h.side).join("") +
+      "", 5, DH - 5);
     drawKnobs();
   }
 
