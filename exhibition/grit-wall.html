@@ -46,6 +46,18 @@
   }
   #guide:empty { opacity:0; }
 
+  /* the capture rule, right above the camera. Always up while the
+     camera is live, because it is the one thing nobody guesses. */
+  #capnote {
+    position:fixed; right:0; bottom:270px; width:360px;
+    padding:0 0 8px 0;
+    font:700 10px/1.5 "HN", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    letter-spacing:.1em; text-align:center;
+    color:#010101; opacity:0; transition:opacity .4s;
+    pointer-events:none;
+  }
+  body.cam #capnote { opacity:.55; }
+
   /* the note: exists only between the capture and the hold going up */
   #note {
     position:fixed; left:68px; bottom:76px;
@@ -97,6 +109,7 @@
   <textarea id="dump" hidden spellcheck="false"></textarea>
   <div id="wall"></div>
   <div id="guide"></div>
+  <div id="capnote">HOLD STILL FOR 3 SECONDS TO SAVE</div>
   <form id="note" hidden autocomplete="off">
     <input id="noteName" placeholder="NAME" maxlength="24">
     <input id="noteText" placeholder="NOTE" maxlength="60">
@@ -580,7 +593,7 @@ if (!gl) {
     on:false, denied:false, note:"OPENING CAMERA",
     grip:0, pinch:0.5, x:0.5, y:0.5, energy:0, present:0,
     lastX:0.5, lastY:0.5, seen:false, lastFrame:-1,
-    hands:[], leftFist:false
+    hands:[], leftFist:false, roll:0, rollArmed:true
   };
 
   const camEl = document.getElementById("cam");
@@ -847,6 +860,18 @@ if (!gl) {
         Sense.energy = Math.min(1, Sense.energy * 0.82 + speed * 0.35);
       }
       Sense.lastX = sx; Sense.lastY = sy; Sense.seen = true;
+      // wrist roll, read off the knuckle line: index MCP to pinky MCP.
+      // Turning the hand past TWIST and back steps to the next hold —
+      // it is the one gesture that does not fight gathering or sizing.
+      const k5 = right.lm[5], k17 = right.lm[17];
+      const roll = Math.atan2(k17.y - k5.y, k17.x - k5.x);
+      Sense.roll += (roll - Sense.roll) * k;
+      if (Math.abs(Sense.roll) < 0.35) Sense.rollArmed = true;
+      else if (Sense.rollArmed && Math.abs(Sense.roll) > 0.85) {
+        Sense.rollArmed = false;
+        if (!S.fixed) rollSeed();
+      }
+
       Sense.x += (sx - Sense.x) * k;
       Sense.y += (sy - Sense.y) * k;
     } else {
@@ -857,10 +882,7 @@ if (!gl) {
 
     // the left hand only sets the size, and holds it when it drops out
     if (left) {
-      const lg = gripOf(left.lm);
-      if (lg > 0.8 && !Sense.leftFist) { Sense.leftFist = true; if (!S.fixed) rollSeed(); }
-      if (lg < 0.4) Sense.leftFist = false;
-      const target = lg > 0.5 ? Sense.pinch : pinchOf(left.lm);
+      const target = pinchOf(left.lm);
       Sense.pinch += (target - Sense.pinch) * k;
     }
 
@@ -1090,7 +1112,9 @@ if (!gl) {
     if (S.phase === "NOTE") g = "YOUR NAME  /  A NOTE  —  ENTER";
     else if (S.hold > 0.9) g = "HOLD STILL  " + Math.max(1, Math.ceil(STILL_AFTER - S.stillT));
     else if (Sense.on && Sense.present < 0.05) g = "RAISE YOUR RIGHT HAND";
-    else if (Sense.on) g = "CLOSE TO GATHER  ·  OPEN TO SCATTER\nLEFT HAND — PINCH FOR SIZE  ·  FIST — NEXT HOLD";
+    else if (Sense.on && S.hold < 0.25) g = "MAKE A FIST TO GATHER  ·  OPEN TO SCATTER";
+    else if (Sense.on && !Sense.hands.some(h => h.side === "L")) g = "RAISE YOUR LEFT HAND\nPINCH THUMB AND INDEX TO RESIZE";
+    else if (Sense.on) g = "PINCH TO RESIZE  ·  TWIST YOUR RIGHT WRIST FOR ANOTHER HOLD";
     if (g !== lastGuide) { guideEl.textContent = g; lastGuide = g; }
 
     // the wall only shows itself when nobody is at it
