@@ -95,7 +95,7 @@
     cursor:pointer; z-index:3;
   }
   #toWall:hover, #toWall:focus-visible { opacity:1; outline:none; }
-  body.wall #toWall, body.handover #toWall { opacity:1; }
+  body.wall #toWall { opacity:1; }
 
   /* the wall: what the room sees when nobody is making anything */
   #wall {
@@ -117,20 +117,18 @@
     transition:opacity .9s ease, visibility 0s .9s;
   }
   body.wall #wall { pointer-events:auto; }
-  body.wall #wall, body.handover #wall {
+  body.wall #wall {
     opacity:1; visibility:visible;
     transition:opacity .9s ease;
   }
 
   /* the field steps back while the wall is up */
   #field, #guide, #camview { transition:opacity .9s ease; }
-  body.wall #field, body.handover #field,
-  body.wall #guide, body.handover #guide,
-  body.wall #camview, body.handover #camview,
-  body.wall #capnote, body.handover #capnote { opacity:0; }
+  body.wall #field, body.wall #guide,
+  body.wall #camview, body.wall #capnote { opacity:0; }
 
   /* the one just added arrives a beat later than the rest */
-  #wall figure.fresh { animation:land .9s ease .35s both; }
+  #wall figure.fresh { animation:land .5s ease both; }
   @keyframes land { from { opacity:0; } to { opacity:1; } }
   #wall figure {
     margin:0; display:grid; place-items:center;
@@ -482,7 +480,7 @@ const HAND_CENTER_Y = 0.44;
 
 const SETTLE_AFTER  = 2.0;                         // s of no movement before the count starts
 const STILL_AFTER   = 1.0;                         // s of counting, then the frame is taken
-const HANDOVER_FOR  = 4200;                        // ms the wall stays up after a hold joins it
+const WALL_IDLE_FOR = 15000;                       // ms of no input on the wall before it goes back
 const NOTE_AFTER    = 45;                          // s of silence before the note goes up as is
 
 // silhouettes of the archive's holds, from the photos in HOLDER (C):
@@ -607,7 +605,7 @@ if (!gl) {
     energy:0,
     down:0, hold:0,
     seed:[0, 0, 0], seed2:[0, 0, 0, 0], form:[0, 1, 0, 0], pick:-1, armed:true, size:0.5,
-    fixed:false, settleT:0, stillT:0, phase:"MAKE", baked:null, bakedUrl:null,
+    fixed:false, settleT:0, stillT:0, phase:"MAKE", baked:null, bakedUrl:null, bakeReady:null,
     wasHold:0, wasSize:0.5, wasForm:-1,
     lastX:0, lastY:0, seen:false,
     lastInput: performance.now(),
@@ -1113,10 +1111,24 @@ if (!gl) {
   const toWallEl = document.getElementById("toWall");
 
   // the wall is a place you can look at any time, not only after saving
+  function leaveWall(){
+    freshId = null;
+    document.body.classList.remove("wall", "detail");
+    toWallEl.textContent = "WALL";
+    renderWall();
+    S.lastInput = performance.now();
+  }
+
+  // anything the visitor does on the wall keeps it open
+  for (const ev of ["pointermove", "pointerdown", "keydown", "wheel"]) {
+    addEventListener(ev, () => { wallIdleAt = performance.now() + WALL_IDLE_FOR; }, { passive:true });
+  }
+
   toWallEl.addEventListener("click", () => {
-    const on = document.body.classList.toggle("wall");
-    if (!on) document.body.classList.remove("detail");
-    toWallEl.textContent = on ? "BACK" : "WALL";
+    if (document.body.classList.contains("wall")) { leaveWall(); return; }
+    document.body.classList.add("wall");
+    toWallEl.textContent = "BACK";
+    wallIdleAt = performance.now() + WALL_IDLE_FOR;
   });
 
   // bumped to leave every earlier record behind: the crop changed, so
@@ -1161,7 +1173,7 @@ if (!gl) {
     })
     .catch(() => {});
   let bakePending = false, noteT = 0, lastGuide = null, lastCount = null;
-  let freshId = null, handoverT = 0;
+  let freshId = null, wallIdleAt = 0;
 
   function saveWall(){
     if (remote) return;        // the server holds it, and object urls do not survive a reload
@@ -1298,6 +1310,13 @@ if (!gl) {
   }
 
   function commit(){
+    // the picture has to exist before the entry that points at it
+    archiveEl.disabled = true;
+    archiveEl.textContent = "SAVING";
+    Promise.resolve(S.bakeReady).then(finishCommit);
+  }
+
+  function finishCommit(){
     wall.push({
       id: Date.now(),
       name: noteName.value.trim(),
@@ -1309,9 +1328,6 @@ if (!gl) {
     freshId = added.id;
     page = Math.ceil(wall.length / perPage()) - 1;
 
-    archiveEl.disabled = true;
-    archiveEl.textContent = "SAVING";
-
     sendHold(added)
       .then(() => {
         if (!remote && added.blob) {
@@ -1320,9 +1336,9 @@ if (!gl) {
         saveWall(); renderWall();
         noteEl.hidden = true;
         archiveEl.disabled = false; archiveEl.textContent = "ARCHIVE";
-        // the handover: field out, wall in, and back for the next visitor
-        document.body.classList.add("handover");
-        handoverT = performance.now() + HANDOVER_FOR;
+        document.body.classList.add("wall");
+        toWallEl.textContent = "BACK";
+        wallIdleAt = performance.now() + WALL_IDLE_FOR;
       })
       .catch(err => {
         console.error("wall unreachable, kept on this machine:", err);
@@ -1338,8 +1354,9 @@ if (!gl) {
         archiveEl.disabled = false; archiveEl.textContent = "ARCHIVE";
         guideEl.textContent = "SAVED ON THIS SCREEN ONLY";
         lastGuide = null;
-        document.body.classList.add("handover");
-        handoverT = performance.now() + HANDOVER_FOR;
+        document.body.classList.add("wall");
+        toWallEl.textContent = "BACK";
+        wallIdleAt = performance.now() + WALL_IDLE_FOR;
       });
     noteName.blur(); noteText.blur();
 
@@ -1475,11 +1492,11 @@ if (!gl) {
       if (c !== lastCount) { countEl.textContent = c; lastCount = c; }
     }
 
-    if (handoverT && now > handoverT) {
-      handoverT = 0; freshId = null;
-      document.body.classList.remove("handover");
-      renderWall();
-      S.lastInput = now;
+    // the wall lets go by itself, but only once nobody has touched it
+    if (document.body.classList.contains("wall")) {
+      if (now > wallIdleAt) leaveWall();
+    } else {
+      wallIdleAt = now + WALL_IDLE_FOR;
     }
 
     if (now - S.lastInput > RESET_AFTER) resetAll();
@@ -1538,7 +1555,10 @@ if (!gl) {
     if (bakePending) {
       bakePending = false;
       // the crop has to be read in the same tick it was drawn
-      bake().then(blob => { S.baked = blob; S.bakedUrl = URL.createObjectURL(blob); });
+      S.bakeReady = bake().then(blob => {
+        S.baked = blob;
+        S.bakedUrl = URL.createObjectURL(blob);
+      });
       openNote();
     }
 
