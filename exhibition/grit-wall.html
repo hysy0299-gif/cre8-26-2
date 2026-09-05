@@ -1010,7 +1010,9 @@ if (!gl) {
   const BAKE     = 360;         // px, square
 
   let wall = [];
-  try { wall = JSON.parse(localStorage.getItem(WALL_KEY) || "[]"); } catch (e) { wall = []; }
+  // ?clear empties the record on this machine and leaves nothing behind
+  if (QS.has("clear")) { try { localStorage.removeItem(WALL_KEY); } catch (e) {} }
+  else { try { wall = JSON.parse(localStorage.getItem(WALL_KEY) || "[]"); } catch (e) { wall = []; } }
   let bakePending = false, noteT = 0, making = false, lastGuide = null, lastCount = null;
 
   function saveWall(){
