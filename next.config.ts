@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // 이 배포는 게스트 인터랙션만 내보낸다. 첫 화면이 곧 전시 화면이고,
+  // 사이트는 여기 없다 — 사이트는 사이트대로 따로 배포한다.
+  async rewrites() {
+    return [{ source: "/", destination: "/exhibition/grit-wall.html" }];
+  },
   images: {
     // 홀드 사진은 화면 높이에 맞춰 커진다. 기본 목록에는 2048 위가 없어서
     // 고해상도 화면에서 작은 변형이 늘어나 뭉개졌다.
