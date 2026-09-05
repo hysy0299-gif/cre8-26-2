@@ -102,6 +102,13 @@ float smin(float a, float b, float k){
   return mix(b, a, w) - k * w * (1.0 - w);
 }
 
+// a segment whose radius tapers along it. FIN, GLIDER and SPROUT are all
+// this shape; no arrangement of spheres reaches that silhouette.
+float sdArm(vec3 p, vec3 b, float r1, float r2){
+  float t = clamp(dot(p, b) / max(dot(b, b), 1e-5), 0.0, 1.0);
+  return length(p - b * t) - mix(r1, r2, t);
+}
+
 float holdSDF(vec3 pos, float h)
 {
   float loose = 1.0 - h;
@@ -110,34 +117,41 @@ float holdSDF(vec3 pos, float h)
   pos.yz *= rot(uRot.y);
 
   vec3 q = pos;
-  q.x *= 1.0 + max(-uSeed.y, 0.0) * 0.62;   // SPROUT and GLIDER run long
-  q.y *= 1.0 + max( uSeed.y, 0.0) * 0.52;   // RAY and SLOPE run wide
-  q.z *= mix(1.45, 2.15, h);                // relief, never a ball
+  q.x *= 1.0 + max(-uSeed.y, 0.0) * 0.55;   // SPROUT and GLIDER run long
+  q.y *= 1.0 + max( uSeed.y, 0.0) * 0.48;   // RAY and SLOPE run wide
+  q.z *= mix(1.45, 2.20, h);                // relief, it bolts to a wall
 
   // still finding its body while the fist is closing
   q += vec3(sin(q.y * 2.7 + iTime * 0.6),
             cos(q.z * 2.3 - iTime * 0.5),
             sin(q.x * 2.1 + iTime * 0.4)) * loose * 0.42;
 
-  float lobes  = floor(1.0 + uSeed.x * 3.999);
-  float spread = mix(0.16, 0.46, fract(uSeed.x * 3.7)) * (1.0 + loose * 1.6);
-  float fuse   = 0.44 * (1.0 - loose * 0.55);
+  float lobes = floor(1.0 + uSeed.x * 3.999);
 
-  float sd = 1e9;
+  // a hub the arms grow out of, so the result is one cast body rather
+  // than a bundle of parts
+  float sd = length(q) - mix(0.28, 0.38, fract(uSeed.x * 5.1));
+
   for (float i = 0.0; i < 4.0; i++) {
     if (i >= lobes) break;
-    float ang = 6.28318530 * (i / lobes) + uSeed.x * 3.1;
-    float rr  = mix(0.30, 0.54, hash11(i * 7.3 + uSeed.x * 17.0));
-    vec3  c   = vec3(cos(ang), sin(ang), hash11(i * 3.1) * 0.24 - 0.12)
-                * spread * step(1.5, lobes);
-    sd = smin(sd, length(q - c) - rr, fuse);
+    float s1 = hash11(i * 7.3 + uSeed.x * 17.0);
+    float s2 = hash11(i * 3.9 + uSeed.x * 11.0);
+
+    // even spacing and equal lengths would read as a flower. Only
+    // CLOVER is symmetric; the other sixteen are not.
+    float ang = 6.28318530 * (i / lobes) + uSeed.x * 3.1 + (s1 - 0.5) * 1.15;
+    vec3  dir = vec3(cos(ang), sin(ang), (s1 - 0.5) * 0.34) * mix(0.54, 1.04, s2);
+
+    // fat where it leaves the hub, thin at the tip. The fusion radius
+    // has to stay well under the arm radius or the arms dissolve and it
+    // collapses back into a ball — that was the whole problem before.
+    sd = smin(sd, sdArm(q, dir, mix(0.24, 0.34, s2), mix(0.06, 0.19, s1)), 0.16);
   }
 
-  // one feature, not a texture. VEIL stays smooth, CRUMPLE keeps a
-  // crease. Past about 0.07 the body stops reading as one piece.
+  // one feature, not a texture. VEIL stays smooth, CRUMPLE keeps a crease.
   float feature = sin(q.x * 4.1 + uSeed.x * 6.0) * sin(q.y * 3.5 - uSeed.x * 4.2)
                 + sin(q.z * 5.2 + uSeed.x * 2.0) * 0.4;
-  sd -= feature * mix(0.010, 0.062, uSeed.z) * h;
+  sd -= feature * mix(0.008, 0.055, uSeed.z) * h;
 
   return sd;
 }
@@ -255,7 +269,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
     for (int i = 0; i < 80; i++) {
       sdist = holdSDF((sro + srd * sz) * bulk, h) / bulk;
       if (sdist < 0.0013) { shit = true; break; }
-      sz += sdist * 0.88;
+      sz += sdist * 0.70;
       if (sz > 7.0) break;
     }
 
