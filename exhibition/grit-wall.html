@@ -27,7 +27,7 @@
     width:360px; height:270px;
     opacity:0; pointer-events:none;
   }
-  body.tune #dbg { opacity:1; }
+  body.tune #dbg, body.cam #dbg { opacity:1; }
   #dump {
     position:fixed; left:68px; top:68px; width:520px; height:60vh;
     font:11px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -35,19 +35,13 @@
     padding:10px; resize:none; outline:none;
   }
   #dump[hidden] { display:none; }
-  #num {
-    position:fixed; left:68px; top:38px;
-    font:12px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    letter-spacing:.08em; color:#010101; opacity:.55;
-    white-space:pre; pointer-events:none;
-  }
 </style>
 </head>
 <body>
   <div id="field"><canvas id="c"></canvas></div>
   <video  id="cam" playsinline muted></video>
   <canvas id="dbg" width="360" height="270"></canvas>
-  <div id="num"></div>
+
   <textarea id="dump" hidden spellcheck="false"></textarea>
 
 <script type="module">
@@ -326,7 +320,7 @@ const HOLD_MAXR = PROFILES.map(r => Math.max(...r));
 
 const canvas  = document.getElementById("c");
 const fieldEl = document.getElementById("field");
-const numEl   = document.getElementById("num");
+
 const stateEl = document.getElementById("state");
 const gl = canvas.getContext("webgl2", { premultipliedAlpha: false, antialias: false });
 
@@ -430,8 +424,8 @@ if (!gl) {
     S.form[0] = S.pick; S.form[1] = S.pick;
     S.form[2] = Math.random() < 0.5 ? -0.0001 : 0.0001;    // sign is the mirror, no blend
     S.form[3] = Math.random() * 6.28318;
-    if (document.body.classList.contains("tune")) numEl.textContent = String(S.pick + 1);
-    else numEl.textContent = "";
+
+
     if (DEV_PICK) {
       const i = Math.max(0, HOLD_NAMES.indexOf(DEV_PICK.toUpperCase()));
       S.form[0] = i; S.form[1] = i; S.form[2] = 0; S.form[3] = DEV_ROT;
@@ -590,6 +584,7 @@ if (!gl) {
           runningMode: "VIDEO"
         });
         Sense.on = true;
+        document.body.classList.add("cam");
         console.info("hand model running on", delegate);
         return;
       } catch (err) {
@@ -602,7 +597,7 @@ if (!gl) {
   startHands();
 
   const DIFF_FLOOR = 0;      // kept out of the way; nothing reads it now
-  let tune = !EXHIBITION;
+  let tune = false;
   document.body.classList.toggle("tune", tune);
 
   addEventListener("keydown", e => {
@@ -803,7 +798,7 @@ if (!gl) {
                  [9,13],[13,14],[14,15],[15,16],[13,17],[17,18],[18,19],[19,20],[0,17]];
 
   function drawTune(){
-    if (!tune) return;
+
     dbgCtx.save();
     dbgCtx.setTransform(-1, 0, 0, 1, DW, 0);
     dbgCtx.drawImage(camEl, 0, 0, DW, DH);
@@ -819,12 +814,13 @@ if (!gl) {
         dbgCtx.moveTo(p[0], p[1]); dbgCtx.lineTo(q[0], q[1]);
       }
       dbgCtx.stroke();
-      dbgCtx.fillStyle = dbgCtx.strokeStyle;
-      const w = P(0);
-      dbgCtx.font = "10px monospace";
-      dbgCtx.fillText(h.side, w[0] + 4, w[1] + 12);
+
+
+
+
     }
 
+    if (!tune) return;
     dbgCtx.fillStyle = "#F5F5F5";
     dbgCtx.fillRect(0, DH - 16, DW, 16);
     dbgCtx.fillStyle = "#010101";
