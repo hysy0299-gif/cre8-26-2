@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GRIT — MG-N01-S04</title>
+<style>
+  html, body {
+    margin:0; padding:0; height:100%;
+    background:#F5F5F5;
+    overflow:hidden;
+  }
+  #field { position:fixed; inset:0; }
+  #field canvas {
+    display:block; width:100%; height:100%;
+    cursor:crosshair; touch-action:none;
+  }
+
+  /* offscreen rather than display:none — a hidden video can stop
+     decoding frames, and then there is nothing to difference */
+  #cam { position:fixed; left:0; top:0; width:1px; height:1px; opacity:0; pointer-events:none; }
+
+  /* tuning overlay: camera on the left, what the camera counts as
+     movement on the right. D toggles it, ?exhibition starts it off. */
+  #dbg {
+    position:fixed; right:0; bottom:0;
+    width:480px; height:180px;
+    image-rendering:pixelated;
+    opacity:0; pointer-events:none;
+  }
+  body.tune #dbg { opacity:1; }
+</style>
+</head>
+<body>
+  <div id="field"><canvas id="c"></canvas></div>
+  <video  id="cam" playsinline muted></video>
+  <canvas id="dbg" width="320" height="120"></canvas>
+
+<script>
+/* ------------------------------------------------------------------
+   MG-N01-S04 — magnetic axis, speculative.
+
+   On GRIT WHITE the field reads as a density record, not a light
+   source: the shader accumulation is inverted, so mass darkens the
+   paper through GREEN -> MID -> BLACK instead of glowing.
+
+   IDLE -> PROXIMITY -> CONTACT -> RESIDUE -> RESET
+------------------------------------------------------------------- */
+
+const VERT = `#version 300 es
+precision highp float;
+layout(location=0) in vec2 a_pos;
+void main(){ gl_Position = vec4(a_pos, 0.0, 1.0); }
+`;
+
+const FRAG = `#version 300 es
+precision highp float;
+
+out vec4 fragColor;
+
+uniform vec3  iResolution;
+uniform float iTime;
+uniform vec2  uRot;        // final ray rotation (idle drift blended with pointer)
+uniform vec2  uPointPx;    // pointer in framebuffer px, origin bottom-left
+uniform vec2  uAnchorPx;   // last contact point, for the residue ring
+uniform float uProx;       // 0..1 approach
+uniform float uContact;    // 0..1 contact
+uniform float uResidue;    // 0..1 decaying trace
+uniform float uEnergy;     // 0..1 pointer speed
+uniform float uHold;       // 0..1 scroll progress
+
+mat2 rot(float a){ float s = sin(a), c = cos(a); return mat2(c, -s, s, c); }
+
+float hash21(vec2 p){
+  p = fract(p * vec2(123.34, 456.21));
+  p += dot(p, p + 45.32);
+  return fract(p.x * p.y);
+}
+
+void mainImage(out vec4 fragColor, in vec2 fragCoord)
+{
+  vec2  r  = iResolution.xy;
+  float t  = iTime;
+  vec3  FC = vec3(fragCoord, t);
+  vec4  o  = vec4(0.0);
+
+  vec3 p, a;
+  float z = 0.0;
+  float d = 0.0;
+
+  // frame width. Higher = wider view = the mass sits smaller in frame.
+  const float FOV = 2.10;
+
+  vec3 rd = FC.rgb * 2.0 - r.xyy;
+  rd.xy *= FOV;
+  vec3 dir = normalize(rd);
+  dir.xz *= rot(uRot.x);
+  dir.yz *= rot(uRot.y);
+
+  float h     = smoothstep(0.02, 0.98, uHold);
+  float pull  = uContact * 2.0 + uResidue * 0.55;
+
+  // the extent is what makes the gathering readable: loose material spans
+  // most of the frame, the packed mass is about a third of it
+  float radius = mix(6.6, 2.8, h) + uContact * 1.15 + uResidue * 0.30;
+  float agit  = uEnergy * 2.2 + uResidue * 0.9 + uProx * 0.5;
+
+  // this is what does the gathering. Over 1.0 the folding overwhelms the
+  // shell and it breaks into separate scattered lobes; dropping toward 0.2
+  // merges them into one mass, with just enough relief left to read as a hold.
+  float fold  = mix(1.62, 0.18, h);
+
+  for (float i = 0.0; i < 100.0; i++)
+  {
+    p = z * dir;
+    a = normalize(cos(vec3(4.0, 2.0, 0.0) + t - d * 10.0 + agit));
+    p.z += 8.0 - pull;
+    p.y *= mix(1.0, 1.12, h);   // settles wider than tall
+    p.z *= mix(1.0, 1.22, h);   // and shallower, so it sits like relief
+    a = a * dot(a, p) - cross(a, p);
+    for (float k = 1.0; k < 5.0; k += 1.0) {
+      a += sin(a * k + t + agit * 0.8).yzx / k * fold;
+    }
+    d = abs(length(a) - radius) / 6.0;
+    z += d;
+    o += vec4(3.0, 8.0, z, 0.0) / max(d, 1e-4) / 9e4;
+  }
+
+  // --- GRIT COLOR
+  vec3 WHITE = vec3(0.961, 0.961, 0.961);
+  vec3 BLACK = vec3(0.004, 0.004, 0.004);
+  vec3 MID   = vec3(0.682, 0.714, 0.749);
+  vec3 GREEN = vec3(0.796, 0.843, 0.831);
+
+  // density, not luminance: the accumulation is inverted onto paper
+  float e = o.r * 0.34 + o.g * 0.50 + o.b * 0.16;
+  e = 1.0 - exp(-e * mix(1.32, 2.10, h));   // thin and dusty up top, solid at the end
+
+  vec3 col = mix(WHITE, GREEN, smoothstep(0.00, 0.26, e));
+  col = mix(col, MID,   smoothstep(0.24, 0.58, e));
+  col = mix(col, BLACK, smoothstep(0.56, 0.98, e));
+
+  // --- approach and residue darken the paper, they never add light.
+  // Over dense areas the subtraction clamps out, so marks stay marks.
+  float md = length(fragCoord - uPointPx) / r.y;
+  col -= (WHITE - GREEN) * exp(-md * 7.0) * (uProx * 0.60 + uContact * 1.35);
+
+  float ad = length(fragCoord - uAnchorPx) / r.y;
+  float ring = exp(-pow(abs(ad - (1.0 - uResidue) * 0.34) * 15.0, 2.0));
+  col -= (WHITE - MID) * ring * uResidue * 0.85;
+
+  // grain, also kills banding across the flat paper
+  col += (hash21(fragCoord + fract(t) * 91.7) - 0.5) * 0.011;
+
+  fragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
+}
+
+void main(){ mainImage(fragColor, gl_FragCoord.xy); }
+`;
+
+const EXHIBITION = new URLSearchParams(location.search).has("exhibition");
+if (EXHIBITION) document.body.classList.add("exhibition");
+
+const RESET_AFTER   = EXHIBITION ? 45000 : 90000;  // ms of no input before reset
+const RESIDUE_DECAY = 0.16;                        // per second, ~7s tail
+
+// share of the camera frame that has to be moving for each band.
+// these get measured in the room with the D overlay, not guessed —
+// ceiling height and how far back the plinth sits move them more than
+// anything else. What is here came off a desk webcam at arm's length.
+const A_PRESENT = 0.004;   // someone is there
+const A_NEAR    = 0.045;   // they are reaching for it
+const A_CLOSE   = 0.280;   // they have it
+
+const canvas  = document.getElementById("c");
+const fieldEl = document.getElementById("field");
+const stateEl = document.getElementById("state");
+const gl = canvas.getContext("webgl2", { premultipliedAlpha: false, antialias: false });
+
+if (!gl) {
+  fieldEl.innerHTML =
+    '<div class="m" style="padding:20px">RECORD UNAVAILABLE / WEBGL2 NOT SUPPORTED</div>';
+} else {
+
+  const compile = (type, src) => {
+    const sh = gl.createShader(type);
+    gl.shaderSource(sh, src); gl.compileShader(sh);
+    if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+      console.error(gl.getShaderInfoLog(sh)); gl.deleteShader(sh); return null;
+    }
+    return sh;
+  };
+
+  const prog = gl.createProgram();
+  gl.attachShader(prog, compile(gl.VERTEX_SHADER, VERT));
+  gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, FRAG));
+  gl.linkProgram(prog);
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) console.error(gl.getProgramInfoLog(prog));
+  gl.useProgram(prog);
+
+  const vao = gl.createVertexArray();
+  gl.bindVertexArray(vao);
+  const vbo = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0);
+  gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+
+  const U = n => gl.getUniformLocation(prog, n);
+  const uRes = U("iResolution"), uTime = U("iTime"), uRot = U("uRot"),
+        uPointPx = U("uPointPx"), uAnchorPx = U("uAnchorPx"),
+        uProx = U("uProx"), uContact = U("uContact"),
+        uResidue = U("uResidue"), uEnergy = U("uEnergy"),
+        uHold = U("uHold");
+
+
+  // ---- state -------------------------------------------------------
+  let ftime = 0;
+
+  const S = {
+    nx:0, ny:0, tnx:0, tny:0,           // pointer, field-normalized (-1..1)
+    px:0, py:0, tpx:0, tpy:0,           // pointer, css px, field-local, y up
+    ax:0, ay:0,                         // residue anchor
+    prox:0, tprox:0,
+    contact:0, tcontact:0,
+    residue:0,
+    energy:0,
+    down:0, hold:0,
+    lastX:0, lastY:0, seen:false,
+    lastInput: performance.now(),
+    label:"IDLE"
+  };
+
+  // radial bands, in units of frame height, measured from the centre
+  const R_PROX = 0.80, R_CONTACT = 0.42, R_CORE = 0.20;
+
+  const smoothstep = (a, b, x) => {
+    const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
+    return t * t * (3 - 2 * t);
+  };
+
+  function onPointer(e){
+    if (Sense.on) return;          // the camera has the floor
+    const r = fieldEl.getBoundingClientRect();
+    const x = e.clientX - r.left;
+    const y = e.clientY - r.top;
+
+    const rd = Math.hypot(x - r.width / 2, y - r.height / 2) / r.height;
+    S.tprox    = 1 - smoothstep(R_CONTACT, R_PROX,    rd);
+    S.tcontact = 1 - smoothstep(R_CORE,    R_CONTACT, rd);
+    const inside = rd < R_CONTACT;
+
+    if (S.seen) {
+      const sp = Math.hypot(x - S.lastX, y - S.lastY) / Math.max(1, r.height);
+      S.energy = Math.min(1, S.energy + sp * 3.0);
+    }
+    S.lastX = x; S.lastY = y; S.seen = true;
+    S.lastInput = performance.now();
+
+    S.tnx = (x / r.width)  * 2 - 1;
+    S.tny = (y / r.height) * 2 - 1;
+    S.tpx = x;
+    S.tpy = r.height - y;
+
+    if (inside) { S.ax = S.tpx; S.ay = S.tpy; S.residue = Math.max(S.residue, 0.85); }
+    if (EXHIBITION) document.body.classList.remove("dim");
+  }
+
+  window.addEventListener("pointermove", onPointer, { passive:true });
+  window.addEventListener("pointerdown", (e) => {
+    onPointer(e); S.residue = 1;
+    if (e.button === 0) S.down = 1;     // hold to gather
+  }, { passive:true });
+  window.addEventListener("pointerup",     () => { S.down = 0; });
+  window.addEventListener("pointercancel", () => { S.down = 0; });
+  window.addEventListener("pointerleave", () => {
+    S.tprox = 0; S.tcontact = 0; S.tnx = 0; S.tny = 0; S.down = 0;
+  });
+  canvas.addEventListener("contextmenu", e => e.preventDefault());
+
+  // ---- camera ------------------------------------------------------
+  // No hand model and no library. A slowly-adapting background frame is
+  // subtracted from the live one; what is left over is the visitor. The
+  // threshold is derived from the frame itself every tick, so a dim room
+  // and a lit room both work and there is no calibration step on site.
+  //
+  //   cx, cy   centre of movement, 0..1, mirrored to match the room
+  //   area     share of the frame moving  -> nearness, stands in for depth
+  //   energy   how hard it is moving      -> material character
+  //   spread   how scattered it is        -> fingertip vs upper body
+  //
+  // getUserMedia needs a secure context: Firefox refuses the camera on
+  // file:// and Chrome re-prompts every launch. Serve it over localhost.
+  // ?mouse skips the camera entirely and falls back to the pointer.
+
+  const SW = 160, SH = 120, SN = SW * SH;
+
+  const Sense = {
+    on:false, denied:false,
+    cx:0.5, cy:0.5, area:0, energy:0, spread:0,
+    lum:new Float32Array(SN), bg:null
+  };
+
+  const camEl = document.getElementById("cam");
+  const dbgEl = document.getElementById("dbg");
+  const dbgCtx = dbgEl.getContext("2d");
+  const sctx = document.createElement("canvas").getContext("2d", { willReadFrequently:true });
+  sctx.canvas.width = SW; sctx.canvas.height = SH;
+
+  // three ways this ends, and the overlay has to be able to tell them
+  // apart: asked for, refused, or never offered in the first place. An
+  // embedding frame without a camera permission removes the API outright,
+  // so there is no rejection to catch and nothing prompts the visitor.
+  const media = navigator.mediaDevices;
+  if (new URLSearchParams(location.search).has("mouse")) {
+    Sense.denied = true;
+  } else if (!media || !media.getUserMedia) {
+    Sense.denied = true;
+    console.warn("no camera API here — pointer fallback. Needs a secure context and a frame that allows the camera.");
+  } else {
+    media.getUserMedia({ video:{ width:320, height:240, facingMode:"user" }, audio:false })
+      .then(stream => { camEl.srcObject = stream; return camEl.play(); })
+      .then(() => { Sense.on = true; })
+      .catch(err => {
+        Sense.denied = true;
+        console.warn("camera unavailable, pointer fallback:", err.name);
+      });
+  }
+
+  // the sensor's own noise. Under this nothing is moving, whatever the maths says
+  const DIFF_FLOOR = 0.035;
+  let tune = !EXHIBITION;
+  document.body.classList.toggle("tune", tune);
+  let maskData = null;
+
+  addEventListener("keydown", e => {
+    if (e.key === "d" || e.key === "D") {
+      tune = !tune;
+      document.body.classList.toggle("tune", tune);
+    }
+  });
+
+  // a blocked camera and a broken overlay look identical if the panel
+  // just stays empty, so say which one it is. Tuning overlay only —
+  // this never reaches the exhibition screen.
+  function senseIdle(){
+    if (!tune) return;
+    dbgCtx.fillStyle = "#F5F5F5";
+    dbgCtx.fillRect(0, 0, SW * 2, SH);
+    dbgCtx.fillStyle = "#010101";
+    dbgCtx.font = "9px monospace";
+    dbgCtx.fillText(Sense.denied ? "NO CAMERA / POINTER" : "OPENING CAMERA", 6, 14);
+  }
+
+  function sense(sec){
+    if (!Sense.on || camEl.readyState < 2) return;
+
+    // mirrored, so moving right in the room moves right on the wall
+    sctx.setTransform(-1, 0, 0, 1, SW, 0);
+    sctx.drawImage(camEl, 0, 0, SW, SH);
+    const px = sctx.getImageData(0, 0, SW, SH).data;
+
+    const lum = Sense.lum;
+    for (let i = 0, j = 0; i < SN; i++, j += 4) {
+      lum[i] = (px[j] * 0.299 + px[j+1] * 0.587 + px[j+2] * 0.114) / 255;
+    }
+
+    // first frame seeds the background, it is not movement
+    if (!Sense.bg) { Sense.bg = Float32Array.from(lum); return; }
+    const bg = Sense.bg;
+
+    // mean difference sets the threshold, so it rides on whatever the
+    // room actually looks like rather than on a number picked at a desk
+    let mean = 0;
+    for (let i = 0; i < SN; i++) mean += Math.abs(lum[i] - bg[i]);
+    mean /= SN;
+    const thr = Math.max(DIFF_FLOOR, mean * 2.4);
+
+    // moments of everything over the threshold
+    let cnt = 0, sx = 0, sy = 0, sxx = 0, syy = 0, sd = 0;
+    if (tune && !maskData) maskData = dbgCtx.createImageData(SW, SH);
+    const mask = tune ? maskData : null;
+
+    // a visitor who stops moving dissolves into the background over ~4s.
+    // that is deliberate: standing still is how you let the hold go.
+    const decay = Math.min(1, sec * 0.25);
+
+    for (let i = 0; i < SN; i++) {
+      const d = Math.abs(lum[i] - bg[i]);
+      if (d > thr) {
+        const x = (i % SW) / SW, y = ((i / SW) | 0) / SH;
+        cnt++; sx += x; sy += y; sxx += x * x; syy += y * y; sd += d;
+        if (mask) { const j = i * 4; mask.data[j] = mask.data[j+1] = mask.data[j+2] = 255; mask.data[j+3] = 255; }
+      } else if (mask) {
+        const j = i * 4; mask.data[j+3] = 255;
+      }
+      bg[i] += (lum[i] - bg[i]) * decay;
+    }
+
+    const area = cnt / SN;
+    const ka = 1 - Math.pow(0.05, sec);
+    Sense.area   += (area - Sense.area) * ka;
+    Sense.energy  = Math.min(1, (sd / SN) * 26);
+
+    // the centroid only moves while there is something to average.
+    // otherwise it would drift to the middle every time the room stills.
+    if (cnt > SN * 0.002) {
+      const mx = sx / cnt, my = sy / cnt;
+      const k = 1 - Math.pow(0.02, sec);
+      Sense.cx += (mx - Sense.cx) * k;
+      Sense.cy += (my - Sense.cy) * k;
+      const vx = Math.max(0, sxx / cnt - mx * mx);
+      const vy = Math.max(0, syy / cnt - my * my);
+      Sense.spread += (Math.sqrt(vx + vy) - Sense.spread) * k;
+    }
+
+    if (mask) {
+      dbgCtx.drawImage(sctx.canvas, 0, 0);        // what the camera sees
+      dbgCtx.putImageData(mask, SW, 0);           // what counts as movement
+      dbgCtx.fillStyle = "#CBD7D4";
+      dbgCtx.fillRect(SW + Sense.cx * SW - 3, Sense.cy * SH - 3, 6, 6);
+      dbgCtx.font = "9px monospace";
+      dbgCtx.fillText(
+        "a" + Sense.area.toFixed(3) + " e" + Sense.energy.toFixed(2) + " s" + Sense.spread.toFixed(2), 3, SH - 4);
+    }
+  }
+
+  function resetAll(){
+    S.tprox = S.tcontact = 0;
+    S.tnx = S.tny = 0;
+    S.residue = 0; S.energy = 0; S.seen = false; S.down = 0;
+    if (EXHIBITION) document.body.classList.add("dim");
+  }
+
+  // ---- sizing ------------------------------------------------------
+  let scale = 1.0, cssW = 1, cssH = 1;
+  function applySize(){
+    const dpr = Math.min(2, Math.max(1, window.devicePixelRatio || 1));
+    cssW = canvas.clientWidth; cssH = canvas.clientHeight;
+    const w = Math.max(1, Math.floor(cssW * dpr * scale));
+    const h = Math.max(1, Math.floor(cssH * dpr * scale));
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w; canvas.height = h;
+      gl.viewport(0, 0, w, h);
+    }
+  }
+  new ResizeObserver(applySize).observe(canvas);
+  applySize();
+  S.px = S.tpx = S.ax = cssW / 2;
+  S.py = S.tpy = S.ay = cssH / 2;
+
+  const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // ---- loop --------------------------------------------------------
+  let raf = 0, t0 = performance.now(), prev = t0, avgDt = 16.7;
+
+  function tick(now){
+    const dt = Math.min(64, now - prev); prev = now;
+    const sec = dt / 1000;
+
+    if (Sense.on) {
+      sense(sec);
+
+      // area is the only depth cue there is: the visitor's silhouette
+      // grows as they come toward the camera
+      S.tprox    = smoothstep(A_PRESENT, A_NEAR,  Sense.area);
+      S.tcontact = smoothstep(A_NEAR,    A_CLOSE, Sense.area);
+
+      S.tnx = Sense.cx * 2 - 1;
+      S.tny = Sense.cy * 2 - 1;
+      S.tpx = Sense.cx * cssW;
+      S.tpy = (1 - Sense.cy) * cssH;   // the shader wants y up
+      S.energy = Sense.energy;
+
+      // there is no button to hold down. Staying close is the holding.
+      S.down = S.tcontact > 0.5 ? 1 : 0;
+
+      if (S.tcontact > 0.5) {
+        S.ax = S.tpx; S.ay = S.tpy;
+        S.residue = Math.max(S.residue, 0.85);
+      }
+      if (S.tprox > 0.02) S.lastInput = now;
+    } else {
+      senseIdle();
+    }
+
+    if (now - S.lastInput > RESET_AFTER) resetAll();
+
+    const k  = 1 - Math.pow(0.001, sec);
+    const ks = 1 - Math.pow(1e-7, sec);
+    S.nx += (S.tnx - S.nx) * k;
+    S.ny += (S.tny - S.ny) * k;
+    S.px += (S.tpx - S.px) * k;
+    S.py += (S.tpy - S.py) * k;
+    S.prox    += (S.tprox    - S.prox)    * k;
+    S.contact += (S.tcontact - S.contact) * ks;
+    if (!Sense.on) S.energy *= Math.pow(0.12, sec);
+
+    // asymmetric: ~1s to gather, ~0.6s to break apart again
+    S.hold += (S.down - S.hold) * (1 - Math.pow(S.down ? 0.07 : 0.004, sec));
+
+    // the field's own clock slows as it settles, so the churn winds down
+    // instead of being cut off
+    ftime += sec * (reduceMotion ? 0.3 : 1) * (1.0 - 0.93 * S.hold);
+    const t = ftime;
+
+    if (S.tcontact < 0.5) S.residue = Math.max(0, S.residue - RESIDUE_DECAY * sec);
+
+    const idleX = reduceMotion ? 0 : Math.sin(t * 0.17) * 0.20;
+    const idleY = reduceMotion ? 0 : Math.cos(t * 0.12) * 0.10;
+    const rx = idleX * (1 - S.prox) + (S.nx *  0.92) * S.prox;
+    const ry = idleY * (1 - S.prox) + (S.ny * -0.55) * S.prox;
+
+    const dpr = Math.min(2, Math.max(1, window.devicePixelRatio || 1));
+    const rs = dpr * scale;
+
+    gl.uniform3f(uRes, canvas.width, canvas.height, dpr);
+    gl.uniform1f(uTime, t);
+    gl.uniform2f(uRot, rx, ry);
+    gl.uniform2f(uPointPx, S.px * rs, S.py * rs);
+    gl.uniform2f(uAnchorPx, S.ax * rs, S.ay * rs);
+    gl.uniform1f(uProx, S.prox);
+    gl.uniform1f(uContact, S.contact);
+    gl.uniform1f(uResidue, S.residue);
+    gl.uniform1f(uEnergy, S.energy);
+    gl.uniform1f(uHold, S.hold);
+
+    gl.bindVertexArray(vao);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+    let label = "IDLE";
+    if (S.contact > 0.4)       label = "CONTACT";
+    else if (S.prox > 0.12)    label = "PROXIMITY";
+    else if (S.residue > 0.02) label = "RESIDUE";
+    if (label !== S.label && stateEl) { stateEl.textContent = label; S.label = label; }
+
+    // 100 raymarch steps is heavy on integrated GPUs
+    avgDt += (dt - avgDt) * 0.05;
+    if (avgDt > 26 && scale > 0.55)     { scale -= 0.06; applySize(); }
+    else if (avgDt < 15 && scale < 1.0) { scale = Math.min(1, scale + 0.03); applySize(); }
+
+    raf = requestAnimationFrame(tick);
+  }
+  raf = requestAnimationFrame(tick);
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) cancelAnimationFrame(raf);
+    else { prev = performance.now(); raf = requestAnimationFrame(tick); }
+  });
+}
+</script>
+</body>
+</html>
