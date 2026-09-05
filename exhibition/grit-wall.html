@@ -927,18 +927,23 @@ if (!gl) {
     for (const h of found) {
       if (h.side !== "L") continue;
       const r = Sense.rolls[h.side] || (Sense.rolls[h.side] = { rest:null, now:0, armed:true });
-      const k5 = h.lm[5], k17 = h.lm[17];
-      // palm width in hand widths: about 0.8 face-on, under 0.4 edge-on
-      const open = dist(k5, k17) / handWidth(h.lm);
-      if (r.rest === null) { r.rest = open; r.now = open; }
-      r.now += (open - r.now) * k;
-      Sense.twist = r.now;
+      // Which side of the index finger the thumb tip is on. The index
+      // runs from its knuckle (5) to its tip (8); the cross product says
+      // left or right of that line, and crossing over flips the sign.
+      const a = h.lm[5], b = h.lm[8], t = h.lm[4];
+      const ix = b.x - a.x, iy = b.y - a.y;
+      const len = Math.hypot(ix, iy) || 1e-5;
+      const sideOf = ((t.x - a.x) * iy - (t.y - a.y) * ix) / len / handWidth(h.lm);
 
-      r.max = Math.max(r.now, (r.max ?? r.now) * Math.pow(0.97, sec));
-      if (r.now > r.max * 0.82) {
-        r.armed = true;                                   // palm is facing us again
-      } else if (r.armed && r.now < r.max * 0.55) {
-        r.armed = false;                                  // turned away: next hold
+      if (r.rest === null) r.now = sideOf;
+      r.now += (sideOf - r.now) * k;
+      Sense.twist = r.now;
+      r.rest = 0;   // kept so the hand-left cleanup below still applies
+
+      // a clear crossing, not a thumb resting against the finger
+      if (r.now > 0.10) r.armed = true;                 // thumb back on its own side
+      else if (r.armed && r.now < -0.10) {
+        r.armed = false;                                // crossed over: next hold
         if (!S.fixed) rollSeed();
       }
     }
@@ -1187,7 +1192,7 @@ if (!gl) {
     if (S.phase === "NOTE") g = "NAME  ·  NOTE  —  ENTER TO SAVE";
     else if (Sense.on && Sense.present < 0.05) g = "RAISE YOUR RIGHT HAND";
     else if (Sense.on && S.hold < 0.5) g = "RIGHT HAND — GRIP TO GATHER  ·  RELEASE TO SCATTER";
-    else if (Sense.on) g = "LEFT HAND — PINCH TO RESIZE  ·  TWIST TO CHANGE\nRIGHT HAND — RELEASE TO SCATTER";
+    else if (Sense.on) g = "LEFT HAND — PINCH TO RESIZE  ·  CROSS THUMB TO CHANGE\nRIGHT HAND — RELEASE TO SCATTER";
     if (g !== lastGuide) { guideEl.textContent = g; lastGuide = g; }
 
     // the crop appears with the count and firms up as it closes
