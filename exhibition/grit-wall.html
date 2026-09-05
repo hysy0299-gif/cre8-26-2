@@ -181,12 +181,12 @@ const RESET_AFTER   = EXHIBITION ? 45000 : 90000;  // ms of no input before rese
 const RESIDUE_DECAY = 0.16;                        // per second, ~7s tail
 
 // share of the camera frame that has to be moving for each band.
-// these get measured in the room with the D overlay, not guessed —
-// ceiling height and how far back the plinth sits move them more than
-// anything else. What is here came off a desk webcam at arm's length.
-const A_PRESENT = 0.004;   // someone is there
-const A_NEAR    = 0.045;   // they are reaching for it
-const A_CLOSE   = 0.280;   // they have it
+// A hand is a small part of the frame — the earlier numbers were sized
+// for a whole body, so CONTACT sat out of reach and nothing ever
+// gathered. Read them off the D overlay, do not guess them.
+const A_PRESENT = 0.002;   // a hand is in frame
+const A_NEAR    = 0.010;   // it is reaching
+const A_CLOSE   = 0.055;   // it has hold
 
 const canvas  = document.getElementById("c");
 const fieldEl = document.getElementById("field");
