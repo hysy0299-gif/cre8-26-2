@@ -534,7 +534,7 @@ if (!gl) {
     S.pick = POOL[Math.floor(Math.random() * POOL.length)];
     S.form[0] = S.pick; S.form[1] = S.pick;
     S.form[2] = Math.random() < 0.5 ? -0.0001 : 0.0001;    // sign is the mirror, no blend
-    S.form[3] = Math.random() * 6.28318;
+    S.form[3] = 0;   // upright, the way the archive photographs them
 
 
     if (DEV_PICK) {
