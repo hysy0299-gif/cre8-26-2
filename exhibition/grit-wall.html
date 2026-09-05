@@ -895,7 +895,11 @@ if (!gl) {
     if (S.prox < 0.02) S.armed = true;
     else if (S.armed && S.prox > 0.05 && S.hold < 0.05) { rollSeed(); S.armed = false; }
 
-    if (DEV_FIX) { S.down = 1; S.hold = 1; S.tprox = 1; S.lastInput = now; }
+    if (DEV_FIX) {
+      S.down = 1; S.hold = 1; S.lastInput = now;
+      S.tprox = S.prox = 1; S.tcontact = S.contact = 1;
+      S.tnx = S.nx = 0; S.tny = S.ny = 0;
+    }
 
     if (now - S.lastInput > RESET_AFTER) resetAll();
 
