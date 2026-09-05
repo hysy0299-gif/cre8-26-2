@@ -73,14 +73,29 @@
     font:inherit; letter-spacing:inherit; color:#010101; text-transform:uppercase;
   }
   #note input::placeholder { color:#010101; opacity:.32; }
-  #retake {
+  #noteRow { display:flex; gap:22px; align-items:baseline; }
+  #archive, #retake {
     align-self:start;
     padding:0; border:0; background:none;
     font:inherit; letter-spacing:inherit; color:#010101; opacity:.55;
     text-decoration:underline; text-underline-offset:4px;
     cursor:pointer;
   }
-  #retake:hover, #retake:focus-visible { opacity:1; outline:none; }
+  #archive { opacity:1; }
+  #archive[disabled] { opacity:.35; cursor:default; }
+  #retake:hover, #retake:focus-visible, #archive:hover, #archive:focus-visible { opacity:1; outline:none; }
+
+  /* the way in to what has been kept, set like the guide below it */
+  #toWall {
+    position:fixed; left:68px; top:38px;
+    font:700 11px/1.7 "HN", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    letter-spacing:.12em;
+    color:#010101; opacity:.55;
+    background:none; border:0; padding:0;
+    cursor:pointer; z-index:3;
+  }
+  #toWall:hover, #toWall:focus-visible { opacity:1; outline:none; }
+  body.wall #toWall, body.handover #toWall { opacity:1; }
 
   /* the wall: what the room sees when nobody is making anything */
   #wall {
@@ -138,12 +153,16 @@
   <textarea id="dump" hidden spellcheck="false"></textarea>
   <div id="wall"></div>
   <div id="guide"></div>
+  <button type="button" id="toWall">WALL</button>
   <div id="capnote">HOLD STILL TO SAVE</div>
   <div id="frame"><span id="count"></span></div>
   <form id="note" hidden autocomplete="off">
     <input id="noteName" placeholder="NAME" maxlength="24">
     <input id="noteText" placeholder="NOTE" maxlength="60">
-    <button type="button" id="retake">AGAIN</button>
+    <div id="noteRow">
+      <button type="submit" id="archive">ARCHIVE</button>
+      <button type="button" id="retake">AGAIN</button>
+    </div>
   </form>
 
 <script type="module">
@@ -1022,6 +1041,14 @@ if (!gl) {
   const noteName = document.getElementById("noteName");
   const noteText = document.getElementById("noteText");
   const retakeEl = document.getElementById("retake");
+  const archiveEl = document.getElementById("archive");
+  const toWallEl = document.getElementById("toWall");
+
+  // the wall is a place you can look at any time, not only after saving
+  toWallEl.addEventListener("click", () => {
+    const on = document.body.classList.toggle("wall");
+    toWallEl.textContent = on ? "BACK" : "WALL";
+  });
 
   const WALL_KEY = "grit-wall";
   const PAGE     = 240;         // a screen of dots. A full one turns over.
@@ -1058,19 +1085,14 @@ if (!gl) {
   // away, and the request catches up. A failed send leaves it on screen
   // for this session and is reported, not swallowed.
   function sendHold(entry){
-    if (!remote) return;
-    fetch(API, {
+    if (!remote) return Promise.resolve();
+    return fetch(API, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ name: entry.name, note: entry.note, hold: entry.hold, img: entry.img })
     })
       .then(r => r.ok ? r.json() : Promise.reject(new Error("HTTP " + r.status)))
-      .then(d => { if (d.entry && d.entry.url) entry.img = d.entry.url; })
-      .catch(err => {
-        console.error("hold not saved to the wall:", err);
-        guideEl.textContent = "NOT SAVED — THE WALL IS UNREACHABLE";
-        lastGuide = null;
-      });
+      .then(d => { if (d.entry && d.entry.url) entry.img = d.entry.url; });
   }
 
   // only the latest page is up. Earlier pages are kept, not shown yet.
@@ -1152,13 +1174,28 @@ if (!gl) {
     });
     const added = wall[wall.length - 1];
     freshId = added.id;
-    sendHold(added);
-    saveWall(); renderWall();
-    noteEl.hidden = true;
 
-    // the handover: field out, wall in, and back again for the next visitor
-    document.body.classList.add("handover");
-    handoverT = performance.now() + HANDOVER_FOR;
+    archiveEl.disabled = true;
+    archiveEl.textContent = "SAVING";
+
+    sendHold(added)
+      .then(() => {
+        saveWall(); renderWall();
+        noteEl.hidden = true;
+        archiveEl.disabled = false; archiveEl.textContent = "ARCHIVE";
+        // the handover: field out, wall in, and back for the next visitor
+        document.body.classList.add("handover");
+        handoverT = performance.now() + HANDOVER_FOR;
+      })
+      .catch(err => {
+        // the hold stays on screen and the visitor can try again
+        console.error("hold not saved to the wall:", err);
+        wall.pop();
+        freshId = null;
+        archiveEl.disabled = false; archiveEl.textContent = "ARCHIVE";
+        guideEl.textContent = "NOT SAVED. TRY AGAIN";
+        lastGuide = null;
+      });
     noteName.blur(); noteText.blur();
 
     // RESET — the field lets go; the next visitor gets a fresh hold
@@ -1273,7 +1310,7 @@ if (!gl) {
 
     // one line of guidance. Pointer mode only gets the lines that apply.
     let g = "";
-    if (S.phase === "NOTE") g = "NAME  ·  NOTE  —  ENTER TO SAVE";
+    if (S.phase === "NOTE") g = "NAME  ·  NOTE";
     else if (Sense.on && Sense.present < 0.05) g = "RAISE YOUR RIGHT HAND";
     else if (Sense.on && S.hold < 0.5) g = "RIGHT HAND — GRIP TO GATHER  ·  RELEASE TO SCATTER";
     else if (Sense.on) g = "LEFT HAND — PINCH TO RESIZE  ·  TWIST TO CHANGE\nRIGHT HAND — RELEASE TO SCATTER";
