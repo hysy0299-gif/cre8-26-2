@@ -85,13 +85,6 @@
   /* the wall: what the room sees when nobody is making anything */
   #wall {
     position:fixed; inset:0;
-    padding:68px 38px 38px 68px;
-    display:grid; grid-template-columns:repeat(8, 1fr); grid-auto-rows:min-content;
-    gap:26px 22px; align-content:start;
-    opacity:1; transition:opacity .6s; pointer-events:none;
-  }
-  #wall {
-    position:fixed; inset:0;
     --dot:96px;
     background-color:#F5F5F5;   /* opaque, or the live field shows through the grid */
     background-image:radial-gradient(circle at center, rgba(1,1,1,.5) 1.1px, transparent 1.6px);
@@ -108,7 +101,7 @@
     margin:0; display:grid; place-items:center;
   }
   /* square, centred on its dot, and well inside the spacing */
-  #wall img { display:block; width:72%; aspect-ratio:1; object-fit:contain; }
+  #wall img { display:block; width:72%; aspect-ratio:1; object-fit:contain; mix-blend-mode:multiply; }
 
   #dump {
     position:fixed; left:68px; top:68px; width:520px; height:60vh;
