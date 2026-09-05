@@ -608,7 +608,7 @@ if (!gl) {
   //
   // The labels come back assuming a mirrored image. If the two hands
   // turn out swapped in the room, flip this and nothing else.
-  const HAND_FLIP = false;
+  const HAND_FLIP = true;
 
   // measured in hand widths (wrist to middle knuckle), so they hold at
   // any distance. Read the live numbers off the D overlay to retune.
@@ -859,12 +859,17 @@ if (!gl) {
       result = landmarker.detectForVideo(camEl, performance.now());
     } catch (err) { return; }
 
-    const found = [];
-    for (let i = 0; i < result.landmarks.length; i++) {
+    const found = result.landmarks.map((lm, i) => {
       const label = result.handedness[i] && result.handedness[i][0]
         ? result.handedness[i][0].categoryName : "Right";
-      const side = (label === "Right") !== HAND_FLIP ? "R" : "L";
-      found.push({ side, lm: result.landmarks[i] });
+      return { lm, label, mx: 1 - lm[9].x };   // mirrored screen x
+    });
+    if (found.length >= 2) {
+      // position decides. Rightmost on screen is the right hand.
+      found.sort((a, b) => b.mx - a.mx);
+      found.forEach((h, i) => { h.side = i === 0 ? "R" : "L"; });
+    } else {
+      for (const h of found) h.side = (h.label === "Right") !== HAND_FLIP ? "R" : "L";
     }
     Sense.hands = found;
 
@@ -909,20 +914,16 @@ if (!gl) {
       if (h.side !== "L") continue;
       const r = Sense.rolls[h.side] || (Sense.rolls[h.side] = { rest:null, now:0, armed:true });
       const k5 = h.lm[5], k17 = h.lm[17];
-      const roll = Math.atan2(k17.y - k5.y, k17.x - k5.x);
-      if (r.rest === null) { r.rest = roll; r.now = roll; }
-      r.now += (roll - r.now) * k;
+      // palm width in hand widths: about 0.8 face-on, under 0.4 edge-on
+      const open = dist(k5, k17) / handWidth(h.lm);
+      if (r.rest === null) { r.rest = open; r.now = open; }
+      r.now += (open - r.now) * k;
+      Sense.twist = r.now;
 
-      let d = r.now - r.rest;
-      while (d >  Math.PI) d -= 6.28318530718;
-      while (d < -Math.PI) d += 6.28318530718;
-      Sense.twist = d;
-
-      if (Math.abs(d) < 0.24) {
-        r.armed = true;
-        r.rest += (r.now - r.rest) * (1 - Math.pow(0.6, sec));
-      } else if (r.armed && Math.abs(d) > 0.80) {
-        r.armed = false;
+      if (r.now > 0.62) {
+        r.armed = true;                                   // palm is facing us again
+      } else if (r.armed && r.now < 0.40) {
+        r.armed = false;                                  // turned away: next hold
         if (!S.fixed) rollSeed();
       }
     }
@@ -969,7 +970,7 @@ if (!gl) {
     dbgCtx.font = "11px monospace";
     dbgCtx.fillText(
       "grip " + Sense.grip.toFixed(2) + "  pinch " + Sense.pinch.toFixed(2) +
-      "  twist " + Sense.twist.toFixed(2) + "  hands " + Sense.hands.map(h => h.side).join("") +
+      "  twist " + Sense.twist.toFixed(2) + "  " + Sense.hands.map(h => h.side + h.label[0]).join(" ") +
       "", 5, DH - 5);
     drawKnobs();
   }
