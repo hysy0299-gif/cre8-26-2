@@ -82,7 +82,7 @@
     gap:26px 22px; align-content:start;
     opacity:1; transition:opacity .6s; pointer-events:none;
   }
-  body.making #wall { opacity:0; }
+  #wall { display:none; }   /* records are kept, not shown */
   #wall figure { margin:0; }
   #wall img { display:block; width:100%; aspect-ratio:1; object-fit:cover; }
   #wall figcaption {
@@ -586,14 +586,14 @@ if (!gl) {
 
   // measured in hand widths (wrist to middle knuckle), so they hold at
   // any distance. Read the live numbers off the D overlay to retune.
-  const GRIP_OPEN  = 1.62, GRIP_SHUT = 1.02;
+  const GRIP_OPEN  = 1.48, GRIP_SHUT = 1.00;
   const PINCH_SHUT = 0.34, PINCH_OPEN = 1.15;
 
   const Sense = {
     on:false, denied:false, note:"OPENING CAMERA",
     grip:0, pinch:0.5, x:0.5, y:0.5, energy:0, present:0,
     lastX:0.5, lastY:0.5, seen:false, lastFrame:-1,
-    hands:[], leftFist:false, roll:0, rollRest:null, twist:0, rollArmed:true
+    hands:[], twist:0, rolls:{}
   };
 
   const camEl = document.getElementById("cam");
@@ -618,7 +618,7 @@ if (!gl) {
     // pull the ends out so a flat hand reads as 0 and a fist as 1,
     // instead of both stopping short
     const t = norm(reach, GRIP_SHUT, GRIP_OPEN);
-    return 1 - norm(t, 0.12, 0.88);
+    return 1 - norm(t, 0.06, 0.80);
   }
 
   const pinchOf = L => norm(norm(dist(L[4], L[8]) / handWidth(L), PINCH_SHUT, PINCH_OPEN), 0.08, 0.92);
@@ -860,34 +860,10 @@ if (!gl) {
         Sense.energy = Math.min(1, Sense.energy * 0.82 + speed * 0.35);
       }
       Sense.lastX = sx; Sense.lastY = sy; Sense.seen = true;
-      // wrist roll, read off the knuckle line: index MCP to pinky MCP.
-      // Turning the hand past TWIST and back steps to the next hold —
-      // it is the one gesture that does not fight gathering or sizing.
-      const k5 = right.lm[5], k17 = right.lm[17];
-      const roll = Math.atan2(k17.y - k5.y, k17.x - k5.x);
-      if (Sense.rollRest === null) { Sense.rollRest = roll; Sense.roll = roll; }
-      Sense.roll += (roll - Sense.roll) * k;
-
-      // shortest signed angle from the resting orientation
-      let d = Sense.roll - Sense.rollRest;
-      while (d >  Math.PI) d -= 6.28318530718;
-      while (d < -Math.PI) d += 6.28318530718;
-      Sense.twist = d;
-
-      if (Math.abs(d) < 0.30) {
-        Sense.rollArmed = true;
-        // only re-learn the rest angle while the hand is near it
-        Sense.rollRest += (Sense.roll - Sense.rollRest) * (1 - Math.pow(0.6, sec));
-      } else if (Sense.rollArmed && Math.abs(d) > 0.70) {
-        Sense.rollArmed = false;
-        if (!S.fixed) rollSeed();
-      }
-
       Sense.x += (sx - Sense.x) * k;
       Sense.y += (sy - Sense.y) * k;
     } else {
       Sense.grip += (0 - Sense.grip) * k;
-      Sense.rollRest = null;   // a new hand brings its own resting angle
       Sense.energy *= Math.pow(0.2, sec);
       Sense.seen = false;
     }
@@ -897,6 +873,34 @@ if (!gl) {
       const target = pinchOf(left.lm);
       Sense.pinch += (target - Sense.pinch) * k;
     }
+
+    // Wrist roll, off the knuckle line from index MCP to pinky MCP.
+    // Either hand can do it: turning a wrist away from where it has been
+    // resting, then back, steps to the next hold. Measured against that
+    // rest angle because a hand held up already sits at a quarter turn,
+    // so an absolute angle never returns to neutral and never re-arms.
+    for (const h of found) {
+      const r = Sense.rolls[h.side] || (Sense.rolls[h.side] = { rest:null, now:0, armed:true });
+      const k5 = h.lm[5], k17 = h.lm[17];
+      const roll = Math.atan2(k17.y - k5.y, k17.x - k5.x);
+      if (r.rest === null) { r.rest = roll; r.now = roll; }
+      r.now += (roll - r.now) * k;
+
+      let d = r.now - r.rest;
+      while (d >  Math.PI) d -= 6.28318530718;
+      while (d < -Math.PI) d += 6.28318530718;
+      if (h.side === "R") Sense.twist = d;
+
+      if (Math.abs(d) < 0.28) {
+        r.armed = true;
+        r.rest += (r.now - r.rest) * (1 - Math.pow(0.6, sec));
+      } else if (r.armed && Math.abs(d) > 0.62) {
+        r.armed = false;
+        if (!S.fixed) rollSeed();
+      }
+    }
+    // a hand that leaves takes its rest angle with it
+    for (const side of ["L", "R"]) if (!found.some(h => h.side === side)) delete Sense.rolls[side];
 
     Sense.present += ((found.length ? 1 : 0) - Sense.present) * kp;
     drawTune();
@@ -1122,10 +1126,9 @@ if (!gl) {
     // one line of guidance. Pointer mode only gets the lines that apply.
     let g = "";
     if (S.phase === "NOTE") g = "YOUR NAME  /  A NOTE  —  ENTER";
-    else if (S.hold > 0.9) g = "HOLD STILL  " + Math.max(1, Math.ceil(STILL_AFTER - S.stillT));
     else if (Sense.on && Sense.present < 0.05) g = "RAISE YOUR RIGHT HAND";
     else if (Sense.on && S.hold < 0.5) g = "MAKE A FIST WITH YOUR RIGHT HAND TO GATHER";
-    else if (Sense.on) g = "LEFT HAND — PINCH THUMB AND INDEX TO RESIZE\nTWIST YOUR RIGHT WRIST FOR ANOTHER HOLD";
+    else if (Sense.on) g = "LEFT HAND — PINCH THUMB AND INDEX TO RESIZE\nTWIST A WRIST FOR ANOTHER HOLD";
     if (g !== lastGuide) { guideEl.textContent = g; lastGuide = g; }
 
     // the wall only shows itself when nobody is at it
