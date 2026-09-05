@@ -232,13 +232,17 @@ export function HoldWheel({ holds }: { holds: Hold[] }) {
         ) : null}
 
         {/*
-          상세 뷰 썸네일 — 오른쪽 가장자리에 세로로 세운다.
-          홀드 그림과 겹치지 않게 흐름 밖으로 빼고, 휠과 같은 계산으로 세로 가운데를 맞춘다.
-          뷰가 두 장 이상인 홀드에만 걸린다.
+          상세 뷰 썸네일 — 그림 바깥, 칸 오른쪽 가장자리에 세로로 세운다.
+          그림 위에 얹지 않는다. 휠과 같은 계산으로 세로 가운데를 맞춘다.
+
+          네 칸을 같은 타일로 맞춘다 —
+          대표 이미지는 배경을 딴 컷아웃이고 나머지는 배경이 있는 사진이라,
+          contain으로 두면 첫 칸만 바탕에 떠 있어서 줄이 따로 논다.
+          cover로 채우면 넷 다 같은 크기의 판으로 읽힌다.
         */}
         {views.length > 1 ? (
           <div
-            className="absolute right-0 flex w-16 flex-col gap-2 lg:w-20"
+            className="absolute right-0 flex w-16 flex-col gap-1.5 lg:w-20"
             style={{
               top: `calc((100dvh - ${offset * 2}px) / 2)`,
               transform: "translateY(-50%)",
@@ -253,7 +257,7 @@ export function HoldWheel({ holds }: { holds: Hold[] }) {
                 aria-current={i === view ? "true" : undefined}
                 // 테두리나 밑줄을 두르지 않는다 — 흰 사진 위에서 검은 선으로 읽힌다.
                 // 지금 보는 장은 진하기로만 구분한다
-                className={`bg-ground relative aspect-square w-full overflow-hidden transition-opacity ${
+                className={`relative aspect-square w-full overflow-hidden bg-white transition-opacity ${
                   i === view ? "opacity-100" : "opacity-40 hover:opacity-75"
                 }`}
               >
@@ -263,7 +267,7 @@ export function HoldWheel({ holds }: { holds: Hold[] }) {
                   fill
                   quality={90}
                   sizes="80px"
-                  className="object-contain"
+                  className="object-cover"
                 />
               </button>
             ))}
