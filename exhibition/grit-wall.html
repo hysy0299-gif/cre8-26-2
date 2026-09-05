@@ -1117,6 +1117,14 @@ if (!gl) {
   });
 
   const WALL_KEY = "grit-wall";
+  const pageNumEl = document.getElementById("pageNum");
+  const prevEl    = document.getElementById("prevPage");
+  const nextEl    = document.getElementById("nextPage");
+
+  prevEl.addEventListener("click", () => { page--; renderWall(); });
+  nextEl.addEventListener("click", () => { page++; renderWall(); });
+  addEventListener("resize", () => { if (wall.length) renderWall(); });
+
   const DOT      = 96;          // matches --dot in the stylesheet
   let page = 0;
 
@@ -1194,14 +1202,6 @@ if (!gl) {
     }));
   }
   renderWall();
-
-  const pageNumEl = document.getElementById("pageNum");
-  const prevEl    = document.getElementById("prevPage");
-  const nextEl    = document.getElementById("nextPage");
-
-  prevEl.addEventListener("click", () => { page--; renderWall(); });
-  nextEl.addEventListener("click", () => { page++; renderWall(); });
-  addEventListener("resize", () => { if (wall.length) renderWall(); });
 
   const detailEl  = document.getElementById("detail");
   const detailImg = document.getElementById("detailImg");
