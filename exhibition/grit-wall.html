@@ -139,24 +139,53 @@
   body.wall #wall figure img { transition:opacity .2s; }
   body.wall #wall figure:hover img { opacity:.5; }
 
-  /* one hold, opened */
+  /* one hold, opened: a card over the wall */
   #detail {
     position:fixed; inset:0; z-index:4;
-    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:26px;
-    background:#F5F5F5;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(245,245,245,.82);
     opacity:0; visibility:hidden;
-    transition:opacity .35s ease, visibility 0s .35s;
+    transition:opacity .3s ease, visibility 0s .3s;
   }
   body.detail #detail {
     opacity:1; visibility:visible;
-    transition:opacity .35s ease;
+    transition:opacity .3s ease;
   }
-  #detailImg { width:min(46vh, 46vw); height:min(46vh, 46vw); object-fit:contain; }
+  #card {
+    display:flex; align-items:center; gap:48px;
+    padding:48px 56px;
+    background:#F5F5F5;
+    border:1px solid #010101;
+    max-width:min(820px, 86vw);
+  }
+  #detailImg {
+    flex:0 0 auto;
+    width:min(34vh, 300px); height:min(34vh, 300px);
+    object-fit:contain;
+  }
   #detailText {
-    font:700 11px/1.9 "HN", "Helvetica Neue", Helvetica, Arial, sans-serif;
-    letter-spacing:.12em; text-align:center; color:#010101;
+    flex:1 1 auto; min-width:0;
+    display:flex; flex-direction:column; gap:14px;
+    font:700 11px/1.7 "HN", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    letter-spacing:.12em; color:#010101;
   }
-  #detailText .what { opacity:.55; }
+  #detailText .what { opacity:.55; overflow-wrap:anywhere; }
+
+  /* which wall you are looking at */
+  #pager {
+    position:fixed; left:0; right:0; bottom:38px; z-index:3;
+    display:none; justify-content:center; align-items:baseline; gap:18px;
+    font:700 11px/1 "HN", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    letter-spacing:.12em; color:#010101;
+  }
+  body.wall #pager { display:flex; }
+  #pager button {
+    font:inherit; letter-spacing:inherit; color:#010101;
+    background:none; border:0; padding:0; cursor:pointer; opacity:.55;
+  }
+  #pager button:hover:not([disabled]) { opacity:1; }
+  #pager button[disabled] { opacity:.18; cursor:default; }
+
 
   /* square, centred on its dot, and well inside the spacing */
   #wall img { display:block; width:72%; aspect-ratio:1; object-fit:contain; }
@@ -178,8 +207,15 @@
   <textarea id="dump" hidden spellcheck="false"></textarea>
   <div id="wall"></div>
   <div id="detail">
-    <img id="detailImg" alt="">
-    <div id="detailText"></div>
+    <div id="card">
+      <img id="detailImg" alt="">
+      <div id="detailText"></div>
+    </div>
+  </div>
+  <div id="pager">
+    <button type="button" id="prevPage">&lsaquo;</button>
+    <span id="pageNum">1</span>
+    <button type="button" id="nextPage">&rsaquo;</button>
   </div>
   <div id="guide"></div>
   <button type="button" id="toWall">WALL</button>
@@ -1081,7 +1117,16 @@ if (!gl) {
   });
 
   const WALL_KEY = "grit-wall";
-  const PAGE     = 240;         // a screen of dots. A full one turns over.
+  const DOT      = 96;          // matches --dot in the stylesheet
+  let page = 0;
+
+  // one wall is whatever fits on this screen. Resizing changes it, which
+  // is fine: the walls are a way to page through, not a fixed layout.
+  function perPage(){
+    const cols = Math.max(1, Math.floor((innerWidth - DOT) / DOT));
+    const rows = Math.max(1, Math.floor((innerHeight - DOT) / DOT));
+    return cols * rows;
+  }
   const BAKE     = 360;         // px, square
 
   const API = "/api/holds";
@@ -1130,9 +1175,16 @@ if (!gl) {
   }
 
   // only the latest page is up. Earlier pages are kept, not shown yet.
+  function pageCount(){ return Math.max(1, Math.ceil(wall.length / perPage())); }
+
   function renderWall(){
-    const start = wall.length ? Math.floor((wall.length - 1) / PAGE) * PAGE : 0;
-    wallEl.replaceChildren(...wall.slice(start, start + PAGE).map(en => {
+    const per = perPage();
+    page = Math.max(0, Math.min(page, pageCount() - 1));
+    const start = page * per;
+    pageNumEl.textContent = String(page + 1);
+    prevEl.disabled = page === 0;
+    nextEl.disabled = page >= pageCount() - 1;
+    wallEl.replaceChildren(...wall.slice(start, start + per).map(en => {
       const f  = document.createElement("figure");
       const im = new Image(); im.src = en.img; im.alt = "";
       f.dataset.id = String(en.id);
@@ -1142,6 +1194,14 @@ if (!gl) {
     }));
   }
   renderWall();
+
+  const pageNumEl = document.getElementById("pageNum");
+  const prevEl    = document.getElementById("prevPage");
+  const nextEl    = document.getElementById("nextPage");
+
+  prevEl.addEventListener("click", () => { page--; renderWall(); });
+  nextEl.addEventListener("click", () => { page++; renderWall(); });
+  addEventListener("resize", () => { if (wall.length) renderWall(); });
 
   const detailEl  = document.getElementById("detail");
   const detailImg = document.getElementById("detailImg");
@@ -1242,6 +1302,7 @@ if (!gl) {
     });
     const added = wall[wall.length - 1];
     freshId = added.id;
+    page = Math.ceil(wall.length / perPage()) - 1;
 
     archiveEl.disabled = true;
     archiveEl.textContent = "SAVING";
