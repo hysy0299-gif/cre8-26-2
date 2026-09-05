@@ -1322,13 +1322,21 @@ if (!gl) {
         handoverT = performance.now() + HANDOVER_FOR;
       })
       .catch(err => {
-        // the hold stays on screen and the visitor can try again
-        console.error("hold not saved to the wall:", err);
-        wall.pop();
-        freshId = null;
+        console.error("wall unreachable, kept on this machine:", err);
+        // it goes up either way; only where it is kept changes
+        const wasRemote = remote;
+        remote = false;
+        if (added.blob) {
+          toDataURL(added.blob).then(u => { added.img = u; delete added.blob; saveWall(); renderWall(); });
+        }
+        saveWall(); renderWall();
+        remote = wasRemote;
+        noteEl.hidden = true;
         archiveEl.disabled = false; archiveEl.textContent = "ARCHIVE";
-        guideEl.textContent = "NOT SAVED. TRY AGAIN";
+        guideEl.textContent = "SAVED ON THIS SCREEN ONLY";
         lastGuide = null;
+        document.body.classList.add("handover");
+        handoverT = performance.now() + HANDOVER_FOR;
       });
     noteName.blur(); noteText.blur();
 
@@ -1452,12 +1460,14 @@ if (!gl) {
 
     // the crop appears with the count and firms up as it closes
     {
+      const counting = S.stillT > 0.05 || S.fixed;
+      const easing   = S.settleT > 1.0;          // still, but not counting yet
       const t = S.fixed ? 1 : Math.min(1, S.stillT / STILL_AFTER);
-      const show = (S.stillT > 0.15 || S.fixed) && S.phase !== "NOTE";
+      const show = (counting || easing) && S.phase !== "NOTE";
       const side = frameSide();
       frameEl.style.width = side + "px";
       frameEl.style.height = side + "px";
-      frameEl.style.opacity = show ? (0.18 + t * 0.42).toFixed(3) : 0;
+      frameEl.style.opacity = !show ? 0 : counting ? (0.22 + t * 0.4).toFixed(3) : "0.14";
       const c = S.fixed ? "" : String(Math.max(1, Math.ceil(STILL_AFTER - S.stillT)));
       if (c !== lastCount) { countEl.textContent = c; lastCount = c; }
     }
