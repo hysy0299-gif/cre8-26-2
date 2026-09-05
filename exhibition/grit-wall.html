@@ -122,7 +122,6 @@
   body.wall #capnote, body.handover #capnote { opacity:0; }
 
   /* the one just added arrives a beat later than the rest */
-  #wall figure.fresh { animation:land .9s ease .35s both; }
   @keyframes land { from { opacity:0; } to { opacity:1; } }
   /* The wall as a dome: the holds sit on the inside of a sphere and you
      turn it. Same idea as the React component, written directly here —
@@ -1090,7 +1089,6 @@ if (!gl) {
   });
 
   const WALL_KEY = "grit-wall";
-  const PAGE     = 240;         // a screen of dots. A full one turns over.
   const BAKE     = 360;         // px, square
 
   const API = "/api/holds";
@@ -1149,7 +1147,6 @@ if (!gl) {
     }));
     layout();
   }
-  renderWall();
 
   // ---- the dome ------------------------------------------------------
   // Holds sit on the inside of a sphere; dragging turns it. Each row is
@@ -1267,6 +1264,8 @@ if (!gl) {
   });
 
   detailEl.addEventListener("click", () => document.body.classList.remove("detail"));
+
+  renderWall();
 
   function bake(){
     const side = Math.min(canvas.width, canvas.height) * CROP;
