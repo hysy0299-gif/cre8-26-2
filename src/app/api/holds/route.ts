@@ -3,9 +3,11 @@ import { put, list } from "@vercel/blob";
 /**
  * 관람객이 만든 홀드가 쌓이는 곳.
  *
- * 이미지는 PNG blob 하나로 올라가고, 이름·한마디·주소는 `index.json`
- * 한 장에 모인다. 벽은 그 index만 읽으면 되니 홀드가 몇 개가 되든
- * 요청은 한 번이고, 이미지는 브라우저가 알아서 캐시한다.
+ * 이름과 한마디는 파일 이름 안에 실려 간다. 그래서 저장은 blob 쓰기
+ * 한 번이고, 읽기는 목록 한 번이다. 따로 index를 두면 저장할 때마다
+ * 읽고 고쳐 쓰느라 왕복이 세 번이 되고, 동시에 둘이 쓰면 하나가 사라진다.
+ *
+ * 이미지는 PNG 바이트 그대로 받는다. base64로 감싸면 3분의 1이 더 붙는다.
  *
  * 저장소는 Vercel Blob이다. 프로젝트에 Blob 스토어를 붙이면
  * `BLOB_READ_WRITE_TOKEN`이 자동으로 들어온다.
@@ -13,7 +15,8 @@ import { put, list } from "@vercel/blob";
 
 export const dynamic = "force-dynamic";
 
-const INDEX = "wall/index.json";
+const PREFIX = "wall/";
+const MAX_BYTES = 2_000_000;
 
 export interface HoldEntry {
   id: number;
@@ -23,19 +26,46 @@ export interface HoldEntry {
   url: string;
 }
 
-/** index.json을 읽는다. 아직 없으면 빈 벽이다. */
-async function readIndex(): Promise<HoldEntry[]> {
-  const found = await list({ prefix: INDEX, limit: 1 });
-  const blob = found.blobs.find((b) => b.pathname === INDEX);
-  if (!blob) return [];
-  const res = await fetch(blob.url, { cache: "no-store" });
-  if (!res.ok) return [];
-  return (await res.json()) as HoldEntry[];
+type Meta = Pick<HoldEntry, "name" | "note" | "hold">;
+
+const packMeta = (m: Meta) =>
+  Buffer.from(JSON.stringify(m), "utf8").toString("base64url");
+
+function unpackMeta(s: string): Meta {
+  try {
+    const m = JSON.parse(Buffer.from(s, "base64url").toString("utf8"));
+    return {
+      name: String(m.name ?? ""),
+      note: String(m.note ?? ""),
+      hold: String(m.hold ?? ""),
+    };
+  } catch {
+    return { name: "", note: "", hold: "" };
+  }
 }
 
 export async function GET() {
   try {
-    return Response.json({ holds: await readIndex() });
+    const { blobs } = await list({ prefix: PREFIX, limit: 1000 });
+    const holds: HoldEntry[] = [];
+
+    for (const b of blobs) {
+      // wall/<id>-<base64url meta>.png — id는 첫 하이픈 앞까지다.
+      // base64url 안에 하이픈이 들어갈 수 있으므로 한 번만 자른다.
+      const rest = b.pathname.slice(PREFIX.length);
+      const cut = rest.indexOf("-");
+      if (cut < 0 || !rest.endsWith(".png")) continue;
+      const id = Number(rest.slice(0, cut));
+      if (!Number.isFinite(id)) continue;
+      holds.push({
+        id,
+        url: b.url,
+        ...unpackMeta(rest.slice(cut + 1, -4)),
+      });
+    }
+
+    holds.sort((a, b) => a.id - b.id);
+    return Response.json({ holds });
   } catch (err) {
     console.error("wall read failed", err);
     return Response.json({ holds: [], error: "read failed" }, { status: 500 });
@@ -43,53 +73,37 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  let body: { name?: string; note?: string; hold?: string; img?: string };
+  const q = new URL(request.url).searchParams;
+  const meta: Meta = {
+    name: (q.get("name") ?? "").slice(0, 24),
+    note: (q.get("note") ?? "").slice(0, 60),
+    hold: (q.get("hold") ?? "").slice(0, 24),
+  };
+
+  let bytes: ArrayBuffer;
   try {
-    body = await request.json();
+    bytes = await request.arrayBuffer();
   } catch {
-    return Response.json({ error: "bad json" }, { status: 400 });
+    return Response.json({ error: "no body" }, { status: 400 });
   }
 
-  const img = typeof body.img === "string" ? body.img : "";
-  if (!img.startsWith("data:image/png;base64,")) {
-    return Response.json({ error: "png data url required" }, { status: 400 });
+  if (bytes.byteLength === 0) {
+    return Response.json({ error: "empty" }, { status: 400 });
   }
-
-  const bytes = Buffer.from(img.slice(img.indexOf(",") + 1), "base64");
-  // 한 장이 이보다 크면 굽는 쪽이 잘못된 것이다
-  if (bytes.length > 2_000_000) {
+  // 이보다 크면 굽는 쪽이 잘못된 것이다
+  if (bytes.byteLength > MAX_BYTES) {
     return Response.json({ error: "too large" }, { status: 413 });
   }
 
   const id = Date.now();
 
   try {
-    const image = await put(`wall/${id}.png`, bytes, {
+    const image = await put(`${PREFIX}${id}-${packMeta(meta)}.png`, bytes, {
       access: "public",
       contentType: "image/png",
       addRandomSuffix: false,
     });
-
-    const entry: HoldEntry = {
-      id,
-      name: String(body.name ?? "").slice(0, 24),
-      note: String(body.note ?? "").slice(0, 60),
-      hold: String(body.hold ?? "").slice(0, 24),
-      url: image.url,
-    };
-
-    // 전시장에서는 한 번에 한 사람이 쓰므로 읽고 다시 쓰는 것으로 충분하다
-    const wall = await readIndex();
-    wall.push(entry);
-    await put(INDEX, JSON.stringify(wall), {
-      access: "public",
-      contentType: "application/json",
-      addRandomSuffix: false,
-      allowOverwrite: true,
-      cacheControlMaxAge: 0,
-    });
-
-    return Response.json({ entry });
+    return Response.json({ entry: { id, url: image.url, ...meta } });
   } catch (err) {
     console.error("wall write failed", err);
     return Response.json({ error: "write failed" }, { status: 500 });

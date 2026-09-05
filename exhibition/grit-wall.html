@@ -542,7 +542,7 @@ if (!gl) {
     energy:0,
     down:0, hold:0,
     seed:[0, 0, 0], seed2:[0, 0, 0, 0], form:[0, 1, 0, 0], pick:-1, armed:true, size:0.5,
-    fixed:false, settleT:0, stillT:0, phase:"MAKE", baked:null,
+    fixed:false, settleT:0, stillT:0, phase:"MAKE", baked:null, bakedUrl:null,
     wasHold:0, wasSize:0.5, wasForm:-1,
     lastX:0, lastY:0, seen:false,
     lastInput: performance.now(),
@@ -1076,7 +1076,7 @@ if (!gl) {
   let freshId = null, handoverT = 0;
 
   function saveWall(){
-    if (remote) return;        // the server holds it
+    if (remote) return;        // the server holds it, and object urls do not survive a reload
     try { localStorage.setItem(WALL_KEY, JSON.stringify(wall)); }
     catch (e) { console.warn("wall not saved:", e.name); }
   }
@@ -1086,13 +1086,17 @@ if (!gl) {
   // for this session and is reported, not swallowed.
   function sendHold(entry){
     if (!remote) return Promise.resolve();
-    return fetch(API, {
+    const q = new URLSearchParams({ name: entry.name, note: entry.note, hold: entry.hold });
+    return fetch(API + "?" + q, {
       method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ name: entry.name, note: entry.note, hold: entry.hold, img: entry.img })
+      headers: { "content-type": "image/png" },
+      body: entry.blob
     })
       .then(r => r.ok ? r.json() : Promise.reject(new Error("HTTP " + r.status)))
-      .then(d => { if (d.entry && d.entry.url) entry.img = d.entry.url; });
+      .then(d => {
+        if (d.entry && d.entry.url) entry.img = d.entry.url;
+        delete entry.blob;
+      });
   }
 
   // only the latest page is up. Earlier pages are kept, not shown yet.
@@ -1132,7 +1136,9 @@ if (!gl) {
       d[i + 3] = Math.round(a * 255);
     }
     cx.putImageData(im, 0, 0);
-    return c.toDataURL("image/png");
+
+    // toBlob encodes off the main thread, so the field keeps running
+    return new Promise(resolve => c.toBlob(b => resolve(b), "image/png"));
   }
 
   function fix(){
@@ -1164,13 +1170,22 @@ if (!gl) {
   }
   retakeEl.addEventListener("click", retake);
 
+  // a blob url dies with the page, so the local fallback needs the bytes
+  function toDataURL(blob){
+    return new Promise(resolve => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result);
+      r.readAsDataURL(blob);
+    });
+  }
+
   function commit(){
     wall.push({
       id: Date.now(),
       name: noteName.value.trim(),
       note: noteText.value.trim(),
       hold: HOLD_NAMES[S.form[0]], form: S.form.slice(), size: S.size,
-      img: S.baked
+      img: S.bakedUrl, blob: S.baked
     });
     const added = wall[wall.length - 1];
     freshId = added.id;
@@ -1180,6 +1195,9 @@ if (!gl) {
 
     sendHold(added)
       .then(() => {
+        if (!remote && added.blob) {
+          toDataURL(added.blob).then(u => { added.img = u; delete added.blob; saveWall(); renderWall(); });
+        }
         saveWall(); renderWall();
         noteEl.hidden = true;
         archiveEl.disabled = false; archiveEl.textContent = "ARCHIVE";
@@ -1388,7 +1406,12 @@ if (!gl) {
     gl.bindVertexArray(vao);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
 
-    if (bakePending) { bakePending = false; S.baked = bake(); openNote(); }
+    if (bakePending) {
+      bakePending = false;
+      // the crop has to be read in the same tick it was drawn
+      bake().then(blob => { S.baked = blob; S.bakedUrl = URL.createObjectURL(blob); });
+      openNote();
+    }
 
     let label = "IDLE";
     if (S.contact > 0.4)       label = "CONTACT";
