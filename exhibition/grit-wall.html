@@ -73,7 +73,7 @@ uniform float uContact;    // 0..1 contact
 uniform float uResidue;    // 0..1 decaying trace
 uniform float uEnergy;     // 0..1 pointer speed
 uniform float uHold;       // 0..1 scroll progress
-uniform vec4  uSeed;       // this visitor's hold: layout, axis, surface, family
+uniform vec3  uSeed;       // this visitor's hold: lobes, axis, surface
 uniform float uSize;       // 0..1, how much material ends up in it
 
 mat2 rot(float a){ float s = sin(a), c = cos(a); return mat2(c, -s, s, c); }
@@ -82,131 +82,6 @@ float hash21(vec2 p){
   p = fract(p * vec2(123.34, 456.21));
   p += dot(p, p + 45.32);
   return fract(p.x * p.y);
-}
-
-// --- BODY ----------------------------------------------------------
-// Everything above stays as it was: loose material is still the density
-// march. This is only what the material becomes once it has gathered.
-//
-// The archive's seventeen are all one thing — a few rounded lobes fused
-// into a single cast body, one dominant axis, one surface feature, and a
-// back flattened because it bolts to a wall. uSeed picks a point inside
-// that range, never outside it.
-
-float hash11(float n){ return fract(sin(n * 127.1) * 43758.5453123); }
-
-// rounded union. This is what makes it read as cast rather than as a
-// pile of spheres stuck together.
-float smin(float a, float b, float k){
-  float w = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
-  return mix(b, a, w) - k * w * (1.0 - w);
-}
-
-// a segment whose radius tapers along it. FIN, GLIDER and SPROUT are all
-// this shape; no arrangement of spheres reaches that silhouette.
-float sdArm(vec3 p, vec3 b, float r1, float r2){
-  float t = clamp(dot(p, b) / max(dot(b, b), 1e-5), 0.0, 1.0);
-  return length(p - b * t) - mix(r1, r2, t);
-}
-
-float smax(float a, float b, float k){ return -smin(-a, -b, k); }
-
-float holdSDF(vec3 pos, float h)
-{
-  float loose = 1.0 - h;
-
-  pos.xz *= rot(uRot.x);
-  pos.yz *= rot(uRot.y);
-
-  // Scaling a coordinate stretches the field along it, which makes every
-  // distance below an overestimate. Keep the factors — the march has to
-  // divide them back out or it steps straight through the body.
-  float sx = 1.0 + max(-uSeed.y, 0.0) * 0.55;   // runs long
-  float sy = 1.0 + max( uSeed.y, 0.0) * 0.48;   // runs wide
-  float sz = mix(1.45, 2.20, h);                // relief, it bolts to a wall
-
-  vec3 q = pos;
-  q.x *= sx; q.y *= sy; q.z *= sz;
-
-  // still finding its body while the fist is closing
-  q += vec3(sin(q.y * 2.7 + iTime * 0.6),
-            cos(q.z * 2.3 - iTime * 0.5),
-            sin(q.x * 2.1 + iTime * 0.4)) * loose * 0.42;
-
-  float base = uSeed.x * 6.28318530;
-  float sd;
-
-  // Four families, because the archive has four. Varying arm counts
-  // inside one family only ever produced variations on one object.
-  float kind = floor(uSeed.w * 3.999);
-
-  if (kind < 0.5) {
-    // RADIAL — a hub with tapered arms. CLOVER, FIN, BUBBLE.
-    // The fusion radius stays well under the arm radius; go near it and
-    // the arms dissolve and the whole thing collapses to a ball.
-    float lobes = floor(2.0 + fract(uSeed.x * 5.1) * 2.999);
-    sd = length(q) - mix(0.26, 0.36, fract(uSeed.x * 3.3));
-    for (float i = 0.0; i < 4.0; i++) {
-      if (i >= lobes) break;
-      float s1 = hash11(i * 7.3 + uSeed.x * 17.0);
-      float s2 = hash11(i * 3.9 + uSeed.x * 11.0);
-      float ang = 6.28318530 * (i / lobes) + base + (s1 - 0.5) * 1.15;
-      vec3  dir = vec3(cos(ang), sin(ang), (s1 - 0.5) * 0.34) * mix(0.56, 1.06, s2);
-      sd = smin(sd, sdArm(q, dir, mix(0.24, 0.34, s2), mix(0.06, 0.19, s1)), 0.16);
-    }
-
-  } else if (kind < 1.5) {
-    // BLADE — one long body, thick at the middle, thin at the ends.
-    // SPROUT, GLIDER, SLOPE. The most directional silhouette there is.
-    vec3 dir = vec3(cos(base), sin(base), 0.0);
-    float hub  = mix(0.28, 0.40, fract(uSeed.x * 5.1));
-    float back = mix(0.30, 0.95, fract(uSeed.x * 7.3));   // asymmetric on purpose
-    sd = sdArm(q,  dir * mix(0.80, 1.25, fract(uSeed.x * 9.7)), hub, mix(0.04, 0.13, uSeed.z));
-    sd = smin(sd, sdArm(q, -dir * back, hub, mix(0.07, 0.22, fract(uSeed.x * 2.9))), 0.20);
-
-  } else if (kind < 2.5) {
-    // SCOOP — a body with a bite taken out. SHELL, VALLEY, CUSHION.
-    // The concave face is what your hand actually catches on.
-    float rb = mix(0.60, 0.84, fract(uSeed.x * 3.3));
-    vec3  e  = vec3(1.0, mix(0.74, 1.26, fract(uSeed.x * 6.1)), 1.0);
-    float body = length(q / e) - rb;
-    vec3  c = vec3(cos(base), sin(base), -0.62) * mix(0.46, 0.86, fract(uSeed.x * 9.1));
-    float bite = length(q - c) - rb * mix(0.70, 1.02, fract(uSeed.x * 4.3));
-    sd = smax(body, -bite, 0.13);
-
-  } else {
-    // STACK — two or three lumps resting on each other. KNOT, MELT,
-    // RIPPLE. Fused just enough to be one object, not enough to merge.
-    float count = 2.0 + step(0.55, fract(uSeed.x * 4.7));
-    sd = 1e9;
-    for (float i = 0.0; i < 3.0; i++) {
-      if (i >= count) break;
-      float s1 = hash11(i * 5.7 + uSeed.x * 13.0);
-      float s2 = hash11(i * 2.3 + uSeed.x * 19.0);
-      float ang = base + i * 2.4 + (s1 - 0.5);
-      vec3  c = vec3(cos(ang), sin(ang), (s2 - 0.5) * 0.5) * mix(0.20, 0.62, s2);
-      sd = smin(sd, length(q - c) - mix(0.32, 0.54, s1), 0.10);
-    }
-  }
-
-  // one feature, not a texture. VEIL stays smooth, CRUMPLE keeps a crease.
-  float feature = sin(q.x * 4.1 + base) * sin(q.y * 3.5 - base * 0.7)
-                + sin(q.z * 5.2 + base * 0.3) * 0.4;
-  sd -= feature * mix(0.008, 0.055, uSeed.z) * h;
-
-  // and here is the division. The view looks straight down the squashed
-  // axis, so without it the body is invisible exactly when it is most
-  // flattened — which is when it has finished gathering.
-  return sd / max(max(sx, sy), sz);
-}
-
-vec3 holdNormal(vec3 pos, float h)
-{
-  vec2 e = vec2(0.0016, 0.0);
-  return normalize(vec3(
-    holdSDF(pos + e.xyy, h) - holdSDF(pos - e.xyy, h),
-    holdSDF(pos + e.yxy, h) - holdSDF(pos - e.yxy, h),
-    holdSDF(pos + e.yyx, h) - holdSDF(pos - e.yyx, h)));
 }
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord)
@@ -299,45 +174,6 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
   // one thing keeping the ground from being exactly GRIT WHITE.
   col += (hash21(fragCoord + fract(t) * 91.7) - 0.5) * 0.011 * smoothstep(0.0, 0.04, e);
 
-  // --- the body condenses out of the dust as the fist closes.
-  // Below h it is not drawn at all, so nothing about the loose state
-  // changes — this only ever adds on top of what gathered.
-  if (h > 0.004) {
-    vec2  suv  = (fragCoord * 2.0 - r) / r.y;
-    float bulk = mix(0.80, 1.30, uSize);
-    vec3  sro  = vec3(0.0, 0.0, -3.15 / bulk);
-    vec3  srd  = normalize(vec3(suv, 1.75));
-
-    float sz = 0.0, sdist = 1.0;
-    bool  shit = false;
-    for (int i = 0; i < 80; i++) {
-      sdist = holdSDF((sro + srd * sz) * bulk, h) / bulk;
-      if (sdist < 0.0013) { shit = true; break; }
-      sz += sdist * 0.78;
-      if (sz > 7.0) break;
-    }
-
-    if (shit) {
-      vec3 sn = holdNormal((sro + srd * sz) * bulk, h);
-
-      // one key from the upper left, the way the archive was shot.
-      // Matte only — a highlight is the one thing that reads as plastic.
-      vec3  key  = normalize(vec3(-0.46, 0.72, -0.52));
-      float dif  = max(dot(sn, key), 0.0);
-      float wrap = max(dot(sn, key) * 0.5 + 0.5, 0.0);
-      float rim  = 1.0 - max(dot(sn, -srd), 0.0);
-      float lum  = 0.10 + dif * 0.56 + wrap * wrap * 0.30 - rim * rim * 0.22;
-
-      // still ink on paper, not light: a lit face takes less of it
-      float ink = clamp(1.0 - lum, 0.0, 1.0);
-      vec3 solid = mix(WHITE, GREEN, smoothstep(0.06, 0.34, ink));
-      solid = mix(solid, MID,   smoothstep(0.30, 0.64, ink));
-      solid = mix(solid, BLACK, smoothstep(0.60, 0.94, ink));
-
-      col = mix(col, solid, h);
-    }
-  }
-
   fragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
 }
 
@@ -404,7 +240,7 @@ if (!gl) {
     residue:0,
     energy:0,
     down:0, hold:0,
-    seed:[0, 0, 0, 0], armed:true, size:0.5,
+    seed:[0, 0, 0], armed:true, size:0.5,
     lastX:0, lastY:0, seen:false,
     lastInput: performance.now(),
     label:"IDLE"
@@ -417,7 +253,6 @@ if (!gl) {
     S.seed[0] = Math.random();
     S.seed[1] = Math.random() * 2 - 1;
     S.seed[2] = Math.random();
-    S.seed[3] = Math.random();
   }
   rollSeed();
 
@@ -827,7 +662,7 @@ if (!gl) {
     gl.uniform1f(uResidue, S.residue);
     gl.uniform1f(uEnergy, S.energy);
     gl.uniform1f(uHold, S.hold);
-    gl.uniform4f(uSeed, S.seed[0], S.seed[1], S.seed[2], S.seed[3]);
+    gl.uniform3f(uSeed, S.seed[0], S.seed[1], S.seed[2]);
     gl.uniform1f(uSize, S.size);
 
     gl.bindVertexArray(vao);
