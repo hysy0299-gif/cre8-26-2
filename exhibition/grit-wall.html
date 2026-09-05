@@ -1015,11 +1015,13 @@ if (!gl) {
   S.py = S.tpy = S.ay = cssH / 2;
 
   const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  window.GRIT = { S, Sense, frames: 0 };
 
   // ---- loop --------------------------------------------------------
   let raf = 0, t0 = performance.now(), prev = t0, avgDt = 16.7;
 
   function tick(now){
+    GRIT.frames++;
     const dt = Math.min(64, now - prev); prev = now;
     const sec = dt / 1000;
 
