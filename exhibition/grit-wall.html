@@ -160,9 +160,14 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
   // the left hand's pinch decides how much material the hold keeps
   // FIT sets the margin once it has gathered: the furthest point of any
   // hold, at default size, sits at packed * FIT from the centre
-  const float FIT = 0.78;
-  float packed = mix(2.10, 3.75, uSize) * uTuneB.x * uFit * FIT;
-  float radius = mix(6.6, packed, h) + uContact * 1.15 + uResidue * 0.30;
+  const float FIT = 0.75;
+  float packed = mix(2.10, 3.75, uSize) * uTuneB.x;
+  // the fit wraps the contact and residue terms too. Added after it,
+  // they were multiplied back up by each hold's reach, and the long
+  // holds came out a third larger than the round ones.
+  float loose  = 6.6    + uContact * 1.15 + uResidue * 0.30;
+  float gather = (packed + uContact * 1.15 + uResidue * 0.30) * uFit * FIT;
+  float radius = mix(loose, gather, h);
   // the churn has to die down as it sets, or it never reads as a thing
   float agit  = (uEnergy * 2.2 + uResidue * 0.9 + uProx * 0.5) * mix(1.0, uTuneA.w, h);
 
