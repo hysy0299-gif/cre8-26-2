@@ -376,19 +376,37 @@ if (!gl) {
       console.warn("camera unavailable, pointer fallback:", err.name);
       return;
     }
+    let fileset;
     try {
-      Sense.note = "LOADING MODEL";
-      const fileset = await FilesetResolver.forVisionTasks(WASM_BASE);
-      landmarker = await HandLandmarker.createFromOptions(fileset, {
-        baseOptions:{ modelAssetPath: MODEL_URL, delegate:"GPU" },
-        numHands: 2,
-        runningMode: "VIDEO"
-      });
-      Sense.on = true;
+      Sense.note = "LOADING RUNTIME";
+      fileset = await FilesetResolver.forVisionTasks(WASM_BASE);
     } catch (err) {
-      Sense.denied = true; Sense.note = "MODEL FAILED";
-      console.warn("hand model failed, pointer fallback:", err);
+      Sense.denied = true;
+      Sense.note = "WASM FAILED / " + String(err && err.message || err).slice(0, 40);
+      console.error("hand runtime failed:", err);
+      return;
     }
+
+    // the page already holds a WebGL2 context of its own, and the GPU
+    // delegate does not always survive sharing a machine with it. CPU is
+    // slower but it is the difference between working and not.
+    Sense.note = "LOADING MODEL";
+    for (const delegate of ["GPU", "CPU"]) {
+      try {
+        landmarker = await HandLandmarker.createFromOptions(fileset, {
+          baseOptions:{ modelAssetPath: MODEL_URL, delegate },
+          numHands: 2,
+          runningMode: "VIDEO"
+        });
+        Sense.on = true;
+        console.info("hand model running on", delegate);
+        return;
+      } catch (err) {
+        Sense.note = delegate + " FAILED / " + String(err && err.message || err).slice(0, 40);
+        console.error("hand model failed on", delegate, err);
+      }
+    }
+    Sense.denied = true;
   }
   startHands();
 
@@ -412,7 +430,15 @@ if (!gl) {
     dbgCtx.fillRect(0, 0, DW, DH);
     dbgCtx.fillStyle = "#010101";
     dbgCtx.font = "11px monospace";
-    dbgCtx.fillText(Sense.note, 8, 20);
+    const words = String(Sense.note).split(" ");
+    let line = "", y = 20;
+    for (const w of words) {
+      const next = line ? line + " " + w : w;
+      if (dbgCtx.measureText(next).width > DW - 16 && line) {
+        dbgCtx.fillText(line, 8, y); y += 14; line = w;
+      } else line = next;
+    }
+    if (line) dbgCtx.fillText(line, 8, y);
   }
 
   function sense(sec){
