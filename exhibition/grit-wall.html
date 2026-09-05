@@ -93,6 +93,11 @@
   #wall { display:none; }   /* records are kept, not shown */
 
   /* the crop, drawn where bake() actually cuts */
+  #count {
+    position:absolute; left:10px; top:10px;
+    font:700 11px/1 "HN", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    letter-spacing:.12em; color:#010101;
+  }
   #frame {
     position:fixed; left:50%; top:50%; transform:translate(-50%, -50%);
     border:1px solid #010101;
@@ -126,7 +131,7 @@
   <div id="wall"></div>
   <div id="guide"></div>
   <div id="capnote">HOLD STILL FOR 3 SECONDS TO SAVE</div>
-  <div id="frame"></div>
+  <div id="frame"><span id="count"></span></div>
   <form id="note" hidden autocomplete="off">
     <input id="noteName" placeholder="NAME" maxlength="24">
     <input id="noteText" placeholder="NOTE" maxlength="60">
@@ -920,9 +925,10 @@ if (!gl) {
       r.now += (open - r.now) * k;
       Sense.twist = r.now;
 
-      if (r.now > 0.62) {
+      r.max = Math.max(r.now, (r.max ?? r.now) * Math.pow(0.97, sec));
+      if (r.now > r.max * 0.82) {
         r.armed = true;                                   // palm is facing us again
-      } else if (r.armed && r.now < 0.40) {
+      } else if (r.armed && r.now < r.max * 0.55) {
         r.armed = false;                                  // turned away: next hold
         if (!S.fixed) rollSeed();
       }
@@ -982,6 +988,7 @@ if (!gl) {
 
   const guideEl  = document.getElementById("guide");
   const frameEl  = document.getElementById("frame");
+  const countEl  = document.getElementById("count");
 
   // the same square bake() takes, in css pixels
   function frameSide(){ return Math.min(cssW, cssH) * CROP; }
@@ -997,7 +1004,7 @@ if (!gl) {
 
   let wall = [];
   try { wall = JSON.parse(localStorage.getItem(WALL_KEY) || "[]"); } catch (e) { wall = []; }
-  let bakePending = false, noteT = 0, making = false, lastGuide = null;
+  let bakePending = false, noteT = 0, making = false, lastGuide = null, lastCount = null;
 
   function saveWall(){
     try { localStorage.setItem(WALL_KEY, JSON.stringify(wall)); }
@@ -1182,6 +1189,8 @@ if (!gl) {
       frameEl.style.width = side + "px";
       frameEl.style.height = side + "px";
       frameEl.style.opacity = show ? (0.18 + t * 0.42).toFixed(3) : 0;
+      const c = S.fixed ? "" : String(Math.max(1, Math.ceil(STILL_AFTER - S.stillT)));
+      if (c !== lastCount) { countEl.textContent = c; lastCount = c; }
     }
 
     // the wall only shows itself when nobody is at it
