@@ -83,6 +83,14 @@
     opacity:1; transition:opacity .6s; pointer-events:none;
   }
   #wall { display:none; }   /* records are kept, not shown */
+
+  /* the crop, drawn where bake() actually cuts */
+  #frame {
+    position:fixed; left:50%; top:50%; transform:translate(-50%, -50%);
+    border:1px solid #010101;
+    opacity:0; transition:opacity .25s;
+    pointer-events:none;
+  }
   #wall figure { margin:0; }
   #wall img { display:block; width:100%; aspect-ratio:1; object-fit:cover; }
   #wall figcaption {
@@ -110,6 +118,7 @@
   <div id="wall"></div>
   <div id="guide"></div>
   <div id="capnote">HOLD STILL FOR 3 SECONDS TO SAVE</div>
+  <div id="frame"></div>
   <form id="note" hidden autocomplete="off">
     <input id="noteName" placeholder="NAME" maxlength="24">
     <input id="noteText" placeholder="NOTE" maxlength="60">
@@ -953,6 +962,10 @@ if (!gl) {
   // images however many there are — the live march only ever renders one.
 
   const guideEl  = document.getElementById("guide");
+  const frameEl  = document.getElementById("frame");
+
+  // the same square bake() takes, in css pixels
+  function frameSide(){ return Math.min(cssW, cssH) * 0.62; }
   const wallEl   = document.getElementById("wall");
   const noteEl   = document.getElementById("note");
   const noteName = document.getElementById("noteName");
@@ -1130,6 +1143,16 @@ if (!gl) {
     else if (Sense.on && S.hold < 0.5) g = "MAKE A FIST WITH YOUR RIGHT HAND TO GATHER";
     else if (Sense.on) g = "LEFT HAND — PINCH THUMB AND INDEX TO RESIZE\nTWIST A WRIST FOR ANOTHER HOLD";
     if (g !== lastGuide) { guideEl.textContent = g; lastGuide = g; }
+
+    // the crop appears with the count and firms up as it closes
+    {
+      const t = S.fixed ? 1 : Math.min(1, S.stillT / STILL_AFTER);
+      const show = (S.stillT > 0.15 || S.fixed) && S.phase !== "NOTE";
+      const side = frameSide();
+      frameEl.style.width = side + "px";
+      frameEl.style.height = side + "px";
+      frameEl.style.opacity = show ? (0.18 + t * 0.42).toFixed(3) : 0;
+    }
 
     // the wall only shows itself when nobody is at it
     const nowMaking = S.prox > 0.05 || S.hold > 0.05 || S.fixed;
