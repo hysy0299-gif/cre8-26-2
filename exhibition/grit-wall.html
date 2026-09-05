@@ -161,21 +161,18 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
   float e = o.r * 0.34 + o.g * 0.50 + o.b * 0.16;
   e = 1.0 - exp(-e * mix(1.32, 2.10, h));   // thin and dusty up top, solid at the end
 
-  vec3 col = mix(WHITE, GREEN, smoothstep(0.00, 0.26, e));
-  col = mix(col, MID,   smoothstep(0.24, 0.58, e));
-  col = mix(col, BLACK, smoothstep(0.56, 0.98, e));
+  // The march leaves a faint accumulation on every pixel it passes
+  // through, including the empty ones. Cut it away, or the whole sheet
+  // tints and there is no white left for the hold to sit on.
+  e = max(0.0, e - 0.12);
 
-  // --- approach and residue darken the paper, they never add light.
-  // Over dense areas the subtraction clamps out, so marks stay marks.
-  float md = length(fragCoord - uPointPx) / r.y;
-  col -= (WHITE - GREEN) * exp(-md * 7.0) * (uProx * 0.60 + uContact * 1.35);
+  vec3 col = mix(WHITE, GREEN, smoothstep(0.00, 0.16, e));
+  col = mix(col, MID,   smoothstep(0.14, 0.46, e));
+  col = mix(col, BLACK, smoothstep(0.44, 0.86, e));
 
-  float ad = length(fragCoord - uAnchorPx) / r.y;
-  float ring = exp(-pow(abs(ad - (1.0 - uResidue) * 0.34) * 15.0, 2.0));
-  col -= (WHITE - MID) * ring * uResidue * 0.85;
-
-  // grain, also kills banding across the flat paper
-  col += (hash21(fragCoord + fract(t) * 91.7) - 0.5) * 0.011;
+  // grain only where there is material. On bare paper it would be the
+  // one thing keeping the ground from being exactly GRIT WHITE.
+  col += (hash21(fragCoord + fract(t) * 91.7) - 0.5) * 0.011 * smoothstep(0.0, 0.04, e);
 
   fragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
 }
