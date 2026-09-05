@@ -16,7 +16,7 @@ import { access, mkdir, readdir, rm, writeFile } from "node:fs/promises";
 import sharp from "sharp";
 import { BOOK_SOURCES, SPREAD_ASPECT } from "./book-pages.mjs";
 
-const SRC = "process book";
+const SRC = "fianl books";
 const OUT = "public/img/book";
 /**
  * 한 쪽의 폭.
