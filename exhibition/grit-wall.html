@@ -515,6 +515,7 @@ if (!gl) {
     down:0, hold:0,
     seed:[0, 0, 0], seed2:[0, 0, 0, 0], form:[0, 1, 0, 0], pick:-1, armed:true, size:0.5,
     fixed:false, settleT:0, stillT:0, phase:"MAKE", baked:null,
+    wasHold:0, wasSize:0.5, wasForm:-1,
     lastX:0, lastY:0, seen:false,
     lastInput: performance.now(),
     label:"IDLE"
@@ -1187,7 +1188,14 @@ if (!gl) {
     // gathered and not moving for STILL_AFTER: that is the decision
     const moving = (Sense.on ? Sense.energy : S.energy) > 0.08;
     if (!S.fixed) {
-      const held = S.hold > 0.9 && !moving;
+      // anything the visitor can still change about the hold restarts it
+      const changed =
+        Math.abs(S.hold - S.wasHold) > 0.02 ||
+        Math.abs(S.size - S.wasSize) > 0.015 ||
+        S.form[0] !== S.wasForm;
+      S.wasHold = S.hold; S.wasSize = S.size; S.wasForm = S.form[0];
+
+      const held = S.hold > 0.9 && !moving && !changed;
       // two seconds of stillness first, then the three-second count
       S.settleT = held ? S.settleT + sec : 0;
       S.stillT  = (held && S.settleT >= SETTLE_AFTER) ? S.stillT + sec : 0;
