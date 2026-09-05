@@ -160,7 +160,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
   // the left hand's pinch decides how much material the hold keeps
   // FIT sets the margin once it has gathered: the furthest point of any
   // hold, at default size, sits at packed * FIT from the centre
-  const float FIT = 1.0;
+  const float FIT = 0.78;
   float packed = mix(2.10, 3.75, uSize) * uTuneB.x * uFit * FIT;
   float radius = mix(6.6, packed, h) + uContact * 1.15 + uResidue * 0.30;
   // the churn has to die down as it sets, or it never reads as a thing
@@ -416,7 +416,7 @@ if (!gl) {
   // their own hold change shape under them.
   function rollSeed(){
     S.seed[0] = Math.random();
-    S.seed[1] = Math.random() * 2 - 1;
+    S.seed[1] = 0;   // ellipse stretch retired: the outline owns the shape
     S.seed[2] = Math.random();
     // the outline carries the variety now; keep these mild, twin off
     for (let i = 0; i < 4; i++) S.seed2[i] = (Math.random() * 2 - 1) * 0.3;
