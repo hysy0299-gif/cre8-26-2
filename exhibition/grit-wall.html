@@ -419,7 +419,6 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
       float w = k < 1.5 ? wk.x : k < 2.5 ? wk.y : k < 3.5 ? wk.z : wk.w;
       a += sin(a * k + t + agit * 0.8).yzx / k * fold * w;
     }
-    if (z > 24.0) break;   // past the mass; nothing left to gather
     d = abs(length(a * an) - radius) / 6.0;
     if (twin > 0.0) {
       float d2 = abs(length((a - toff * radius * 0.55) * an) - radius * 0.72) / 6.0;
