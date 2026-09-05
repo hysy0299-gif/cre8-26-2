@@ -508,7 +508,7 @@ if (!gl) {
 
   // measured in hand widths (wrist to middle knuckle), so they hold at
   // any distance. Read the live numbers off the D overlay to retune.
-  const GRIP_OPEN  = 2.30, GRIP_SHUT = 1.20;
+  const GRIP_OPEN  = 1.90, GRIP_SHUT = 1.05;
   const PINCH_SHUT = 0.30, PINCH_OPEN = 1.40;
 
   const Sense = {
@@ -807,18 +807,21 @@ if (!gl) {
 
     for (const h of Sense.hands) {
       const P = i => [(1 - h.lm[i].x) * DW, h.lm[i].y * DH];
-      dbgCtx.strokeStyle = h.side === "R" ? "#010101" : "#CBD7D4";
-      dbgCtx.lineWidth = 1.5;
-      dbgCtx.beginPath();
-      for (const [a, b] of BONES) {
-        const p = P(a), q = P(b);
-        dbgCtx.moveTo(p[0], p[1]); dbgCtx.lineTo(q[0], q[1]);
+      if (h.side === "R") {
+        // the gathering hand: its joints as points
+        dbgCtx.fillStyle = "#010101";
+        for (let i = 0; i < 21; i++) {
+          const p = P(i);
+          dbgCtx.beginPath(); dbgCtx.arc(p[0], p[1], 2.2, 0, 6.2832); dbgCtx.fill();
+        }
+      } else {
+        // the sizing hand: thumb tip to index tip, and the span between
+        const a = P(4), b = P(8);
+        dbgCtx.strokeStyle = "#CBD7D4"; dbgCtx.lineWidth = 1.5;
+        dbgCtx.beginPath(); dbgCtx.moveTo(a[0], a[1]); dbgCtx.lineTo(b[0], b[1]); dbgCtx.stroke();
+        dbgCtx.fillStyle = "#CBD7D4";
+        for (const p of [a, b]) { dbgCtx.beginPath(); dbgCtx.arc(p[0], p[1], 3.5, 0, 6.2832); dbgCtx.fill(); }
       }
-      dbgCtx.stroke();
-
-
-
-
     }
 
     if (!tune) return;
