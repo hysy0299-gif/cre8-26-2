@@ -555,6 +555,7 @@ if (!gl) {
       });
       camEl.srcObject = stream;
       await camEl.play();
+      document.body.classList.add("cam");
     } catch (err) {
       Sense.denied = true; Sense.note = "NO CAMERA / " + err.name;
       console.warn("camera unavailable, pointer fallback:", err.name);
@@ -704,7 +705,7 @@ if (!gl) {
   }
 
   function senseIdle(){
-    if (!tune) return;
+    if (!tune && !document.body.classList.contains("cam")) return;
     if (camEl.readyState >= 2) {
       dbgCtx.save();
       dbgCtx.setTransform(-1, 0, 0, 1, DW, 0);
