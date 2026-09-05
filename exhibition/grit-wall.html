@@ -93,6 +93,7 @@ uniform float uSize;       // 0..1, how much material ends up in it
 uniform vec4  uSeed2;      // -1..1 each: lobe scale, shell stretch, twin amount, twin angle
 uniform sampler2D uProfile; // 256 x 17, R8: a hold's reach by angle, x2.5
 uniform vec4  uForm;       // hold A row, hold B row, blend (sign = mirrored), turn
+uniform float uFit;        // 1 / this hold's furthest reach, so all holds fill the same circle
 uniform sampler2D uRelief; // 64 x 1088, R8: light and dark inside each hold, 0.5 = flat
 uniform vec4  uTuneA;      // gathered: exposure, fold lo, fold hi, churn left
 uniform vec4  uTuneB;      // gathered: radius scale, y squash, z squash, -
@@ -157,7 +158,10 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
   // the extent is what makes the gathering readable: loose material spans
   // most of the frame, the packed mass is about a third of it
   // the left hand's pinch decides how much material the hold keeps
-  float packed = mix(2.10, 3.75, uSize) * uTuneB.x;
+  // FIT sets the margin once it has gathered: the furthest point of any
+  // hold, at default size, sits at packed * FIT from the centre
+  const float FIT = 1.0;
+  float packed = mix(2.10, 3.75, uSize) * uTuneB.x * uFit * FIT;
   float radius = mix(6.6, packed, h) + uContact * 1.15 + uResidue * 0.30;
   // the churn has to die down as it sets, or it never reads as a thing
   float agit  = (uEnergy * 2.2 + uResidue * 0.9 + uProx * 0.5) * mix(1.0, uTuneA.w, h);
@@ -310,6 +314,10 @@ const PROFILES = [
 // still count the full list, so 10 is followed by 12.
 const HOLD_SKIP = ["RIPPLE"];
 const POOL = HOLD_NAMES.map((_, i) => i).filter(i => !HOLD_SKIP.includes(HOLD_NAMES[i]));
+// furthest reach of each outline. Profiles are mean-normalised, so a
+// round hold peaks near 1.1 and a long one near 2.4 — without this the
+// same radius drew SPROUT twice the size of BUBBLE.
+const HOLD_MAXR = PROFILES.map(r => Math.max(...r));
 
 const canvas  = document.getElementById("c");
 const fieldEl = document.getElementById("field");
@@ -353,7 +361,8 @@ if (!gl) {
         uResidue = U("uResidue"), uEnergy = U("uEnergy"),
         uHold = U("uHold"), uSeed = U("uSeed"), uSize = U("uSize"),
         uTuneA = U("uTuneA"), uTuneB = U("uTuneB"), uSeed2 = U("uSeed2"),
-        uProfile = U("uProfile"), uForm = U("uForm"), uRelief = U("uRelief"), uTuneC = U("uTuneC");
+        uProfile = U("uProfile"), uForm = U("uForm"), uRelief = U("uRelief"), uTuneC = U("uTuneC"),
+        uFit = U("uFit");
 
   // the archive's outlines: one row per hold, angle across, wrapping
   {
@@ -620,20 +629,20 @@ if (!gl) {
   // per-hold values from the tuning pass. What the visitor changes is
   // size and angle; none of this.
   const HOLD_TUNE = {
-    "BUBBLE": {"expo":1.6,"foldLo":-0.1,"foldHi":0.02,"agit":0.4,"radius":2,"py":1.22,"pz":1.22,"relief":-0.05,"dome":0.1,"zoom":1.1},
-    "CHALK": {"expo":2.2,"foldLo":0.05,"foldHi":-0.08,"agit":0.4,"radius":1.75,"py":1.22,"pz":1.22,"relief":-0.8,"dome":0.35,"zoom":1.1},
-    "CLOVER": {"expo":2.7,"foldLo":-0.75,"foldHi":0.42,"agit":-3.6,"radius":2,"py":1.22,"pz":1.42,"relief":0.2,"dome":0.35,"zoom":1.1},
-    "CRUMPLE": {"expo":2.3,"foldLo":-0.05,"foldHi":0.22,"agit":-0.1,"radius":1.75,"py":1.22,"pz":1.22,"relief":0.2,"dome":0.35,"zoom":1.1},
-    "CUSHION": {"expo":0.7,"foldLo":-0.67,"foldHi":0.46,"agit":0.75,"radius":2,"py":1.12,"pz":1.32,"relief":-0.05,"dome":0.1,"zoom":1.1},
-    "FIN": {"expo":2.2,"foldLo":0.25,"foldHi":0.07,"agit":-4.1,"radius":1.7,"py":0.92,"pz":1.22,"relief":-0.8,"dome":0.35,"zoom":1.1},
-    "GLIDER": {"expo":4.7,"foldLo":-0.15,"foldHi":-0.13,"agit":-0.1,"radius":1.5,"py":1.12,"pz":1.12,"relief":0.45,"dome":0.35,"zoom":1.1},
-    "KNOT": {"expo":2.7,"foldLo":0.15,"foldHi":0.22,"agit":0.15,"radius":1.5,"py":1.12,"pz":1.22,"relief":0.45,"dome":0.35,"zoom":1.1},
+    "BUBBLE": {"expo":1.6,"foldLo":-0.1,"foldHi":0.02,"agit":0.4,"radius":1,"py":1.22,"pz":1.22,"relief":-0.05,"dome":0.1,"zoom":1.1},
+    "CHALK": {"expo":2.2,"foldLo":0.05,"foldHi":-0.08,"agit":0.4,"radius":1,"py":1.22,"pz":1.22,"relief":-0.8,"dome":0.35,"zoom":1.1},
+    "CLOVER": {"expo":2.7,"foldLo":-0.75,"foldHi":0.42,"agit":-3.6,"radius":1,"py":1.22,"pz":1.42,"relief":0.2,"dome":0.35,"zoom":1.1},
+    "CRUMPLE": {"expo":2.3,"foldLo":-0.05,"foldHi":0.22,"agit":-0.1,"radius":1,"py":1.22,"pz":1.22,"relief":0.2,"dome":0.35,"zoom":1.1},
+    "CUSHION": {"expo":0.7,"foldLo":-0.67,"foldHi":0.46,"agit":0.75,"radius":1,"py":1.12,"pz":1.32,"relief":-0.05,"dome":0.1,"zoom":1.1},
+    "FIN": {"expo":2.2,"foldLo":0.25,"foldHi":0.07,"agit":-4.1,"radius":1,"py":0.92,"pz":1.22,"relief":-0.8,"dome":0.35,"zoom":1.1},
+    "GLIDER": {"expo":4.7,"foldLo":-0.15,"foldHi":-0.13,"agit":-0.1,"radius":1,"py":1.12,"pz":1.12,"relief":0.45,"dome":0.35,"zoom":1.1},
+    "KNOT": {"expo":2.7,"foldLo":0.15,"foldHi":0.22,"agit":0.15,"radius":1,"py":1.12,"pz":1.22,"relief":0.45,"dome":0.35,"zoom":1.1},
     "MELT": {"expo":2.2,"foldLo":0.05,"foldHi":0.22,"agit":0.15,"radius":1,"py":1.12,"pz":1.22,"relief":0.45,"dome":0.35,"zoom":1.1},
-    "RAY": {"expo":2.7,"foldLo":-0.05,"foldHi":0.17,"agit":0.15,"radius":1.75,"py":1.12,"pz":1.32,"relief":0.95,"dome":0.35,"zoom":1.1},
-    "RIPPLE": {"expo":1.2,"foldLo":0,"foldHi":0.22,"agit":-0.1,"radius":1.25,"py":1.02,"pz":1.42,"relief":0.45,"dome":0.35,"zoom":1.1},
+    "RAY": {"expo":2.7,"foldLo":-0.05,"foldHi":0.17,"agit":0.15,"radius":1,"py":1.12,"pz":1.32,"relief":0.95,"dome":0.35,"zoom":1.1},
+    "RIPPLE": {"expo":1.2,"foldLo":0,"foldHi":0.22,"agit":-0.1,"radius":1,"py":1.02,"pz":1.42,"relief":0.45,"dome":0.35,"zoom":1.1},
     "SHELL": {"expo":2.2,"foldLo":0.05,"foldHi":0.22,"agit":0.15,"radius":1,"py":1.12,"pz":1.22,"relief":0.45,"dome":0.35,"zoom":1.1},
-    "SLOPE": {"expo":5.2,"foldLo":0.05,"foldHi":0.02,"agit":-0.1,"radius":1.95,"py":0.92,"pz":1.32,"relief":-0.55,"dome":0.35,"zoom":1.1},
-    "SPROUT": {"expo":2.2,"foldLo":0.05,"foldHi":0.22,"agit":0.15,"radius":1.75,"py":1.12,"pz":1.22,"relief":0.45,"dome":0.35,"zoom":1.1},
+    "SLOPE": {"expo":5.2,"foldLo":0.05,"foldHi":0.02,"agit":-0.1,"radius":1,"py":0.92,"pz":1.32,"relief":-0.55,"dome":0.35,"zoom":1.1},
+    "SPROUT": {"expo":2.2,"foldLo":0.05,"foldHi":0.22,"agit":0.15,"radius":1,"py":1.12,"pz":1.22,"relief":0.45,"dome":0.35,"zoom":1.1},
     "VALLEY": {"expo":2.2,"foldLo":0.05,"foldHi":0.22,"agit":0.15,"radius":1,"py":1.12,"pz":1.22,"relief":0.45,"dome":0.35,"zoom":1.1},
     "VEIL": {"expo":2.2,"foldLo":0.05,"foldHi":0.22,"agit":0.15,"radius":1,"py":1.12,"pz":1.22,"relief":0.45,"dome":0.35,"zoom":1.1},
     "WHORL": {"expo":2.2,"foldLo":0.05,"foldHi":0.22,"agit":0.15,"radius":1,"py":1.12,"pz":1.22,"relief":0.45,"dome":0.35,"zoom":1.1}
@@ -931,6 +940,7 @@ if (!gl) {
     gl.uniform3f(uSeed, S.seed[0], S.seed[1], S.seed[2]);
     gl.uniform4f(uSeed2, S.seed2[0], S.seed2[1], S.seed2[2], S.seed2[3]);
     gl.uniform4f(uForm, S.form[0], S.form[1], S.form[2], S.form[3]);
+    gl.uniform1f(uFit, 1 / HOLD_MAXR[S.form[0]]);
     gl.uniform4f(uTuneC, T.relief, T.dome, T.zoom, 0);
     gl.uniform1f(uSize, S.size);
     T = tuneFor(S.form[0]);
