@@ -472,7 +472,7 @@ if (EXHIBITION) document.body.classList.add("exhibition");
 
 const RESET_AFTER   = EXHIBITION ? 45000 : 90000;  // ms of no input before reset
 const RESIDUE_DECAY = 0.16;                        // per second, ~7s tail
-const CROP          = 0.82;                        // saved square, as a share of the short side
+const CROP          = 1.00;                        // saved square, as a share of the short side
 
 // Where a raised right hand actually sits in frame. The visitor stands
 // centred, so the hand rests right of centre and the field was reading
@@ -1116,7 +1116,9 @@ if (!gl) {
     toWallEl.textContent = on ? "BACK" : "WALL";
   });
 
-  const WALL_KEY = "grit-wall";
+  // bumped to leave every earlier record behind: the crop changed, so
+  // the old squares no longer match what is being saved now
+  const WALL_KEY = "grit-wall-2";
   const pageNumEl = document.getElementById("pageNum");
   const prevEl    = document.getElementById("prevPage");
   const nextEl    = document.getElementById("nextPage");

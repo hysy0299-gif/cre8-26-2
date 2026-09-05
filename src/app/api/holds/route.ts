@@ -15,7 +15,9 @@ import { put, list } from "@vercel/blob";
 
 export const dynamic = "force-dynamic";
 
-const PREFIX = "wall/";
+// wall2/ 로 옮겨서 이전 기록을 두고 온다. 크롭이 바뀌어 예전 사각형은
+// 지금 저장되는 것과 크기가 안 맞는다.
+const PREFIX = "wall2/";
 const MAX_BYTES = 2_000_000;
 
 export interface HoldEntry {
