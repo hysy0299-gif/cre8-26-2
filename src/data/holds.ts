@@ -16,7 +16,7 @@ export const holds: Hold[] = [
     ],
     spec: { form: "—", material: "—", surface: "—", interaction: "—" },
     hero: {"src":"/img/holds/bubble-055e803e.webp","alt":"Bubble hold","width":2200,"height":2039},
-    views: [{"src":"/img/holds/bubble-055e803e.webp","alt":"Bubble hold","width":2200,"height":2039},{"src":"/img/holds/views/bubble-01-fc9ad349.webp","alt":"Bubble hold, full view","width":1600,"height":1600},{"src":"/img/holds/views/bubble-02-2752be7c.webp","alt":"Bubble hold, close-up","width":1365,"height":1365},{"src":"/img/holds/views/bubble-03-ecadb7f0.webp","alt":"Bubble hold from above","width":1365,"height":1365},{"src":"/img/holds/views/bubble-04-4824267b.webp","alt":"Bubble hold surface","width":1365,"height":1365}],
+    views: [{"src":"/img/holds/bubble-055e803e.webp","alt":"Bubble hold","width":2200,"height":2039},{"src":"/img/holds/views/bubble-01-c4e79aec.webp","alt":"Bubble hold, view 1","width":1600,"height":1600},{"src":"/img/holds/views/bubble-02-49cadbaf.webp","alt":"Bubble hold, view 2","width":1600,"height":1600},{"src":"/img/holds/views/bubble-03-aab9a1b0.webp","alt":"Bubble hold, view 3","width":1600,"height":1600}],
     sections: [],
     processRefs: [],
     order: 1,
@@ -31,7 +31,7 @@ export const holds: Hold[] = [
     ],
     spec: { form: "—", material: "—", surface: "—", interaction: "—" },
     hero: {"src":"/img/holds/slope-71312763.webp","alt":"Slope hold","width":2158,"height":2200},
-
+    views: [{"src":"/img/holds/slope-71312763.webp","alt":"Slope hold","width":2158,"height":2200},{"src":"/img/holds/views/slope-01-7a7c020d.webp","alt":"Slope hold, view 1","width":1600,"height":1600},{"src":"/img/holds/views/slope-02-fb0d620b.webp","alt":"Slope hold, view 2","width":1600,"height":1600},{"src":"/img/holds/views/slope-03-d387ccc3.webp","alt":"Slope hold, view 3","width":1600,"height":1600}],
     sections: [],
     processRefs: [],
     order: 2,
@@ -46,7 +46,7 @@ export const holds: Hold[] = [
     ],
     spec: { form: "—", material: "—", surface: "—", interaction: "—" },
     hero: {"src":"/img/holds/sprout-46a3fe52.webp","alt":"Sprout hold","width":730,"height":2200},
-
+    views: [{"src":"/img/holds/sprout-46a3fe52.webp","alt":"Sprout hold","width":730,"height":2200},{"src":"/img/holds/views/sprout-01-31d0691f.webp","alt":"Sprout hold, view 1","width":1600,"height":1600},{"src":"/img/holds/views/sprout-02-95666a52.webp","alt":"Sprout hold, view 2","width":1600,"height":1600},{"src":"/img/holds/views/sprout-03-1b4e6df4.webp","alt":"Sprout hold, view 3","width":1600,"height":1600}],
     sections: [],
     processRefs: [],
     order: 3,
@@ -61,7 +61,7 @@ export const holds: Hold[] = [
     ],
     spec: { form: "—", material: "—", surface: "—", interaction: "—" },
     hero: {"src":"/img/holds/valley-280acf84.webp","alt":"Valley hold","width":2200,"height":1562},
-
+    views: [{"src":"/img/holds/valley-280acf84.webp","alt":"Valley hold","width":2200,"height":1562},{"src":"/img/holds/views/valley-01-813bbcab.webp","alt":"Valley hold, view 1","width":1600,"height":1600},{"src":"/img/holds/views/valley-02-636394f8.webp","alt":"Valley hold, view 2","width":1600,"height":1600},{"src":"/img/holds/views/valley-03-79b0d987.webp","alt":"Valley hold, view 3","width":1600,"height":1600}],
     sections: [],
     processRefs: [],
     order: 4,
@@ -76,7 +76,7 @@ export const holds: Hold[] = [
     ],
     spec: { form: "—", material: "—", surface: "—", interaction: "—" },
     hero: {"src":"/img/holds/glider-d4cba319.webp","alt":"Glider hold","width":2200,"height":1736},
-
+    views: [{"src":"/img/holds/glider-d4cba319.webp","alt":"Glider hold","width":2200,"height":1736},{"src":"/img/holds/views/glider-01-25ed7f76.webp","alt":"Glider hold, view 1","width":1600,"height":1600},{"src":"/img/holds/views/glider-02-8065e2a5.webp","alt":"Glider hold, view 2","width":1600,"height":1600},{"src":"/img/holds/views/glider-03-382fc269.webp","alt":"Glider hold, view 3","width":1600,"height":1600}],
     sections: [],
     processRefs: [],
     order: 5,
@@ -91,7 +91,7 @@ export const holds: Hold[] = [
     ],
     spec: { form: "—", material: "—", surface: "—", interaction: "—" },
     hero: {"src":"/img/holds/ripple-f3074379.webp","alt":"Ripple hold","width":2200,"height":1086},
-
+    views: [{"src":"/img/holds/ripple-f3074379.webp","alt":"Ripple hold","width":2200,"height":1086},{"src":"/img/holds/views/ripple-01-6cdc8619.webp","alt":"Ripple hold, view 1","width":1600,"height":1600},{"src":"/img/holds/views/ripple-02-3758405c.webp","alt":"Ripple hold, view 2","width":1600,"height":1600},{"src":"/img/holds/views/ripple-03-7ad659b2.webp","alt":"Ripple hold, view 3","width":1600,"height":1600}],
     sections: [],
     processRefs: [],
     order: 6,
@@ -106,7 +106,7 @@ export const holds: Hold[] = [
     ],
     spec: { form: "—", material: "—", surface: "—", interaction: "—" },
     hero: {"src":"/img/holds/fin-6156c306.webp","alt":"Fin hold","width":2131,"height":2200},
-
+    views: [{"src":"/img/holds/fin-6156c306.webp","alt":"Fin hold","width":2131,"height":2200},{"src":"/img/holds/views/fin-01-381e239d.webp","alt":"Fin hold, view 1","width":1600,"height":1600},{"src":"/img/holds/views/fin-02-65296de4.webp","alt":"Fin hold, view 2","width":1600,"height":1600},{"src":"/img/holds/views/fin-03-c649400f.webp","alt":"Fin hold, view 3","width":1600,"height":1600}],
     sections: [],
     processRefs: [],
     order: 7,
@@ -121,7 +121,7 @@ export const holds: Hold[] = [
     ],
     spec: { form: "—", material: "—", surface: "—", interaction: "—" },
     hero: {"src":"/img/holds/ray-752f154e.webp","alt":"Ray hold","width":2200,"height":1221},
-
+    views: [{"src":"/img/holds/ray-752f154e.webp","alt":"Ray hold","width":2200,"height":1221},{"src":"/img/holds/views/ray-01-07eb3998.webp","alt":"Ray hold, view 1","width":1600,"height":1600},{"src":"/img/holds/views/ray-02-3cf6f1a5.webp","alt":"Ray hold, view 2","width":1600,"height":1600},{"src":"/img/holds/views/ray-03-488636f2.webp","alt":"Ray hold, view 3","width":1600,"height":1600}],
     sections: [],
     processRefs: [],
     order: 8,
@@ -136,7 +136,7 @@ export const holds: Hold[] = [
     ],
     spec: { form: "—", material: "—", surface: "—", interaction: "—" },
     hero: {"src":"/img/holds/cushion-903cec3e.webp","alt":"Cushion hold","width":2200,"height":1448},
-
+    views: [{"src":"/img/holds/cushion-903cec3e.webp","alt":"Cushion hold","width":2200,"height":1448},{"src":"/img/holds/views/cushion-01-56e0098c.webp","alt":"Cushion hold, view 1","width":1600,"height":1600},{"src":"/img/holds/views/cushion-02-9b84bea5.webp","alt":"Cushion hold, view 2","width":1600,"height":1600},{"src":"/img/holds/views/cushion-03-0af77dff.webp","alt":"Cushion hold, view 3","width":1600,"height":1600}],
     sections: [],
     processRefs: [],
     order: 9,
@@ -151,7 +151,7 @@ export const holds: Hold[] = [
     ],
     spec: { form: "—", material: "—", surface: "—", interaction: "—" },
     hero: {"src":"/img/holds/clover-05772feb.webp","alt":"Clover hold","width":2162,"height":2200},
-
+    views: [{"src":"/img/holds/clover-05772feb.webp","alt":"Clover hold","width":2162,"height":2200},{"src":"/img/holds/views/clover-01-ac6fd666.webp","alt":"Clover hold, view 1","width":1600,"height":1600},{"src":"/img/holds/views/clover-02-ed59a2fe.webp","alt":"Clover hold, view 2","width":1600,"height":1600},{"src":"/img/holds/views/clover-03-99ab7bcc.webp","alt":"Clover hold, view 3","width":1600,"height":1600}],
     sections: [],
     processRefs: [],
     order: 10,
@@ -166,7 +166,7 @@ export const holds: Hold[] = [
     ],
     spec: { form: "—", material: "—", surface: "—", interaction: "—" },
     hero: {"src":"/img/holds/shell-38739eb9.webp","alt":"Shell hold","width":1532,"height":2200},
-
+    views: [{"src":"/img/holds/shell-38739eb9.webp","alt":"Shell hold","width":1532,"height":2200},{"src":"/img/holds/views/shell-01-9dfdebe5.webp","alt":"Shell hold, view 1","width":1600,"height":1600},{"src":"/img/holds/views/shell-02-29dcec97.webp","alt":"Shell hold, view 2","width":1600,"height":1600},{"src":"/img/holds/views/shell-03-664b76b8.webp","alt":"Shell hold, view 3","width":1600,"height":1600}],
     sections: [],
     processRefs: [],
     order: 11,
@@ -181,7 +181,7 @@ export const holds: Hold[] = [
     ],
     spec: { form: "—", material: "—", surface: "—", interaction: "—" },
     hero: {"src":"/img/holds/knot-6a8c893b.webp","alt":"Knot hold","width":1562,"height":2200},
-
+    views: [{"src":"/img/holds/knot-6a8c893b.webp","alt":"Knot hold","width":1562,"height":2200},{"src":"/img/holds/views/knot-01-e452249a.webp","alt":"Knot hold, view 1","width":1600,"height":1600},{"src":"/img/holds/views/knot-02-a4be780a.webp","alt":"Knot hold, view 2","width":1600,"height":1600},{"src":"/img/holds/views/knot-03-47f1a2da.webp","alt":"Knot hold, view 3","width":1600,"height":1600}],
     sections: [],
     processRefs: [],
     order: 12,
@@ -193,7 +193,7 @@ export const holds: Hold[] = [
     description: [],
     spec: { form: "—", material: "—", surface: "—", interaction: "—" },
     hero: {"src":"/img/holds/whorl-2b2c1ea2.webp","alt":"Whorl hold","width":1992,"height":2200},
-
+    views: [{"src":"/img/holds/whorl-2b2c1ea2.webp","alt":"Whorl hold","width":1992,"height":2200},{"src":"/img/holds/views/whorl-01-e93e8c1f.webp","alt":"Whorl hold, view 1","width":1600,"height":1600},{"src":"/img/holds/views/whorl-02-94237d37.webp","alt":"Whorl hold, view 2","width":1600,"height":1600},{"src":"/img/holds/views/whorl-03-563d5690.webp","alt":"Whorl hold, view 3","width":1600,"height":1600}],
     sections: [],
     processRefs: [],
     order: 13,
@@ -223,7 +223,7 @@ export const holds: Hold[] = [
     ],
     spec: { form: "—", material: "—", surface: "—", interaction: "—" },
     hero: {"src":"/img/holds/crumple-f79df5e8.webp","alt":"Crumple hold","width":1868,"height":2200},
-
+    views: [{"src":"/img/holds/crumple-f79df5e8.webp","alt":"Crumple hold","width":1868,"height":2200},{"src":"/img/holds/views/crumple-01-0216d98a.webp","alt":"Crumple hold, view 1","width":1600,"height":1600},{"src":"/img/holds/views/crumple-02-9835c301.webp","alt":"Crumple hold, view 2","width":1600,"height":1600},{"src":"/img/holds/views/crumple-03-1aac7cf4.webp","alt":"Crumple hold, view 3","width":1600,"height":1600}],
     sections: [],
     processRefs: [],
     order: 15,
@@ -238,7 +238,7 @@ export const holds: Hold[] = [
     ],
     spec: { form: "—", material: "—", surface: "—", interaction: "—" },
     hero: {"src":"/img/holds/melt-a6f43caa.webp","alt":"Melt hold","width":1654,"height":2200},
-
+    views: [{"src":"/img/holds/melt-a6f43caa.webp","alt":"Melt hold","width":1654,"height":2200},{"src":"/img/holds/views/melt-01-62f79dca.webp","alt":"Melt hold, view 1","width":1600,"height":1600},{"src":"/img/holds/views/melt-02-c9472102.webp","alt":"Melt hold, view 2","width":1600,"height":1600},{"src":"/img/holds/views/melt-03-313e5803.webp","alt":"Melt hold, view 3","width":1600,"height":1600}],
     sections: [],
     processRefs: [],
     order: 16,
@@ -253,7 +253,7 @@ export const holds: Hold[] = [
     ],
     spec: { form: "—", material: "—", surface: "—", interaction: "—" },
     hero: {"src":"/img/holds/veil-72c87d0e.webp","alt":"Veil hold","width":2200,"height":1504},
-
+    views: [{"src":"/img/holds/veil-72c87d0e.webp","alt":"Veil hold","width":2200,"height":1504},{"src":"/img/holds/views/veil-01-8952b23e.webp","alt":"Veil hold, view 1","width":1600,"height":1600},{"src":"/img/holds/views/veil-02-32859fea.webp","alt":"Veil hold, view 2","width":1600,"height":1600},{"src":"/img/holds/views/veil-03-f4dc0287.webp","alt":"Veil hold, view 3","width":1600,"height":1600}],
     sections: [],
     processRefs: [],
     order: 17,

@@ -240,8 +240,10 @@ export function HoldWheel({ holds }: { holds: Hold[] }) {
                 onClick={() => setView(i)}
                 aria-label={v.alt}
                 aria-current={i === view ? "true" : undefined}
+                // 테두리나 밑줄을 두르지 않는다 — 흰 사진 위에서 검은 선으로 읽힌다.
+                // 지금 보는 장은 진하기로만 구분한다
                 className={`bg-ground relative aspect-square w-full overflow-hidden transition-opacity ${
-                  i === view ? "opacity-100" : "opacity-45 hover:opacity-80"
+                  i === view ? "opacity-100" : "opacity-40 hover:opacity-75"
                 }`}
               >
                 <Image
@@ -251,13 +253,6 @@ export function HoldWheel({ holds }: { holds: Hold[] }) {
                   quality={90}
                   sizes="80px"
                   className="object-contain"
-                />
-                {/* 지금 보고 있는 장에만 밑줄 — 테두리를 두르면 사진마다 액자가 생긴다 */}
-                <span
-                  aria-hidden
-                  className={`bg-ink absolute inset-x-0 bottom-0 h-px transition-opacity ${
-                    i === view ? "opacity-100" : "opacity-0"
-                  }`}
                 />
               </button>
             ))}
