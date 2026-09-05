@@ -1009,15 +1009,44 @@ if (!gl) {
   const PAGE     = 240;         // a screen of dots. A full one turns over.
   const BAKE     = 360;         // px, square
 
+  const API = "/api/holds";
+  let remote = false;          // set once the server answers
   let wall = [];
-  // ?clear empties the record on this machine and leaves nothing behind
+
   if (QS.has("clear")) { try { localStorage.removeItem(WALL_KEY); } catch (e) {} }
   else { try { wall = JSON.parse(localStorage.getItem(WALL_KEY) || "[]"); } catch (e) { wall = []; } }
+
+  // ask the server; if it is there its wall replaces the local one
+  fetch(API, { cache: "no-store" })
+    .then(r => r.ok ? r.json() : null)
+    .then(d => {
+      if (!d || !Array.isArray(d.holds)) return;
+      remote = true;
+      wall = d.holds.map(h => ({ ...h, img: h.url }));
+      renderWall();
+    })
+    .catch(() => {});
   let bakePending = false, noteT = 0, making = false, lastGuide = null, lastCount = null;
 
   function saveWall(){
+    if (remote) return;        // the server holds it
     try { localStorage.setItem(WALL_KEY, JSON.stringify(wall)); }
     catch (e) { console.warn("wall not saved:", e.name); }
+  }
+
+  // The visitor never waits on the network: the hold goes up straight
+  // away, and the request catches up. A failed send leaves it on screen
+  // for this session and is reported, not swallowed.
+  function sendHold(entry){
+    if (!remote) return;
+    fetch(API, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name: entry.name, note: entry.note, hold: entry.hold, img: entry.img })
+    })
+      .then(r => r.ok ? r.json() : Promise.reject(new Error("HTTP " + r.status)))
+      .then(d => { if (d.entry && d.entry.url) entry.img = d.entry.url; })
+      .catch(err => console.error("hold not saved to the wall:", err));
   }
 
   // only the latest page is up. Earlier pages are kept, not shown yet.
@@ -1096,6 +1125,7 @@ if (!gl) {
       hold: HOLD_NAMES[S.form[0]], form: S.form.slice(), size: S.size,
       img: S.baked
     });
+    sendHold(wall[wall.length - 1]);
     saveWall(); renderWall();
     noteEl.hidden = true;
     noteName.blur(); noteText.blur();
