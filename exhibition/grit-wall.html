@@ -125,7 +125,8 @@
   #field, #guide, #camview { transition:opacity .9s ease; }
   body.wall #field, body.handover #field,
   body.wall #guide, body.handover #guide,
-  body.wall #camview, body.handover #camview { opacity:0; }
+  body.wall #camview, body.handover #camview,
+  body.wall #capnote, body.handover #capnote { opacity:0; }
 
   /* the one just added arrives a beat later than the rest */
   #wall figure.fresh { animation:land .9s ease .35s both; }
@@ -154,7 +155,7 @@
   <div id="wall"></div>
   <div id="guide"></div>
   <button type="button" id="toWall">WALL</button>
-  <div id="capnote">HOLD STILL TO SAVE</div>
+  <div id="capnote">HOLD STILL FOR 3 SECONDS TO CAPTURE</div>
   <div id="frame"><span id="count"></span></div>
   <form id="note" hidden autocomplete="off">
     <input id="noteName" placeholder="NAME" maxlength="24">
