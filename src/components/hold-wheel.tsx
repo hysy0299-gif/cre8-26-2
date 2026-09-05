@@ -95,6 +95,18 @@ const TEXT_TOP_VH = 50 + MAX_VH / 2 + 2.5;
  */
 const VIEW_VH = MAX_VH;
 
+/**
+ * 그림이 놓이는 자리의 폭(vh).
+ *
+ * 홀드마다 폭이 달라서, 그림을 칸 한가운데 그냥 두면 홀드를 넘길 때마다
+ * 좌우로 흔들린다. 가장 넓은 홀드가 들어갈 만큼을 고정으로 잡아두고
+ * 그 안에서 가운데 정렬하면 흔들리지 않는다.
+ */
+const STAGE_VW = 70;
+/** 썸네일 줄의 폭과 그림과의 간격 */
+const THUMB_LANE = "5rem";
+const THUMB_GAP = "1.5rem";
+
 function holdHeightVh(width: number, height: number) {
   const r = width / height;
   return Math.min(MAX_VH, SQUARE_VH / Math.sqrt(r));
@@ -197,82 +209,84 @@ export function HoldWheel({ holds }: { holds: Hold[] }) {
         className="relative col-span-12 md:col-span-7"
         style={{ height: `calc(100dvh - ${offset}px)` }}
       >
-        {active ? (
-          <figure key={`${active.slug}-${view}`} className="hold-swap absolute inset-0">
-            {/*
-              휠과 같은 계산으로 높이를 잡는다 — 이 칸의 가운데가 정확히 50dvh다.
-              그래야 홀드 중심과 휠 중심이 같은 가로선에 놓인다.
-            */}
-            <div
-              className="flex w-full items-center justify-center"
-              style={{ height: `calc(100dvh - ${offset * 2}px)` }}
-            >
-              {active.model ? (
-                <div className="h-full w-full">
-                  <ModelViewer url={active.model} />
-                </div>
-              ) : shown ? (
-                <Image
-                  src={shown.src}
-                  alt={shown.alt}
-                  width={shown.width}
-                  height={shown.height}
-                  priority
-                  quality={90}
-                  sizes="(max-width: 768px) 100vw, 62vw"
-                  className="w-auto object-contain"
-                  style={{
-                    // 0번은 대표 이미지(컷아웃), 그 뒤는 사진 — 크기 기준이 다르다
-                    maxHeight: `min(100%, ${view > 0 ? VIEW_VH : holdHeightVh(shown.width, shown.height)}vh)`,
-                  }}
-                />
-              ) : null}
-            </div>
-          </figure>
-        ) : null}
-
         {/*
-          상세 뷰 썸네일 — 그림 바깥, 칸 오른쪽 가장자리에 세로로 세운다.
-          그림 위에 얹지 않는다. 휠과 같은 계산으로 세로 가운데를 맞춘다.
+          그림과 썸네일을 한 줄로 묶는다.
 
-          네 칸을 같은 타일로 맞춘다 —
-          대표 이미지는 배경을 딴 컷아웃이고 나머지는 배경이 있는 사진이라,
-          contain으로 두면 첫 칸만 바탕에 떠 있어서 줄이 따로 논다.
-          cover로 채우면 넷 다 같은 크기의 판으로 읽힌다.
+          휠과 같은 계산으로 높이를 잡는다 — 이 줄의 가운데가 정확히 50dvh다.
+          그래야 홀드 중심과 휠 중심이 같은 가로선에 놓인다.
         */}
-        {views.length > 1 ? (
-          <div
-            className="absolute right-0 flex w-16 flex-col gap-1.5 lg:w-20"
-            style={{
-              top: `calc((100dvh - ${offset * 2}px) / 2)`,
-              transform: "translateY(-50%)",
-            }}
-          >
-            {views.map((v, i) => (
-              <button
-                key={v.src}
-                type="button"
-                onClick={() => setView(i)}
-                aria-label={v.alt}
-                aria-current={i === view ? "true" : undefined}
-                // 테두리나 밑줄을 두르지 않는다 — 흰 사진 위에서 검은 선으로 읽힌다.
-                // 지금 보는 장은 진하기로만 구분한다
-                className={`relative aspect-square w-full overflow-hidden bg-white transition-opacity ${
-                  i === view ? "opacity-100" : "opacity-40 hover:opacity-75"
-                }`}
+        <div
+          className="flex w-full items-center justify-center"
+          style={{ height: `calc(100dvh - ${offset * 2}px)` }}
+        >
+          {/*
+            그림 자리는 폭을 고정한다. 홀드마다 폭이 달라서 그냥 가운데 두면
+            넘길 때마다 좌우로 흔들린다.
+          */}
+          <div className="relative h-full shrink-0" style={{ width: `${STAGE_VW}vh` }}>
+            {active ? (
+              <figure
+                key={`${active.slug}-${view}`}
+                className="hold-swap absolute inset-0 flex items-center justify-center"
               >
-                <Image
-                  src={v.src}
-                  alt=""
-                  fill
-                  quality={90}
-                  sizes="80px"
-                  className="object-cover"
-                />
-              </button>
-            ))}
+                {active.model ? (
+                  <div className="h-full w-full">
+                    <ModelViewer url={active.model} />
+                  </div>
+                ) : shown ? (
+                  <Image
+                    src={shown.src}
+                    alt={shown.alt}
+                    width={shown.width}
+                    height={shown.height}
+                    priority
+                    quality={90}
+                    sizes="(max-width: 768px) 100vw, 62vw"
+                    className="w-auto object-contain"
+                    style={{
+                      // 0번은 대표 이미지(컷아웃), 그 뒤는 사진 — 크기 기준이 다르다
+                      maxHeight: `min(100%, ${view > 0 ? VIEW_VH : holdHeightVh(shown.width, shown.height)}vh)`,
+                    }}
+                  />
+                ) : null}
+              </figure>
+            ) : null}
           </div>
-        ) : null}
+
+          {/*
+            썸네일 줄 — 그림 자리 바로 옆에 붙인다.
+            칸 오른쪽 끝에 따로 떨어뜨리면 그림과 한 덩어리로 안 읽힌다.
+            figure 밖에 두는 건 장을 바꿀 때 같이 다시 그려지지 않게 하려는 것.
+          */}
+          {views.length > 1 ? (
+            <div
+              className="flex shrink-0 flex-col gap-1.5"
+              style={{ width: THUMB_LANE, marginLeft: THUMB_GAP }}
+            >
+              {views.map((v, i) => (
+                <button
+                  key={v.src}
+                  type="button"
+                  onClick={() => setView(i)}
+                  aria-label={v.alt}
+                  aria-current={i === view ? "true" : undefined}
+                  // 테두리나 밑줄을 두르지 않는다 — 흰 사진 위에서 검은 선으로 읽힌다.
+                  // 지금 보는 장은 진하기로만 구분한다
+                  className={`relative aspect-square w-full overflow-hidden bg-white transition-opacity ${
+                    i === view ? "opacity-100" : "opacity-40 hover:opacity-75"
+                  }`}
+                >
+                  {/*
+                    넷 다 같은 타일로 맞춘다 — 대표 이미지는 배경을 딴 컷아웃이고
+                    나머지는 배경이 있는 사진이라, contain으로 두면 첫 칸만
+                    바탕에 떠 있어서 줄이 따로 논다. cover면 같은 판으로 읽힌다.
+                  */}
+                  <Image src={v.src} alt="" fill quality={90} sizes="80px" className="object-cover" />
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </div>
 
         {/*
           다음에 볼 그림을 미리 받아둔다.
@@ -298,13 +312,20 @@ export function HoldWheel({ holds }: { holds: Hold[] }) {
           설명은 흐름에서 빼서 고정 위치에 건다.
           흐름에 두면 글 높이만큼 홀드가 위로 밀려 휠과 중심이 어긋난다.
 
-          left-1/2 + -translate-x-1/2 로 홀드 중심에 맞추고, 폭은 글에 맡긴다(w-max).
-          칸 폭에 가두면 긴 문장이 넘쳐 두 줄이 세 줄 네 줄이 된다.
+          홀드 중심에 맞춘다. 썸네일 줄이 붙으면 그림이 그만큼 왼쪽으로 밀리므로,
+          글도 같은 만큼(썸네일 폭+간격의 절반) 따라 옮겨야 그림 아래 가운데가 된다.
+          폭은 글에 맡긴다(w-max) — 칸 폭에 가두면 긴 문장이 세 줄 네 줄이 된다.
         */}
         {active?.description.length ? (
           <div
-            className="text-ink absolute left-1/2 flex w-max max-w-[92vw] -translate-x-1/2 flex-col gap-1 text-center text-[clamp(0.75rem,1.15vw,1rem)] leading-relaxed"
-            style={{ top: `calc(${TEXT_TOP_VH}dvh - ${offset}px)` }}
+            className="text-ink absolute flex w-max max-w-[92vw] -translate-x-1/2 flex-col gap-1 text-center text-[clamp(0.75rem,1.15vw,1rem)] leading-relaxed"
+            style={{
+              top: `calc(${TEXT_TOP_VH}dvh - ${offset}px)`,
+              left:
+                views.length > 1
+                  ? `calc(50% - (${THUMB_LANE} + ${THUMB_GAP}) / 2)`
+                  : "50%",
+            }}
           >
             {active.description.map((line, i) => (
               // 좁은 화면에서는 줄바꿈을 허용한다 — 안 그러면 글자가 읽을 수 없게 작아진다
