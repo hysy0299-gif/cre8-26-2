@@ -130,7 +130,7 @@
   <form id="note" hidden autocomplete="off">
     <input id="noteName" placeholder="NAME" maxlength="24">
     <input id="noteText" placeholder="NOTE" maxlength="60">
-    <button type="button" id="retake">TAKE IT AGAIN</button>
+    <button type="button" id="retake">AGAIN</button>
   </form>
 
 <script type="module">
@@ -1167,10 +1167,10 @@ if (!gl) {
 
     // one line of guidance. Pointer mode only gets the lines that apply.
     let g = "";
-    if (S.phase === "NOTE") g = "YOUR NAME  /  A NOTE  —  ENTER";
+    if (S.phase === "NOTE") g = "NAME  ·  NOTE  —  ENTER TO SAVE";
     else if (Sense.on && Sense.present < 0.05) g = "RAISE YOUR RIGHT HAND";
-    else if (Sense.on && S.hold < 0.5) g = "MAKE A FIST WITH YOUR RIGHT HAND TO GATHER";
-    else if (Sense.on) g = "LEFT HAND — PINCH THUMB AND INDEX TO RESIZE\nTWIST A WRIST FOR ANOTHER HOLD";
+    else if (Sense.on && S.hold < 0.5) g = "RIGHT HAND — GRIP TO GATHER  ·  RELEASE TO SCATTER";
+    else if (Sense.on) g = "LEFT HAND — PINCH TO RESIZE  ·  TWIST TO CHANGE\nRIGHT HAND — RELEASE TO SCATTER";
     if (g !== lastGuide) { guideEl.textContent = g; lastGuide = g; }
 
     // the crop appears with the count and firms up as it closes
