@@ -75,6 +75,8 @@ uniform float uEnergy;     // 0..1 pointer speed
 uniform float uHold;       // 0..1 scroll progress
 uniform vec3  uSeed;       // this visitor's hold: lobes, axis, surface
 uniform float uSize;       // 0..1, how much material ends up in it
+uniform vec4  uTuneA;      // gathered: exposure, fold lo, fold hi, churn left
+uniform vec4  uTuneB;      // gathered: radius scale, y squash, z squash, -
 
 mat2 rot(float a){ float s = sin(a), c = cos(a); return mat2(c, -s, s, c); }
 
@@ -110,9 +112,10 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
   // the extent is what makes the gathering readable: loose material spans
   // most of the frame, the packed mass is about a third of it
   // the left hand's pinch decides how much material the hold keeps
-  float packed = mix(2.10, 3.75, uSize);
+  float packed = mix(2.10, 3.75, uSize) * uTuneB.x;
   float radius = mix(6.6, packed, h) + uContact * 1.15 + uResidue * 0.30;
-  float agit  = uEnergy * 2.2 + uResidue * 0.9 + uProx * 0.5;
+  // the churn has to die down as it sets, or it never reads as a thing
+  float agit  = (uEnergy * 2.2 + uResidue * 0.9 + uProx * 0.5) * mix(1.0, uTuneA.w, h);
 
   // --- SEED. The archive's own seventeen set the range, nothing wider:
   // one to four rounded lobes, a single dominant axis, one surface
@@ -125,14 +128,14 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
   // scaling a coordinate up compresses the mass along it. Negative seed
   // runs it long like SPROUT, positive runs it flat and wide like RAY.
   float stretchX = mix(1.0, 1.0  + max(-uSeed.y, 0.0) * 0.55, h);
-  float stretchY = mix(1.0, 1.12 + max( uSeed.y, 0.0) * 0.42, h);
+  float stretchY = mix(1.0, uTuneB.y + max( uSeed.y, 0.0) * 0.42, h);
 
   // this is what does the gathering. Over 1.0 the folding overwhelms the
   // shell and it breaks into separate scattered lobes; dropping toward 0.2
   // merges them into one mass, with just enough relief left to read as a hold.
   // VEIL and CUSHION settle almost smooth; CRUMPLE, WHORL and RIPPLE
   // keep their relief. Above 0.4 it stops reading as one hold.
-  float fold  = mix(1.62, mix(0.07, 0.36, uSeed.z), h);
+  float fold  = mix(1.62, mix(uTuneA.y, uTuneA.z, uSeed.z), h);
 
   for (float i = 0.0; i < 100.0; i++)
   {
@@ -141,7 +144,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
     p.z += 8.0 - pull;
     p.x *= stretchX;
     p.y *= stretchY;            // settles wider than tall
-    p.z *= mix(1.0, 1.22, h);   // and shallower, so it sits like relief
+    p.z *= mix(1.0, uTuneB.z, h);   // and shallower, so it sits like relief
     a = a * dot(a, p) - cross(a, p);
     for (float k = 1.0; k < 5.0; k += 1.0) {
       a += sin(a * k + t + agit * 0.8).yzx / k * fold;
@@ -159,7 +162,7 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord)
 
   // density, not luminance: the accumulation is inverted onto paper
   float e = o.r * 0.34 + o.g * 0.50 + o.b * 0.16;
-  e = 1.0 - exp(-e * mix(1.32, 2.10, h));   // thin and dusty up top, solid at the end
+  e = 1.0 - exp(-e * mix(1.32, uTuneA.x, h));   // thin and dusty up top, solid at the end
 
   // The march leaves a faint accumulation on every pixel it passes
   // through, including the empty ones. Cut it away, or the whole sheet
@@ -225,7 +228,8 @@ if (!gl) {
         uPointPx = U("uPointPx"), uAnchorPx = U("uAnchorPx"),
         uProx = U("uProx"), uContact = U("uContact"),
         uResidue = U("uResidue"), uEnergy = U("uEnergy"),
-        uHold = U("uHold"), uSeed = U("uSeed"), uSize = U("uSize");
+        uHold = U("uHold"), uSeed = U("uSeed"), uSize = U("uSize"),
+        uTuneA = U("uTuneA"), uTuneB = U("uTuneB");
 
 
   // ---- state -------------------------------------------------------
@@ -432,6 +436,52 @@ if (!gl) {
   // the overlay has to say which of the several ways this can fail
   // happened, or a blocked camera and a broken page look the same.
   // Tuning overlay only — it never reaches the exhibition screen.
+  // ---- knobs for the gathered state ---------------------------------
+  // Turned from the keyboard with the D overlay up, kept in localStorage.
+  // Once a set reads right, its numbers go into the shader as defaults.
+  //   1-7 pick a knob · ↑↓ nudge (shift ×5) · 0 puts everything back
+  const KNOBS = [
+    ["expo",   3.20, 0.10, "exposure at full hold. up = solid"],
+    ["foldLo", 0.05, 0.01, "relief, smooth end of the seed"],
+    ["foldHi", 0.22, 0.01, "relief, rough end of the seed"],
+    ["agit",   0.15, 0.05, "churn left once it has set"],
+    ["radius", 1.00, 0.05, "size of the set mass"],
+    ["py",     1.12, 0.02, "flattened top to bottom"],
+    ["pz",     1.22, 0.02, "flattened front to back. relief"]
+  ];
+  const T = {};
+  for (const [k, v] of KNOBS) T[k] = v;
+  try { Object.assign(T, JSON.parse(localStorage.getItem("grit-tune") || "{}")); } catch (e) {}
+  let knob = 0;
+
+  addEventListener("keydown", e => {
+    if (!tune) return;
+    const d = e.key === "ArrowUp" ? 1 : e.key === "ArrowDown" ? -1 : 0;
+    if (d) {
+      e.preventDefault();
+      const [k, , step] = KNOBS[knob];
+      T[k] = Math.round((T[k] + d * step * (e.shiftKey ? 5 : 1)) * 1000) / 1000;
+    } else if (e.key >= "1" && e.key <= String(KNOBS.length)) {
+      knob = Number(e.key) - 1;
+    } else if (e.key === "0") {
+      for (const [k, v] of KNOBS) T[k] = v;
+    } else return;
+    try { localStorage.setItem("grit-tune", JSON.stringify(T)); } catch (err) {}
+  });
+
+  function drawKnobs(){
+    const x = 8, y0 = 44, lh = 13;
+    dbgCtx.fillStyle = "#F5F5F5";
+    dbgCtx.fillRect(0, y0 - 10, 250, lh * KNOBS.length + 6);
+    dbgCtx.font = "10px monospace";
+    KNOBS.forEach(([k, , , what], i) => {
+      dbgCtx.fillStyle = "#010101";
+      dbgCtx.globalAlpha = i === knob ? 1 : 0.55;
+      dbgCtx.fillText((i === knob ? "> " : "  ") + (i + 1) + " " + k.padEnd(7) + T[k].toFixed(2) + "  " + what, x, y0 + i * lh);
+    });
+    dbgCtx.globalAlpha = 1;
+  }
+
   function senseIdle(){
     if (!tune) return;
     if (camEl.readyState >= 2) {
@@ -463,6 +513,7 @@ if (!gl) {
     dbgCtx.fillText(
       "hold " + S.hold.toFixed(2) + "  size " + S.size.toFixed(2) +
       "  seed " + S.seed.map(v => v.toFixed(2)).join("/"), 5, DH - 5);
+    drawKnobs();
   }
 
   function sense(sec){
@@ -556,6 +607,7 @@ if (!gl) {
       "grip " + Sense.grip.toFixed(2) + "  pinch " + Sense.pinch.toFixed(2) +
       "  hands " + Sense.hands.map(h => h.side).join("") +
       "  seed " + S.seed.map(v => v.toFixed(2)).join("/"), 5, DH - 5);
+    drawKnobs();
   }
 
   function resetAll(){
@@ -664,6 +716,8 @@ if (!gl) {
     gl.uniform1f(uHold, S.hold);
     gl.uniform3f(uSeed, S.seed[0], S.seed[1], S.seed[2]);
     gl.uniform1f(uSize, S.size);
+    gl.uniform4f(uTuneA, T.expo, T.foldLo, T.foldHi, T.agit);
+    gl.uniform4f(uTuneB, T.radius, T.py, T.pz, 0);
 
     gl.bindVertexArray(vao);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
