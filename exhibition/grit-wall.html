@@ -375,6 +375,14 @@ if (EXHIBITION) document.body.classList.add("exhibition");
 
 const RESET_AFTER   = EXHIBITION ? 45000 : 90000;  // ms of no input before reset
 const RESIDUE_DECAY = 0.16;                        // per second, ~7s tail
+const CROP          = 0.82;                        // saved square, as a share of the short side
+
+// Where a raised right hand actually sits in frame. The visitor stands
+// centred, so the hand rests right of centre and the field was reading
+// that as a permanent turn — every hold came out leaning the same way.
+const HAND_CENTER_X = 0.64;
+const HAND_CENTER_Y = 0.44;
+
 const STILL_AFTER   = 3.0;                         // s gathered and still before it is captured
 const NOTE_AFTER    = 45;                          // s of silence before the note goes up as is
 
@@ -974,7 +982,7 @@ if (!gl) {
   const frameEl  = document.getElementById("frame");
 
   // the same square bake() takes, in css pixels
-  function frameSide(){ return Math.min(cssW, cssH) * 0.62; }
+  function frameSide(){ return Math.min(cssW, cssH) * CROP; }
   const wallEl   = document.getElementById("wall");
   const noteEl   = document.getElementById("note");
   const noteName = document.getElementById("noteName");
@@ -1009,7 +1017,7 @@ if (!gl) {
   renderWall();
 
   function bake(){
-    const side = Math.min(canvas.width, canvas.height) * 0.62;
+    const side = Math.min(canvas.width, canvas.height) * CROP;
     const sx = (canvas.width - side) / 2, sy = (canvas.height - side) / 2;
     const c = document.createElement("canvas");
     c.width = BAKE; c.height = BAKE;
@@ -1113,8 +1121,8 @@ if (!gl) {
       S.down     = Sense.grip;
 
       if (DEV_SIZE !== null) Sense.pinch = DEV_SIZE;
-      S.tnx = Sense.x * 2 - 1;
-      S.tny = Sense.y * 2 - 1;
+      S.tnx = Math.max(-1, Math.min(1, (Sense.x - HAND_CENTER_X) * 2.4));
+      S.tny = Math.max(-1, Math.min(1, (Sense.y - HAND_CENTER_Y) * 2.4));
       S.tpx = Sense.x * cssW;
       S.tpy = (1 - Sense.y) * cssH;   // the shader wants y up
       S.energy = Sense.energy;
@@ -1202,8 +1210,8 @@ if (!gl) {
 
     const idleX = reduceMotion ? 0 : Math.sin(t * 0.17) * 0.20;
     const idleY = reduceMotion ? 0 : Math.cos(t * 0.12) * 0.10;
-    const rx = idleX * (1 - S.prox) + (S.nx *  0.92) * S.prox;
-    const ry = idleY * (1 - S.prox) + (S.ny * -0.55) * S.prox;
+    const rx = idleX * (1 - S.prox) + (S.nx *  0.62) * S.prox;
+    const ry = idleY * (1 - S.prox) + (S.ny * -0.38) * S.prox;
 
     const dpr = Math.min(2, Math.max(1, window.devicePixelRatio || 1));
     const rs = dpr * scale;
