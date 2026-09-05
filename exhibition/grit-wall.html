@@ -411,17 +411,13 @@ if (!gl) {
     S.seed[2] = Math.random();
     // the outline carries the variety now; keep these mild, twin off
     for (let i = 0; i < 4; i++) S.seed2[i] = (Math.random() * 2 - 1) * 0.3;
-    // mostly one hold with a lean toward another, turned, half the time mirrored
-    const a = Math.floor(Math.random() * PROFILES.length);
-    let b = Math.floor(Math.random() * PROFILES.length);
-    if (b === a) b = (a + 1) % PROFILES.length;
-    S.form[0] = a; S.form[1] = b;
-    S.form[2] = (Math.random() < 0.5 ? -1 : 1) * Math.random() * 0.6;
+    // one hold per visitor, from the pool, turned, half the time mirrored
+    S.pick = POOL[Math.floor(Math.random() * POOL.length)];
+    S.form[0] = S.pick; S.form[1] = S.pick;
+    S.form[2] = Math.random() < 0.5 ? -0.0001 : 0.0001;    // sign is the mirror, no blend
     S.form[3] = Math.random() * 6.28318;
-    // tuning pass: one hold at a time, unblended, unturned, numbered
-    S.pick = POOL[(POOL.indexOf(S.pick) + 1) % POOL.length];
-    S.form[0] = S.pick; S.form[1] = S.pick; S.form[2] = 0; S.form[3] = 0;
-    numEl.textContent = String(S.pick + 1);
+    if (document.body.classList.contains("tune")) numEl.textContent = String(S.pick + 1);
+    else numEl.textContent = "";
     if (DEV_PICK) {
       const i = Math.max(0, HOLD_NAMES.indexOf(DEV_PICK.toUpperCase()));
       S.form[0] = i; S.form[1] = i; S.form[2] = 0; S.form[3] = DEV_ROT;
@@ -621,13 +617,33 @@ if (!gl) {
     ["dome",   0.35, 0.05, "back rounds off toward the edge"],
     ["zoom",   1.10, 0.05, "view width once gathered. down = closer"]
   ];
-  const HOLD_TUNE = {};
+  // per-hold values from the tuning pass. What the visitor changes is
+  // size and angle; none of this.
+  const HOLD_TUNE = {
+    "BUBBLE": {"expo":1.6,"foldLo":-0.1,"foldHi":0.02,"agit":0.4,"radius":2,"py":1.22,"pz":1.22,"relief":-0.05,"dome":0.1,"zoom":1.1},
+    "CHALK": {"expo":2.2,"foldLo":0.05,"foldHi":-0.08,"agit":0.4,"radius":1.75,"py":1.22,"pz":1.22,"relief":-0.8,"dome":0.35,"zoom":1.1},
+    "CLOVER": {"expo":2.7,"foldLo":-0.75,"foldHi":0.42,"agit":-3.6,"radius":2,"py":1.22,"pz":1.42,"relief":0.2,"dome":0.35,"zoom":1.1},
+    "CRUMPLE": {"expo":2.3,"foldLo":-0.05,"foldHi":0.22,"agit":-0.1,"radius":1.75,"py":1.22,"pz":1.22,"relief":0.2,"dome":0.35,"zoom":1.1},
+    "CUSHION": {"expo":0.7,"foldLo":-0.67,"foldHi":0.46,"agit":0.75,"radius":2,"py":1.12,"pz":1.32,"relief":-0.05,"dome":0.1,"zoom":1.1},
+    "FIN": {"expo":2.2,"foldLo":0.25,"foldHi":0.07,"agit":-4.1,"radius":1.7,"py":0.92,"pz":1.22,"relief":-0.8,"dome":0.35,"zoom":1.1},
+    "GLIDER": {"expo":4.7,"foldLo":-0.15,"foldHi":-0.13,"agit":-0.1,"radius":1.5,"py":1.12,"pz":1.12,"relief":0.45,"dome":0.35,"zoom":1.1},
+    "KNOT": {"expo":2.7,"foldLo":0.15,"foldHi":0.22,"agit":0.15,"radius":1.5,"py":1.12,"pz":1.22,"relief":0.45,"dome":0.35,"zoom":1.1},
+    "MELT": {"expo":2.2,"foldLo":0.05,"foldHi":0.22,"agit":0.15,"radius":1,"py":1.12,"pz":1.22,"relief":0.45,"dome":0.35,"zoom":1.1},
+    "RAY": {"expo":2.7,"foldLo":-0.05,"foldHi":0.17,"agit":0.15,"radius":1.75,"py":1.12,"pz":1.32,"relief":0.95,"dome":0.35,"zoom":1.1},
+    "RIPPLE": {"expo":1.2,"foldLo":0,"foldHi":0.22,"agit":-0.1,"radius":1.25,"py":1.02,"pz":1.42,"relief":0.45,"dome":0.35,"zoom":1.1},
+    "SHELL": {"expo":2.2,"foldLo":0.05,"foldHi":0.22,"agit":0.15,"radius":1,"py":1.12,"pz":1.22,"relief":0.45,"dome":0.35,"zoom":1.1},
+    "SLOPE": {"expo":5.2,"foldLo":0.05,"foldHi":0.02,"agit":-0.1,"radius":1.95,"py":0.92,"pz":1.32,"relief":-0.55,"dome":0.35,"zoom":1.1},
+    "SPROUT": {"expo":2.2,"foldLo":0.05,"foldHi":0.22,"agit":0.15,"radius":1.75,"py":1.12,"pz":1.22,"relief":0.45,"dome":0.35,"zoom":1.1},
+    "VALLEY": {"expo":2.2,"foldLo":0.05,"foldHi":0.22,"agit":0.15,"radius":1,"py":1.12,"pz":1.22,"relief":0.45,"dome":0.35,"zoom":1.1},
+    "VEIL": {"expo":2.2,"foldLo":0.05,"foldHi":0.22,"agit":0.15,"radius":1,"py":1.12,"pz":1.22,"relief":0.45,"dome":0.35,"zoom":1.1},
+    "WHORL": {"expo":2.2,"foldLo":0.05,"foldHi":0.22,"agit":0.15,"radius":1,"py":1.12,"pz":1.22,"relief":0.45,"dome":0.35,"zoom":1.1}
+  };
   let TUNES = {};
-  try { TUNES = JSON.parse(localStorage.getItem("grit-tune-holds") || "{}"); } catch (e) {}
+  try { TUNES = JSON.parse(localStorage.getItem("grit-tune-holds-2") || "{}"); } catch (e) {}
   function tuneFor(i){
     if (!TUNES[i]) {
       TUNES[i] = {};
-      for (const [k, v] of KNOBS) TUNES[i][k] = (HOLD_TUNE[i] || {})[k] ?? v;
+      for (const [k, v] of KNOBS) TUNES[i][k] = (HOLD_TUNE[HOLD_NAMES[i]] || {})[k] ?? v;
     }
     return TUNES[i];
   }
@@ -647,7 +663,7 @@ if (!gl) {
     } else if (e.key === "Backspace") {
       for (const [k, v] of KNOBS) T[k] = v;
     } else return;
-    try { localStorage.setItem("grit-tune-holds", JSON.stringify(TUNES)); } catch (err) {}
+    try { localStorage.setItem("grit-tune-holds-2", JSON.stringify(TUNES)); } catch (err) {}
   });
 
   const dumpEl = document.getElementById("dump");
