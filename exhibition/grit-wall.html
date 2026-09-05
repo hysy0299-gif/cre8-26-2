@@ -36,11 +36,10 @@
   <canvas id="dbg" width="360" height="270"></canvas>
 
 <script type="module">
-import { FilesetResolver, HandLandmarker } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.21/vision_bundle.mjs";
-
-// the gallery machine needs to reach these, or they get vendored into
-// exhibition/vendor/ before the show. Nothing else is fetched.
-const WASM_BASE = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.21/wasm";
+// Loaded only after a camera opens. Nothing is fetched on a machine
+// without one, and a CDN that is down costs the hand tracking, not the
+// page. Vendor these into exhibition/vendor/ before the show.
+const VISION = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.21";
 const MODEL_URL = "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task";
 
 /* ------------------------------------------------------------------
@@ -387,10 +386,11 @@ if (!gl) {
       console.warn("camera unavailable, pointer fallback:", err.name);
       return;
     }
-    let fileset;
+    let fileset, FilesetResolver, HandLandmarker;
     try {
       Sense.note = "LOADING RUNTIME";
-      fileset = await FilesetResolver.forVisionTasks(WASM_BASE);
+      ({ FilesetResolver, HandLandmarker } = await import(VISION + "/vision_bundle.mjs"));
+      fileset = await FilesetResolver.forVisionTasks(VISION + "/wasm");
     } catch (err) {
       Sense.denied = true;
       Sense.note = "WASM FAILED / " + String(err && err.message || err).slice(0, 40);
