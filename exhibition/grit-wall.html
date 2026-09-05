@@ -24,8 +24,7 @@
      washed over it. D toggles it, ?exhibition starts it off. */
   #dbg {
     position:fixed; right:0; bottom:0;
-    width:240px; height:180px;
-    image-rendering:pixelated;
+    width:360px; height:270px;
     opacity:0; pointer-events:none;
   }
   body.tune #dbg { opacity:1; }
@@ -34,7 +33,7 @@
 <body>
   <div id="field"><canvas id="c"></canvas></div>
   <video  id="cam" playsinline muted></video>
-  <canvas id="dbg" width="160" height="120"></canvas>
+  <canvas id="dbg" width="360" height="270"></canvas>
 
 <script>
 /* ------------------------------------------------------------------
@@ -303,7 +302,9 @@ if (!gl) {
 
   const camEl = document.getElementById("cam");
   const dbgEl = document.getElementById("dbg");
+  const DW = 360, DH = 270;
   const dbgCtx = dbgEl.getContext("2d");
+  dbgCtx.imageSmoothingEnabled = false;   // show the sensor's own pixels
   const sctx = document.createElement("canvas").getContext("2d", { willReadFrequently:true });
   sctx.canvas.width = SW; sctx.canvas.height = SH;
   const mctx = document.createElement("canvas").getContext("2d");
@@ -348,10 +349,10 @@ if (!gl) {
   function senseIdle(){
     if (!tune) return;
     dbgCtx.fillStyle = "#F5F5F5";
-    dbgCtx.fillRect(0, 0, SW, SH);
+    dbgCtx.fillRect(0, 0, DW, DH);
     dbgCtx.fillStyle = "#010101";
-    dbgCtx.font = "9px monospace";
-    dbgCtx.fillText(Sense.denied ? "NO CAMERA / POINTER" : "OPENING CAMERA", 6, 14);
+    dbgCtx.font = "11px monospace";
+    dbgCtx.fillText(Sense.denied ? "NO CAMERA / POINTER" : "OPENING CAMERA", 8, 20);
   }
 
   function sense(sec){
@@ -420,17 +421,17 @@ if (!gl) {
     }
 
     if (mask) {
-      dbgCtx.drawImage(sctx.canvas, 0, 0);   // what the camera sees
+      dbgCtx.drawImage(sctx.canvas, 0, 0, DW, DH);   // what the camera sees
       mctx.putImageData(mask, 0, 0);
-      dbgCtx.drawImage(mctx.canvas, 0, 0);   // what counts as movement, washed over it
+      dbgCtx.drawImage(mctx.canvas, 0, 0, DW, DH);   // what counts as movement, over it
       dbgCtx.fillStyle = "#010101";
-      dbgCtx.fillRect(Sense.cx * SW - 3, Sense.cy * SH - 3, 6, 6);
+      dbgCtx.fillRect(Sense.cx * DW - 4, Sense.cy * DH - 4, 8, 8);
       dbgCtx.fillStyle = "#F5F5F5";
-      dbgCtx.fillRect(0, SH - 12, SW, 12);
+      dbgCtx.fillRect(0, DH - 16, DW, 16);
       dbgCtx.fillStyle = "#010101";
-      dbgCtx.font = "9px monospace";
+      dbgCtx.font = "11px monospace";
       dbgCtx.fillText(
-        "a" + Sense.area.toFixed(3) + " e" + Sense.energy.toFixed(2) + " s" + Sense.spread.toFixed(2), 3, SH - 3);
+        "a" + Sense.area.toFixed(3) + "  e" + Sense.energy.toFixed(2) + "  s" + Sense.spread.toFixed(2), 5, DH - 5);
     }
   }
 
