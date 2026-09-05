@@ -317,7 +317,7 @@ const PROFILES = [
 // holds that stay in the archive but never get made: RIPPLE is five
 // separate pieces and turns to mush as one outline. Numbers on screen
 // still count the full list, so 10 is followed by 12.
-const HOLD_SKIP = ["RIPPLE"];
+const HOLD_SKIP = ["RIPPLE", "WHORL"];
 const POOL = HOLD_NAMES.map((_, i) => i).filter(i => !HOLD_SKIP.includes(HOLD_NAMES[i]));
 // furthest reach of each outline. Profiles are mean-normalised, so a
 // round hold peaks near 1.1 and a long one near 2.4 — without this the
