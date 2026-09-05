@@ -20,11 +20,11 @@
      decoding frames, and then there is nothing to difference */
   #cam { position:fixed; left:0; top:0; width:1px; height:1px; opacity:0; pointer-events:none; }
 
-  /* tuning overlay: camera on the left, what the camera counts as
-     movement on the right. D toggles it, ?exhibition starts it off. */
+  /* tuning overlay: the camera, with whatever counts as movement
+     washed over it. D toggles it, ?exhibition starts it off. */
   #dbg {
     position:fixed; right:0; bottom:0;
-    width:480px; height:180px;
+    width:240px; height:180px;
     image-rendering:pixelated;
     opacity:0; pointer-events:none;
   }
@@ -34,7 +34,7 @@
 <body>
   <div id="field"><canvas id="c"></canvas></div>
   <video  id="cam" playsinline muted></video>
-  <canvas id="dbg" width="320" height="120"></canvas>
+  <canvas id="dbg" width="160" height="120"></canvas>
 
 <script>
 /* ------------------------------------------------------------------
@@ -306,6 +306,8 @@ if (!gl) {
   const dbgCtx = dbgEl.getContext("2d");
   const sctx = document.createElement("canvas").getContext("2d", { willReadFrequently:true });
   sctx.canvas.width = SW; sctx.canvas.height = SH;
+  const mctx = document.createElement("canvas").getContext("2d");
+  mctx.canvas.width = SW; mctx.canvas.height = SH;
 
   // three ways this ends, and the overlay has to be able to tell them
   // apart: asked for, refused, or never offered in the first place. An
@@ -346,7 +348,7 @@ if (!gl) {
   function senseIdle(){
     if (!tune) return;
     dbgCtx.fillStyle = "#F5F5F5";
-    dbgCtx.fillRect(0, 0, SW * 2, SH);
+    dbgCtx.fillRect(0, 0, SW, SH);
     dbgCtx.fillStyle = "#010101";
     dbgCtx.font = "9px monospace";
     dbgCtx.fillText(Sense.denied ? "NO CAMERA / POINTER" : "OPENING CAMERA", 6, 14);
@@ -390,9 +392,12 @@ if (!gl) {
       if (d > thr) {
         const x = (i % SW) / SW, y = ((i / SW) | 0) / SH;
         cnt++; sx += x; sy += y; sxx += x * x; syy += y * y; sd += d;
-        if (mask) { const j = i * 4; mask.data[j] = mask.data[j+1] = mask.data[j+2] = 255; mask.data[j+3] = 255; }
+        if (mask) {
+          const j = i * 4;
+          mask.data[j] = 203; mask.data[j+1] = 215; mask.data[j+2] = 212; mask.data[j+3] = 170;
+        }
       } else if (mask) {
-        const j = i * 4; mask.data[j+3] = 255;
+        mask.data[i * 4 + 3] = 0;
       }
       bg[i] += (lum[i] - bg[i]) * decay;
     }
@@ -415,13 +420,17 @@ if (!gl) {
     }
 
     if (mask) {
-      dbgCtx.drawImage(sctx.canvas, 0, 0);        // what the camera sees
-      dbgCtx.putImageData(mask, SW, 0);           // what counts as movement
-      dbgCtx.fillStyle = "#CBD7D4";
-      dbgCtx.fillRect(SW + Sense.cx * SW - 3, Sense.cy * SH - 3, 6, 6);
+      dbgCtx.drawImage(sctx.canvas, 0, 0);   // what the camera sees
+      mctx.putImageData(mask, 0, 0);
+      dbgCtx.drawImage(mctx.canvas, 0, 0);   // what counts as movement, washed over it
+      dbgCtx.fillStyle = "#010101";
+      dbgCtx.fillRect(Sense.cx * SW - 3, Sense.cy * SH - 3, 6, 6);
+      dbgCtx.fillStyle = "#F5F5F5";
+      dbgCtx.fillRect(0, SH - 12, SW, 12);
+      dbgCtx.fillStyle = "#010101";
       dbgCtx.font = "9px monospace";
       dbgCtx.fillText(
-        "a" + Sense.area.toFixed(3) + " e" + Sense.energy.toFixed(2) + " s" + Sense.spread.toFixed(2), 3, SH - 4);
+        "a" + Sense.area.toFixed(3) + " e" + Sense.energy.toFixed(2) + " s" + Sense.spread.toFixed(2), 3, SH - 3);
     }
   }
 
