@@ -114,13 +114,22 @@ body:has([data-screen="archive"]) main {
   padding-bottom: 0;
 }
 
-/* 아카이브 상단은 비워둔다 — 심볼만 남기고 링크 글씨는 감춘다 */
-body:has([data-screen="archive"]) [data-nav-links] {
+/*
+ * 화면 하나가 통째로 인터랙션인 페이지는 상단을 비워둔다 —
+ * 심볼만 남기고 오른쪽 링크 글씨는 감춘다.
+ * 아카이브, GRIT 매니페스토, 프로세스 북이 여기 해당한다.
+ *
+ * 지우지 않고 감추는 이유 — 키보드로 탭을 돌리면 다시 나타나야
+ * 마우스 없이도 다른 화면으로 갈 수 있다.
+ */
+body:has([data-screen="archive"]) [data-nav-links],
+body:has([data-bare-nav]) [data-nav-links] {
   opacity: 0;
   pointer-events: none;
 }
 
-body:has([data-screen="archive"]) [data-nav-links]:focus-within {
+body:has([data-screen="archive"]) [data-nav-links]:focus-within,
+body:has([data-bare-nav]) [data-nav-links]:focus-within {
   opacity: 1;
   pointer-events: auto;
 }

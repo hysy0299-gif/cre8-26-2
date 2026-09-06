@@ -8,7 +8,7 @@ import { BrandBook } from "@/components/brand-book";
  */
 export default function ProcessPage() {
   return (
-    <section data-block="brand-book">
+    <section data-block="brand-book" data-bare-nav>
       <h1 className="sr-only">Process</h1>
       <BrandBook />
     </section>

@@ -16,7 +16,7 @@ const MANIFESTO = [
 
 export default function GritPage() {
   return (
-    <section data-block="manifesto">
+    <section data-block="manifesto" data-bare-nav>
       <h1 className="sr-only">GRIT — Manifesto</h1>
       <ScrollBurnText sections={MANIFESTO} logoOutro hint="scroll" />
     </section>
