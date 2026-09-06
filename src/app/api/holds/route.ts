@@ -47,6 +47,15 @@ function unpackMeta(s: string): Meta {
 }
 
 export async function GET() {
+  // 스토어가 안 붙었는지, 붙었는데 읽기가 실패했는지 밖에서 구분할 수 있어야
+  // 한다. 토큰 값은 절대 내보내지 않고 있는지 여부만 알린다.
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    return Response.json(
+      { holds: [], error: "no blob store connected" },
+      { status: 503 },
+    );
+  }
+
   try {
     const { blobs } = await list({ prefix: PREFIX, limit: 1000 });
     const holds: HoldEntry[] = [];
