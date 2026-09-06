@@ -29,12 +29,11 @@ export interface Destination {
 }
 
 /**
- * 사이트의 네 갈래. 내부 페이지 상단 네비가 이 목록을 그대로 쓴다.
+ * 사이트의 세 갈래. 내부 페이지 상단 네비가 이 목록을 그대로 쓴다.
  *
  * GRIT     브랜드 방향성 · 비주얼 · 매니페스토
  * ARCHIVE  CMF가 다른 홀드들의 아카이빙
  * PROCESS  브랜드북 · 제작 과정
- * ABOUT    팀 · 전시
  */
 export const destinations: Destination[] = [
   {
@@ -70,13 +69,12 @@ export const destinations: Destination[] = [
       height: 3800,
     },
   },
-  { label: "ABOUT", href: "/about" },
 ];
 
 export const nav = destinations;
 
 /**
  * 메인화면(/home)이 세로로 나눠 갖는 세 칸.
- * ABOUT은 메인에서 빼고 내부 페이지 네비로만 간다 — 첫 화면은 세 갈래로 단순하게.
+ * ABOUT은 내용이 안 채워져 있어 페이지째 걷어냈다 — 나중에 다시 넣으면 여기도 따라온다.
  */
-export const mainSections: Destination[] = destinations.filter((d) => d.href !== "/about");
+export const mainSections: Destination[] = destinations;
