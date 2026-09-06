@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useRef } from "react";
+import { useCallback, useRef, useState } from "react";
 import { MorphingText, type MorphingTextHandle } from "@/components/morphing-text";
 import { ScrollExpand } from "@/components/scroll-expand";
 
@@ -16,12 +16,30 @@ import { ScrollExpand } from "@/components/scroll-expand";
 const MORPH_FROM = 0.15;
 const MORPH_TO = 0.75;
 
+/**
+ * 여기까지 열려야 눌러서 들어갈 수 있다.
+ *
+ * 예전엔 화면 전체가 처음부터 링크라, 전시장에서 지나가다 한 번 스치면
+ * 벽이 열리는 장면을 못 보고 바로 넘어가 버렸다.
+ * 다 열린 뒤에만 링크를 건다.
+ */
+const ENTER_AT = 0.98;
+
 export default function LandingPage() {
   const morphRef = useRef<MorphingTextHandle>(null);
+  const [ready, setReady] = useState(false);
+  /** 스크롤 프레임마다 setState를 부르지 않게, 넘나들 때만 바꾼다 */
+  const readyRef = useRef(false);
 
   const handleProgress = useCallback((p: number) => {
     const t = (p - MORPH_FROM) / (MORPH_TO - MORPH_FROM);
     morphRef.current?.setProgress(Math.min(Math.max(t, 0), 1));
+
+    const open = p >= ENTER_AT;
+    if (open !== readyRef.current) {
+      readyRef.current = open;
+      setReady(open);
+    }
   }, []);
 
   return (
@@ -48,13 +66,18 @@ export default function LandingPage() {
         hint={<span className="text-label text-ink-muted uppercase">Scroll</span>}
       />
 
-      {/* 화면 아무 데나 눌러도 들어가진다. 스크롤은 그대로 통과한다. */}
-      <Link
-        href="/home"
-        aria-label="Enter"
-        className="fixed inset-0 z-10"
-        style={{ WebkitTapHighlightColor: "transparent" }}
-      />
+      {/*
+        다 열린 뒤에만 링크를 건다. 그 전에는 눌러도 안 넘어간다 —
+        스크롤로 벽이 열리는 장면을 건너뛰지 않게 하려는 것.
+      */}
+      {ready ? (
+        <Link
+          href="/home"
+          aria-label="Enter"
+          className="fixed inset-0 z-10"
+          style={{ WebkitTapHighlightColor: "transparent" }}
+        />
+      ) : null}
     </div>
   );
 }
