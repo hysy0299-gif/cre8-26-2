@@ -104,12 +104,16 @@ const VIEW_VH = MAX_VH;
 const STAGE_VW = 70;
 /** 썸네일 줄의 폭과 그림과의 간격 */
 const THUMB_LANE = "5rem";
-const THUMB_GAP = "1.5rem";
+const THUMB_GAP = "3rem";
 /**
- * 그림·썸네일·글을 한꺼번에 왼쪽으로 미는 양.
- * 그대로 두면 썸네일이 오른쪽 여백에 붙어 보인다 — 그만큼 안쪽으로 들여놓는다.
+ * 줄 전체를 왼쪽으로 미는 양.
+ *
+ * 그림만 더 왼쪽으로 보내고 썸네일은 제자리에 두려면 둘을 같이 만져야 한다 —
+ * THUMB_GAP을 X만큼 넓히면 줄이 X만큼 넓어지고, 가운데 정렬이라
+ * 그림은 X/2 왼쪽·썸네일은 X/2 오른쪽으로 간다. 여기서 X/2를 더 밀면
+ * 그림은 X만큼 왼쪽으로 가고 썸네일은 원래 자리에 남는다.
  */
-const SHIFT_LEFT = "2.5rem";
+const SHIFT_LEFT = "3.25rem";
 
 function holdHeightVh(width: number, height: number) {
   const r = width / height;
