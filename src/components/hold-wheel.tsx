@@ -104,7 +104,7 @@ const VIEW_VH = MAX_VH;
 const STAGE_VW = 70;
 /** 썸네일 줄의 폭과 그림과의 간격 */
 const THUMB_LANE = "5rem";
-const THUMB_GAP = "3rem";
+const THUMB_GAP = "4.5rem";
 /**
  * 줄 전체를 왼쪽으로 미는 양.
  *
@@ -113,7 +113,7 @@ const THUMB_GAP = "3rem";
  * 그림은 X/2 왼쪽·썸네일은 X/2 오른쪽으로 간다. 여기서 X/2를 더 밀면
  * 그림은 X만큼 왼쪽으로 가고 썸네일은 원래 자리에 남는다.
  */
-const SHIFT_LEFT = "3.25rem";
+const SHIFT_LEFT = "4rem";
 
 function holdHeightVh(width: number, height: number) {
   const r = width / height;
@@ -167,7 +167,7 @@ export function HoldWheel({ holds }: { holds: Hold[] }) {
       <div ref={colRef} className="col-span-12 md:col-span-5">
         <div
           // 오른쪽으로 조금 밀어 왼쪽 여백을 준다. 위로 올리는 건 예전 그대로
-          className="sticky h-[60vh] -translate-y-[2.5vh] translate-x-6 md:h-[var(--wheel-h)]"
+          className="sticky h-[60vh] -translate-y-[2.5vh] translate-x-12 md:h-[var(--wheel-h)]"
           style={
             { top: offset, "--wheel-h": `calc(100dvh - ${offset * 2}px)` } as CSSProperties
           }
