@@ -35,7 +35,7 @@ export default function MainPage() {
       className="relative flex h-dvh items-center justify-center py-[var(--page-margin)]"
     >
       {/* 이 화면에는 네비가 없다. 랜딩(클라이밍 벽)으로 돌아가는 길을 하나 둔다 */}
-      <div className="page-inset absolute inset-x-0 top-[var(--nav-pad)] z-10">
+      <div className="fixed top-[var(--nav-pad)] left-[var(--page-margin)] z-50">
         <BackLink href="/" label="Back to start" />
       </div>
 
