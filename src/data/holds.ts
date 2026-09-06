@@ -190,7 +190,10 @@ export const holds: Hold[] = [
     index: "HOLD 13",
     slug: "whorl",
     name: "Whorl",
-    description: [],
+    description: [
+      "WHORL is formed by a single ridge that coils inward in widening turns toward a shallow center,",
+      "finished in a mottled pale-gray matte surface that keeps each turn legible under the hand.",
+    ],
     spec: { form: "—", material: "—", surface: "—", interaction: "—" },
     hero: {"src":"/img/holds/whorl-2b2c1ea2.webp","alt":"Whorl hold","width":1992,"height":2200},
     views: [{"src":"/img/holds/whorl-2b2c1ea2.webp","alt":"Whorl hold","width":1992,"height":2200},{"src":"/img/holds/views/whorl-01-e93e8c1f.webp","alt":"Whorl hold, view 1","width":1600,"height":1600},{"src":"/img/holds/views/whorl-02-94237d37.webp","alt":"Whorl hold, view 2","width":1600,"height":1600},{"src":"/img/holds/views/whorl-03-563d5690.webp","alt":"Whorl hold, view 3","width":1600,"height":1600}],

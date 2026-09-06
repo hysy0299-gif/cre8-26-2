@@ -193,13 +193,16 @@ export const HOLD_SOURCES = [
     slug: "whorl",
     file: "WHORL.png",
     name: "Whorl",
+    description: [
+      "WHORL is formed by a single ridge that coils inward in widening turns toward a shallow center,",
+      "finished in a mottled pale-gray matte surface that keeps each turn legible under the hand.",
+    ],
     /** 상세 뷰 — holder thumnail/ 의 3장. 오른쪽 썸네일로 걸린다 */
     views: [
       { file: "WHORL1.png", alt: "Whorl hold, view 1" },
       { file: "WHORL2.png", alt: "Whorl hold, view 2" },
       { file: "WHORL3.png", alt: "Whorl hold, view 3" },
     ],
-    description: [],
   },
   {
     slug: "crumple",
