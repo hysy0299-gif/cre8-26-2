@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 import dynamic from "next/dynamic";
-import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import OptionWheel from "@/components/option-wheel";
 import type { Hold, MediaItem } from "@/types/hold";
@@ -115,35 +114,21 @@ function holdHeightVh(width: number, height: number) {
 /**
  * 아카이브 탐색 — 왼쪽 키워드 휠, 오른쪽 홀드와 설명.
  *
- * 스크롤/드래그로 휠을 돌리면 오른쪽이 바뀐다.
- * 가운데 키워드를 한 번 더 누르거나 Enter를 치면 그 홀드의 상세로 들어간다.
+ * 스크롤/드래그로 휠을 돌리면 오른쪽 그림이 바뀐다.
+ * 홀드 상세 페이지는 없앴다 — 내용이 안 채워진 자리표시 화면이라 걷어냈다.
  */
 export function HoldWheel({ holds }: { holds: Hold[] }) {
-  const router = useRouter();
   const fontSize = useWheelFontSize();
   const { ref: colRef, offset } = useTopOffset();
   const [index, setIndex] = useState(0);
   /** 상세 뷰가 여러 장인 홀드에서 지금 보고 있는 장 */
   const [view, setView] = useState(0);
 
-  const handleChange = useCallback(
-    (i: number) => {
-      setIndex(i);
-      // 홀드가 바뀌면 대표 이미지로 되돌린다 — 앞 홀드의 3번째 뷰가 남아 있으면 헷갈린다
-      setView(0);
-      const hold = holds[i];
-      if (hold) router.prefetch(`/archive/${hold.slug}`);
-    },
-    [holds, router],
-  );
-
-  const handleCommit = useCallback(
-    (i: number) => {
-      const hold = holds[i];
-      if (hold) router.push(`/archive/${hold.slug}`);
-    },
-    [holds, router],
-  );
+  const handleChange = useCallback((i: number) => {
+    setIndex(i);
+    // 홀드가 바뀌면 대표 이미지로 되돌린다 — 앞 홀드의 3번째 뷰가 남아 있으면 헷갈린다
+    setView(0);
+  }, []);
 
   const active = holds[index];
   /**
@@ -181,7 +166,6 @@ export function HoldWheel({ holds }: { holds: Hold[] }) {
             items={holds.map((h) => h.name)}
             defaultSelected={0}
             onChange={handleChange}
-            onCommit={handleCommit}
             side="left"
             fontSize={fontSize}
             spacing={1.75}
