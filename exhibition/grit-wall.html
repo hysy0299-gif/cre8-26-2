@@ -128,6 +128,19 @@
   body.wall #camview, body.wall #capnote { opacity:0; }
 
   /* the one just added arrives a beat later than the rest */
+  /* the crop, drawn where bake() actually cuts */
+  #frame {
+    position:fixed; left:50%; top:50%; transform:translate(-50%, -50%);
+    border:1px solid #010101;
+    opacity:0; transition:opacity .25s;
+    pointer-events:none;
+  }
+  #count {
+    position:absolute; left:10px; top:10px;
+    font:700 11px/1 "HN", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    letter-spacing:.12em; color:#010101;
+  }
+
   #wall figure.fresh { animation:land .5s ease both; }
   @keyframes land { from { opacity:0; } to { opacity:1; } }
   #wall figure {
@@ -1119,6 +1132,13 @@ if (!gl) {
     S.lastInput = performance.now();
   }
 
+  function enterWall(){
+    document.body.classList.add("wall");
+    toWallEl.textContent = "BACK";
+    wallIdleAt = performance.now() + WALL_IDLE_FOR;
+  }
+
+
   // anything the visitor does on the wall keeps it open
   for (const ev of ["pointermove", "pointerdown", "keydown", "wheel"]) {
     addEventListener(ev, () => { wallIdleAt = performance.now() + WALL_IDLE_FOR; }, { passive:true });
@@ -1126,9 +1146,7 @@ if (!gl) {
 
   toWallEl.addEventListener("click", () => {
     if (document.body.classList.contains("wall")) { leaveWall(); return; }
-    document.body.classList.add("wall");
-    toWallEl.textContent = "BACK";
-    wallIdleAt = performance.now() + WALL_IDLE_FOR;
+    enterWall();
   });
 
   // bumped to leave every earlier record behind: the crop changed, so
@@ -1158,7 +1176,6 @@ if (!gl) {
   let remote = false;          // set once the server answers
   let wall = [];
 
-  if (QS.has("wall")) document.body.classList.add("wall");
   if (QS.has("clear")) { try { localStorage.removeItem(WALL_KEY); } catch (e) {} }
   else { try { wall = JSON.parse(localStorage.getItem(WALL_KEY) || "[]"); } catch (e) { wall = []; } }
 
@@ -1336,9 +1353,7 @@ if (!gl) {
         saveWall(); renderWall();
         noteEl.hidden = true;
         archiveEl.disabled = false; archiveEl.textContent = "ARCHIVE";
-        document.body.classList.add("wall");
-        toWallEl.textContent = "BACK";
-        wallIdleAt = performance.now() + WALL_IDLE_FOR;
+        enterWall();
       })
       .catch(err => {
         console.error("wall unreachable, kept on this machine:", err);
@@ -1354,9 +1369,7 @@ if (!gl) {
         archiveEl.disabled = false; archiveEl.textContent = "ARCHIVE";
         guideEl.textContent = "SAVED ON THIS SCREEN ONLY";
         lastGuide = null;
-        document.body.classList.add("wall");
-        toWallEl.textContent = "BACK";
-        wallIdleAt = performance.now() + WALL_IDLE_FOR;
+        enterWall();
       });
     noteName.blur(); noteText.blur();
 
@@ -1573,7 +1586,11 @@ if (!gl) {
     if (avgDt > 26 && scale > 0.55)     { scale -= 0.06; applySize(); }
     else if (avgDt < 15 && scale < 1.0) { scale = Math.min(1, scale + 0.03); applySize(); }
 
-    raf = requestAnimationFrame(tick);
+    // ?wall opens straight onto what has been kept. Last, so every
+  // piece of state it touches already exists.
+  if (QS.has("wall")) enterWall();
+
+  raf = requestAnimationFrame(tick);
   }
   raf = requestAnimationFrame(tick);
 
