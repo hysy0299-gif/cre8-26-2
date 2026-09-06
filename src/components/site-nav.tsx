@@ -1,24 +1,23 @@
 import Link from "next/link";
-import { Logo } from "@/components/logo";
+import { BackLink } from "@/components/back-link";
 import { nav } from "@/data/site";
 
 /**
  * 내부 페이지 전역 네비게이션.
  *
- * 아카이브에서는 링크 글씨를 감추고 심볼만 남긴다 — 화면 위쪽을 비워두기 위해서다.
- * 감추는 건 CSS(globals의 data-screen="archive" 규칙)라서 마크업은 그대로고,
- * 키보드·스크린리더로는 여전히 닿는다.
+ * 왼쪽 위는 뒤로가기다 — 메인화면(3분할)으로 돌아간다.
+ * 예전엔 심볼이 그 자리에서 같은 곳으로 갔는데, 전시장에서는 로고가
+ * 돌아가는 길로 안 읽힌다. 화살표가 할 일을 더 분명히 말한다.
+ *
+ * 오른쪽 링크 글씨는 화면 하나가 통째로 인터랙션인 페이지에서 감춘다
+ * (globals의 data-bare-nav / data-screen="archive" 규칙).
+ * 감추기만 하고 지우지는 않아서 키보드로는 여전히 닿는다.
  */
 export function SiteNav() {
   return (
     <nav className="page-inset flex items-center justify-between py-[var(--nav-pad)]">
-      <Link href="/home" aria-label="GRIT — home">
-        <Logo variant="symbol" className="text-ink h-5 w-auto" />
-      </Link>
-      <ul
-        data-nav-links
-        className="text-label flex gap-[var(--grid-gutter)] uppercase"
-      >
+      <BackLink href="/home" label="Back to main" />
+      <ul data-nav-links className="text-label flex gap-[var(--grid-gutter)] uppercase">
         {nav.map((item) => (
           <li key={item.href}>
             <Link href={item.href} className="text-ink-muted hover:text-ink">

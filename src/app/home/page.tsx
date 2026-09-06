@@ -1,4 +1,5 @@
 import { AccordionGallery } from "@/components/accordion-gallery";
+import { BackLink } from "@/components/back-link";
 import { mainSections } from "@/data/site";
 
 /**
@@ -31,8 +32,13 @@ export default function MainPage() {
   return (
     <div
       data-screen="main"
-      className="flex h-dvh items-center justify-center py-[var(--page-margin)]"
+      className="relative flex h-dvh items-center justify-center py-[var(--page-margin)]"
     >
+      {/* 이 화면에는 네비가 없다. 랜딩(클라이밍 벽)으로 돌아가는 길을 하나 둔다 */}
+      <div className="page-inset absolute inset-x-0 top-[var(--nav-pad)] z-10">
+        <BackLink href="/" label="Back to start" />
+      </div>
+
       <div className="h-full max-w-full" style={{ aspectRatio: `${WIDEST / OPEN_RATIO}` }}>
         <AccordionGallery
           items={mainSections.map((s) => ({
