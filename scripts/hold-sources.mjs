@@ -25,21 +25,6 @@ export const HOLD_SOURCES = [
     ],
   },
   {
-    slug: "slope",
-    file: "SLOPE.png",
-    name: "Slope",
-    /** 상세 뷰 — holder thumnail/ 의 3장. 오른쪽 썸네일로 걸린다 */
-    views: [
-      { file: "SLOPE1.png", alt: "Slope hold, view 1" },
-      { file: "SLOPE2.png", alt: "Slope hold, view 2" },
-      { file: "SLOPE3.png", alt: "Slope hold, view 3" },
-    ],
-    description: [
-      "SLOPE is shaped by a soft asymmetrical volume crossed by a sweeping diagonal ridge,",
-      "with a pale ice-blue matte surface that emphasizes subtle directional movement.",
-    ],
-  },
-  {
     slug: "sprout",
     file: "SPROUT.png",
     name: "Sprout",
@@ -55,66 +40,6 @@ export const HOLD_SOURCES = [
     ],
   },
   {
-    slug: "valley",
-    file: "VALLEY.png",
-    name: "Valley",
-    /** 상세 뷰 — holder thumnail/ 의 3장. 오른쪽 썸네일로 걸린다 */
-    views: [
-      { file: "VALL1.png", alt: "Valley hold, view 1" },
-      { file: "VALL2.png", alt: "Valley hold, view 2" },
-      { file: "VALL3.png", alt: "Valley hold, view 3" },
-    ],
-    description: [
-      "VALLEY is defined by a deep central depression between two rising ridges,",
-      "with a pale blue matte surface that evokes a softly eroded landscape.",
-    ],
-  },
-  {
-    slug: "glider",
-    file: "GLIDER.png",
-    name: "Glider",
-    /** 상세 뷰 — holder thumnail/ 의 3장. 오른쪽 썸네일로 걸린다 */
-    views: [
-      { file: "GL1.png", alt: "Glider hold, view 1" },
-      { file: "GL2.png", alt: "Glider hold, view 2" },
-      { file: "GL3.png", alt: "Glider hold, view 3" },
-    ],
-    description: [
-      "GLIDER is shaped by the silhouette of a glider in flight, with elongated wings",
-      "and a metallic lavender finish that gives the form a sleek, aerodynamic presence.",
-    ],
-  },
-  {
-    slug: "ripple",
-    file: "RIPPLE.png",
-    name: "Ripple",
-    /** 상세 뷰 — holder thumnail/ 의 3장. 오른쪽 썸네일로 걸린다 */
-    views: [
-      { file: "RIPPLE1.png", alt: "Ripple hold, view 1" },
-      { file: "RIPPLE2.png", alt: "Ripple hold, view 2" },
-      { file: "RIPPLE3.png", alt: "Ripple hold, view 3" },
-    ],
-    description: [
-      "RIPPLE is composed of five forms that gradually shift in scale,",
-      "echoing spreading waves through clear surfaces and softly textured pale-gray edges.",
-    ],
-  },
-  {
-    slug: "fin",
-    file: "FIN.png",
-    name: "Fin",
-    /** 상세 뷰 — holder thumnail/ 의 3장. 오른쪽 썸네일로 걸린다 */
-    views: [
-      { file: "FIN1.png", alt: "Fin hold, view 1" },
-      { file: "FIN2.png", alt: "Fin hold, view 2" },
-      { file: "FIN3.png", alt: "Fin hold, view 3" },
-    ],
-    description: [
-      "FIN is shaped by the broad sweep of a tail fin, creating a light, directional silhouette",
-      "with a rough mint-green surface that adds tactile depth.",
-    ],
-  },
-  {
     slug: "ray",
     file: "RAY.png",
     name: "Ray",
@@ -127,51 +52,6 @@ export const HOLD_SOURCES = [
     description: [
       "RAY is defined by a wide, symmetrical silhouette that spreads outward like wings,",
       "softened by a muted gray fur surface that adds warmth and tactile depth.",
-    ],
-  },
-  {
-    slug: "cushion",
-    file: "CUSHION.png",
-    name: "Cushion",
-    /** 상세 뷰 — holder thumnail/ 의 3장. 오른쪽 썸네일로 걸린다 */
-    views: [
-      { file: "cu1.png", alt: "Cushion hold, view 1" },
-      { file: "cu2.png", alt: "Cushion hold, view 2" },
-      { file: "cu3.png", alt: "Cushion hold, view 3" },
-    ],
-    description: [
-      "CUSHION is shaped like a compressed padded surface, with deep folds and worn black leather-like textures",
-      "that emphasize softness, pressure, and accumulated wear.",
-    ],
-  },
-  {
-    slug: "clover",
-    file: "CLOVER.png",
-    name: "Clover",
-    /** 상세 뷰 — holder thumnail/ 의 3장. 오른쪽 썸네일로 걸린다 */
-    views: [
-      { file: "CLO1.png", alt: "Clover hold, view 1" },
-      { file: "CLO2.png", alt: "Clover hold, view 2" },
-      { file: "CLO3.png", alt: "Clover hold, view 3" },
-    ],
-    description: [
-      "CLOVER is formed from four rounded lobes gathered around a narrow center,",
-      "creating a balanced silhouette with a smooth charcoal surface and soft rubber-like presence.",
-    ],
-  },
-  {
-    slug: "shell",
-    file: "SHELL.png",
-    name: "Shell",
-    /** 상세 뷰 — holder thumnail/ 의 3장. 오른쪽 썸네일로 걸린다 */
-    views: [
-      { file: "SHELL1.png", alt: "Shell hold, view 1" },
-      { file: "SHELL2.png", alt: "Shell hold, view 2" },
-      { file: "SHELL3.png", alt: "Shell hold, view 3" },
-    ],
-    description: [
-      "SHELL is formed by a soft black outer mass intersected by a thin metal plate,",
-      "creating a strong contrast between tactile softness and cold precision.",
     ],
   },
   {
@@ -205,21 +85,6 @@ export const HOLD_SOURCES = [
     ],
   },
   {
-    slug: "crumple",
-    file: "CRUMPLE.png",
-    name: "Crumple",
-    /** 상세 뷰 — holder thumnail/ 의 3장. 오른쪽 썸네일로 걸린다 */
-    views: [
-      { file: "CRUM1.png", alt: "Crumple hold, view 1" },
-      { file: "CRUM2.png", alt: "Crumple hold, view 2" },
-      { file: "CRUM3.png", alt: "Crumple hold, view 3" },
-    ],
-    description: [
-      "CRUMPLE is shaped by compressed folds and soft depressions,",
-      "while its pale sage-green fur surface transforms the wrinkled form into something warm and tactile.",
-    ],
-  },
-  {
     slug: "melt",
     file: "MELT.png",
     name: "Melt",
@@ -235,6 +100,96 @@ export const HOLD_SOURCES = [
     ],
   },
   {
+    slug: "fin",
+    file: "FIN.png",
+    name: "Fin",
+    /** 상세 뷰 — holder thumnail/ 의 3장. 오른쪽 썸네일로 걸린다 */
+    views: [
+      { file: "FIN1.png", alt: "Fin hold, view 1" },
+      { file: "FIN2.png", alt: "Fin hold, view 2" },
+      { file: "FIN3.png", alt: "Fin hold, view 3" },
+    ],
+    description: [
+      "FIN is shaped by the broad sweep of a tail fin, creating a light, directional silhouette",
+      "with a rough mint-green surface that adds tactile depth.",
+    ],
+  },
+  {
+    slug: "valley",
+    file: "VALLEY.png",
+    name: "Valley",
+    /** 상세 뷰 — holder thumnail/ 의 3장. 오른쪽 썸네일로 걸린다 */
+    views: [
+      { file: "VALL1.png", alt: "Valley hold, view 1" },
+      { file: "VALL2.png", alt: "Valley hold, view 2" },
+      { file: "VALL3.png", alt: "Valley hold, view 3" },
+    ],
+    description: [
+      "VALLEY is defined by a deep central depression between two rising ridges,",
+      "with a pale blue matte surface that evokes a softly eroded landscape.",
+    ],
+  },
+  {
+    slug: "slope",
+    file: "SLOPE.png",
+    name: "Slope",
+    /** 상세 뷰 — holder thumnail/ 의 3장. 오른쪽 썸네일로 걸린다 */
+    views: [
+      { file: "SLOPE1.png", alt: "Slope hold, view 1" },
+      { file: "SLOPE2.png", alt: "Slope hold, view 2" },
+      { file: "SLOPE3.png", alt: "Slope hold, view 3" },
+    ],
+    description: [
+      "SLOPE is shaped by a soft asymmetrical volume crossed by a sweeping diagonal ridge,",
+      "with a pale ice-blue matte surface that emphasizes subtle directional movement.",
+    ],
+  },
+  {
+    slug: "shell",
+    file: "SHELL.png",
+    name: "Shell",
+    /** 상세 뷰 — holder thumnail/ 의 3장. 오른쪽 썸네일로 걸린다 */
+    views: [
+      { file: "SHELL1.png", alt: "Shell hold, view 1" },
+      { file: "SHELL2.png", alt: "Shell hold, view 2" },
+      { file: "SHELL3.png", alt: "Shell hold, view 3" },
+    ],
+    description: [
+      "SHELL is formed by a soft black outer mass intersected by a thin metal plate,",
+      "creating a strong contrast between tactile softness and cold precision.",
+    ],
+  },
+  {
+    slug: "clover",
+    file: "CLOVER.png",
+    name: "Clover",
+    /** 상세 뷰 — holder thumnail/ 의 3장. 오른쪽 썸네일로 걸린다 */
+    views: [
+      { file: "CLO1.png", alt: "Clover hold, view 1" },
+      { file: "CLO2.png", alt: "Clover hold, view 2" },
+      { file: "CLO3.png", alt: "Clover hold, view 3" },
+    ],
+    description: [
+      "CLOVER is formed from four rounded lobes gathered around a narrow center,",
+      "creating a balanced silhouette with a smooth charcoal surface and soft rubber-like presence.",
+    ],
+  },
+  {
+    slug: "ripple",
+    file: "RIPPLE.png",
+    name: "Ripple",
+    /** 상세 뷰 — holder thumnail/ 의 3장. 오른쪽 썸네일로 걸린다 */
+    views: [
+      { file: "RIPPLE1.png", alt: "Ripple hold, view 1" },
+      { file: "RIPPLE2.png", alt: "Ripple hold, view 2" },
+      { file: "RIPPLE3.png", alt: "Ripple hold, view 3" },
+    ],
+    description: [
+      "RIPPLE is composed of five forms that gradually shift in scale,",
+      "echoing spreading waves through clear surfaces and softly textured pale-gray edges.",
+    ],
+  },
+  {
     slug: "veil",
     file: "VEIL.png",
     name: "Veil",
@@ -247,6 +202,51 @@ export const HOLD_SOURCES = [
     description: [
       "VEIL is formed as if fabric has been stretched over a soft volume,",
       "allowing tension, folds, and woven gray textures to define its sculptural surface.",
+    ],
+  },
+  {
+    slug: "cushion",
+    file: "CUSHION.png",
+    name: "Cushion",
+    /** 상세 뷰 — holder thumnail/ 의 3장. 오른쪽 썸네일로 걸린다 */
+    views: [
+      { file: "cu1.png", alt: "Cushion hold, view 1" },
+      { file: "cu2.png", alt: "Cushion hold, view 2" },
+      { file: "cu3.png", alt: "Cushion hold, view 3" },
+    ],
+    description: [
+      "CUSHION is shaped like a compressed padded surface, with deep folds and worn black leather-like textures",
+      "that emphasize softness, pressure, and accumulated wear.",
+    ],
+  },
+  {
+    slug: "crumple",
+    file: "CRUMPLE.png",
+    name: "Crumple",
+    /** 상세 뷰 — holder thumnail/ 의 3장. 오른쪽 썸네일로 걸린다 */
+    views: [
+      { file: "CRUM1.png", alt: "Crumple hold, view 1" },
+      { file: "CRUM2.png", alt: "Crumple hold, view 2" },
+      { file: "CRUM3.png", alt: "Crumple hold, view 3" },
+    ],
+    description: [
+      "CRUMPLE is shaped by compressed folds and soft depressions,",
+      "while its pale sage-green fur surface transforms the wrinkled form into something warm and tactile.",
+    ],
+  },
+  {
+    slug: "glider",
+    file: "GLIDER.png",
+    name: "Glider",
+    /** 상세 뷰 — holder thumnail/ 의 3장. 오른쪽 썸네일로 걸린다 */
+    views: [
+      { file: "GL1.png", alt: "Glider hold, view 1" },
+      { file: "GL2.png", alt: "Glider hold, view 2" },
+      { file: "GL3.png", alt: "Glider hold, view 3" },
+    ],
+    description: [
+      "GLIDER is shaped by the silhouette of a glider in flight, with elongated wings",
+      "and a metallic lavender finish that gives the form a sleek, aerodynamic presence.",
     ],
   },
 ];
