@@ -17,6 +17,8 @@ export const dynamic = "force-dynamic";
 
 // wall2/ 로 옮겨서 이전 기록을 두고 온다. 크롭이 바뀌어 예전 사각형은
 // 지금 저장되는 것과 크기가 안 맞는다.
+// 배포가 실제로 갱신됐는지 응답만 보고 확인하려고 둔다
+const BUILD = "2026-09-06a";
 const PREFIX = "wall2/";
 const MAX_BYTES = 2_000_000;
 
@@ -79,7 +81,16 @@ export async function GET() {
     return Response.json({ holds });
   } catch (err) {
     console.error("wall read failed", err);
-    return Response.json({ holds: [], error: "read failed" }, { status: 500 });
+    // 무엇이 왜 실패했는지 밖에서 보여야 고칠 수 있다. 토큰 값은 안 나간다.
+    return Response.json(
+      {
+        holds: [],
+        error: "read failed",
+        why: String(err instanceof Error ? err.message : err).slice(0, 200),
+        build: BUILD,
+      },
+      { status: 500 },
+    );
   }
 }
 
