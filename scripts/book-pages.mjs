@@ -19,7 +19,6 @@
 export const BOOK_SOURCES = [
   "grit_brandbook31 1.png",
   "grit_brandbook2 10.png",
-  "grit_brandbook2 11.png",
   "grit_brandbook3 2.png",
   "grit_brandbook4 1.png",
   "grit_brandbook5 1.png",
@@ -47,6 +46,7 @@ export const BOOK_SOURCES = [
   "grit_brandbook27 1.png",
   "grit_brandbook28 1.png",
   "grit_brandbook29 1.png",
+  "grit_brandbook30 1.png",
   "grit_brandbook 32.png",
 ];
 
