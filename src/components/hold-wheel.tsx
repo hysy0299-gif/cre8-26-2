@@ -20,7 +20,7 @@ const ModelViewer = dynamic(() => import("@/components/model-viewer"), {
  * 휠은 행 높이를 fontSize에서 px로 계산하므로 CSS clamp을 못 쓴다.
  * 폭 구간별로 값을 바꿔 끼우면 휠이 알아서 다시 배치된다.
  */
-const FONT_SIZE = { sm: 3.2, md: 4.6, lg: 6.2 } as const;
+const FONT_SIZE = { sm: 3.2, md: 4.8, lg: 6.9 } as const;
 
 function useWheelFontSize() {
   const [size, setSize] = useState<number>(FONT_SIZE.lg);
@@ -105,6 +105,11 @@ const STAGE_VW = 70;
 /** 썸네일 줄의 폭과 그림과의 간격 */
 const THUMB_LANE = "5rem";
 const THUMB_GAP = "1.5rem";
+/**
+ * 그림·썸네일·글을 한꺼번에 왼쪽으로 미는 양.
+ * 그대로 두면 썸네일이 오른쪽 여백에 붙어 보인다 — 그만큼 안쪽으로 들여놓는다.
+ */
+const SHIFT_LEFT = "2.5rem";
 
 function holdHeightVh(width: number, height: number) {
   const r = width / height;
@@ -157,7 +162,8 @@ export function HoldWheel({ holds }: { holds: Hold[] }) {
     <div className="relative grid grid-cols-12 gap-[var(--grid-gutter)]">
       <div ref={colRef} className="col-span-12 md:col-span-5">
         <div
-          className="sticky h-[60vh] -translate-y-[2.5vh] md:h-[var(--wheel-h)]"
+          // 오른쪽으로 조금 밀어 왼쪽 여백을 준다. 위로 올리는 건 예전 그대로
+          className="sticky h-[60vh] -translate-y-[2.5vh] translate-x-6 md:h-[var(--wheel-h)]"
           style={
             { top: offset, "--wheel-h": `calc(100dvh - ${offset * 2}px)` } as CSSProperties
           }
@@ -201,7 +207,10 @@ export function HoldWheel({ holds }: { holds: Hold[] }) {
         */}
         <div
           className="flex w-full items-center justify-center"
-          style={{ height: `calc(100dvh - ${offset * 2}px)` }}
+          style={{
+            height: `calc(100dvh - ${offset * 2}px)`,
+            transform: `translateX(-${SHIFT_LEFT})`,
+          }}
         >
           {/*
             그림 자리는 폭을 고정한다. 홀드마다 폭이 달라서 그냥 가운데 두면
@@ -307,8 +316,8 @@ export function HoldWheel({ holds }: { holds: Hold[] }) {
               top: `calc(${TEXT_TOP_VH}dvh - ${offset}px)`,
               left:
                 views.length > 1
-                  ? `calc(50% - (${THUMB_LANE} + ${THUMB_GAP}) / 2)`
-                  : "50%",
+                  ? `calc(50% - (${THUMB_LANE} + ${THUMB_GAP}) / 2 - ${SHIFT_LEFT})`
+                  : `calc(50% - ${SHIFT_LEFT})`,
             }}
           >
             {active.description.map((line, i) => (
