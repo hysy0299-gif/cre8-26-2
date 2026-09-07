@@ -51,6 +51,8 @@ const NEAR = 0.25;
 const LOGO_END = 0.79;
 /** 글자 하나가 사그라드는 구간. 아래 opacity 클래스의 0.09와 짝이다 */
 const RAMP = 0.09;
+/** 끝자락에서 문단 셈이 물러나는 구간 */
+const TAIL = 0.06;
 
 /** 심볼을 구워 넣을 판의 한 변(px). 글자 수백 개를 찍어보는 용도라 이 정도면 충분하다 */
 const FIELD = 128;
@@ -257,6 +259,11 @@ export function ScrollBurnText({
       });
 
       if (hintRef.current) hintRef.current.style.opacity = `${clamp01(1 - p / 0.08)}`;
+      // 마지막 칸에 다 닿으면 셈은 할 일을 마쳤다. 여기서 걷어내지 않으면
+      // 무대가 위로 빠질 때 화면 한가운데를 가로질러 떠간다
+      if (counterRef.current) {
+        counterRef.current.style.opacity = `${clamp01((1 - p) / TAIL)}`;
+      }
       if (active !== front) {
         active = front;
         if (counterRef.current) {

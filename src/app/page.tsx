@@ -3,13 +3,21 @@
 import Link from "next/link";
 import { useCallback, useRef, useState } from "react";
 import { MorphingText, type MorphingTextHandle } from "@/components/morphing-text";
+import { ScrollBurnText } from "@/components/scroll-burn-text";
 import { ScrollExpand } from "@/components/scroll-expand";
+import { MANIFESTO } from "@/data/manifesto";
 
 /**
- * LANDING — 스크롤이 모는 진입 화면.
+ * 첫 화면 — 매니페스토를 읽고 나서 벽이 열린다.
  *
- * 내리면 벽 사진 프레임이 열려 화면을 먹고, 같은 스크롤로
- * "Be Experimental"이 "GRIT"으로 녹아 바뀐다. 누르면 메인화면으로.
+ * 스크롤 한 줄에 두 인터랙션이 차례로 걸린다.
+ * 1. 문단 셋이 다가와 읽히고 GRIT 심볼 모양으로 타 사라진 뒤, 그 자리에 로고가 선다.
+ * 2. 이어 내리면 벽 사진 프레임이 열려 화면을 먹고, 같은 스크롤로
+ *    "Be Experimental"이 "GRIT"으로 녹아 바뀐다. 다 열린 뒤 누르면 메인화면으로.
+ *
+ * 두 컴포넌트 모두 제 구간(runway/track)을 창 스크롤에 대고 재기 때문에,
+ * 위아래로 쌓아두기만 하면 각자 제 차례에만 움직인다.
+ * 매니페스토 쪽 sticky 무대가 불투명(bg-ground)이라 아래 벽이 비쳐 보이지도 않는다.
  */
 
 /** 모핑을 스크롤 전 구간에 걸지 않는다 — 조금 내렸을 때 시작해 다 열리기 전에 끝난다 */
@@ -44,6 +52,11 @@ export default function LandingPage() {
 
   return (
     <div data-screen="landing" className="relative">
+      <section data-block="manifesto">
+        <h1 className="sr-only">GRIT — Manifesto</h1>
+        <ScrollBurnText sections={MANIFESTO} logoOutro hint="scroll" />
+      </section>
+
       <ScrollExpand
         src="/img/landing-bg.webp"
         alt=""
