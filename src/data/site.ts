@@ -34,11 +34,15 @@ export interface Destination {
  * GRIT     브랜드 방향성 · 비주얼 · 매니페스토
  * ARCHIVE  CMF가 다른 홀드들의 아카이빙
  * PROCESS  브랜드북 · 제작 과정
+ *
+ * GRIT은 따로 페이지를 두지 않고 첫 화면(/)이 그대로 그 파트다.
+ * 전시를 켜면 처음 보게 되는 화면이 매니페스토라, 같은 글을 안쪽에 한 벌 더
+ * 두면 같은 걸 두 군데서 관리하게 된다. 3분할의 GRIT 칸은 그 화면으로 되돌아간다.
  */
 export const destinations: Destination[] = [
   {
     label: "GRIT",
-    href: "/grit",
+    href: "/",
     image: {
       src: "/img/sections/grit-1400-ede43e8d.webp",
       srcSet:

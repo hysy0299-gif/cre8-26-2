@@ -2,13 +2,17 @@
 
 import Link from "next/link";
 import { useCallback, useRef, useState } from "react";
+import { BackLink } from "@/components/back-link";
 import { MorphingText, type MorphingTextHandle } from "@/components/morphing-text";
 import { ScrollBurnText } from "@/components/scroll-burn-text";
 import { ScrollExpand } from "@/components/scroll-expand";
 import { MANIFESTO } from "@/data/manifesto";
 
 /**
- * 첫 화면 — 매니페스토를 읽고 나서 벽이 열린다.
+ * 첫 화면 = GRIT 파트. 매니페스토를 읽고 나서 벽이 열린다.
+ *
+ * 전시를 켜면 여기부터 보이고, 3분할의 GRIT 칸도 이리로 되돌아온다.
+ * 그래서 뒤로가기가 여기 붙는다 — 3분할이 이 웹의 집이고, 여기는 그 안쪽 한 갈래다.
  *
  * 스크롤 한 줄에 두 인터랙션이 차례로 걸린다.
  * 1. 문단 셋이 다가와 읽히고 GRIT 심볼 모양으로 타 사라진 뒤, 그 자리에 로고가 선다.
@@ -52,6 +56,11 @@ export default function LandingPage() {
 
   return (
     <div data-screen="landing" className="relative">
+      {/* 긴 스크롤이라 흐름에 두면 첫 화면에서만 보인다. 화면에 고정해 둔다 */}
+      <div className="fixed top-[var(--nav-pad)] left-[var(--page-margin)] z-50">
+        <BackLink href="/home" label="Back to main" />
+      </div>
+
       <section data-block="manifesto">
         <h1 className="sr-only">GRIT — Manifesto</h1>
         <ScrollBurnText sections={MANIFESTO} logoOutro hint="scroll" />

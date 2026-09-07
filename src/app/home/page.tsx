@@ -1,5 +1,4 @@
 import { AccordionGallery } from "@/components/accordion-gallery";
-import { BackLink } from "@/components/back-link";
 import { mainSections } from "@/data/site";
 
 /**
@@ -8,6 +7,10 @@ import { mainSections } from "@/data/site";
  * 세 칸이 같은 높이로 나란히 서고, 커서를 올린 칸이 넓어진다.
  * 사진은 크기가 안 변한다 — 칸이 창처럼 넓어졌다 좁아지며 더 보여주거나 가린다.
  * 접힌 칸을 누르면 펼치기만 하고, 펼쳐진 칸을 다시 누르면 그 화면으로 들어간다.
+ *
+ * 여기가 이 웹의 집이라 뒤로가기를 두지 않는다 — 돌아갈 뒤가 없다.
+ * 손을 떼면 어느 화면에서든 다시 이리로 돌아온다(IdleReset).
+ * 나가는 길이 필요한 건 안쪽 세 화면 쪽이다.
  */
 
 /**
@@ -34,11 +37,6 @@ export default function MainPage() {
       data-screen="main"
       className="relative flex h-dvh items-center justify-center py-[var(--page-margin)]"
     >
-      {/* 이 화면에는 네비가 없다. 랜딩(클라이밍 벽)으로 돌아가는 길을 하나 둔다 */}
-      <div className="fixed top-[var(--nav-pad)] left-[var(--page-margin)] z-50">
-        <BackLink href="/" label="Back to start" />
-      </div>
-
       <div className="h-full max-w-full" style={{ aspectRatio: `${WIDEST / OPEN_RATIO}` }}>
         <AccordionGallery
           items={mainSections.map((s) => ({
