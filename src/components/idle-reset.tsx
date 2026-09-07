@@ -9,9 +9,7 @@ import { useEffect, useRef } from "react";
  * 전시장에 놓고 쓰는 화면이라, 앞 사람이 아카이브 중간쯤 열어두고 가버리면
  * 다음 사람은 그 상태부터 보게 된다. 일정 시간 손을 안 대면 되돌린다.
  *
- * 돌아가는 곳은 첫 화면(/)이 아니라 3분할(/home)이다.
- * 첫 화면은 매니페스토를 다 읽고 벽까지 열어야 넘어가는 긴 스크롤이라,
- * 다음 사람을 매번 그 앞에 세우면 세 갈래로 가는 길이 멀어진다.
+ * 돌아가는 곳은 3분할(/)이다 — 링크를 열면 처음 보이는 화면이자 이 웹의 집이다.
  *
  * 움직임·누름·스크롤 무엇이든 활동으로 치고 타이머를 다시 잰다.
  * 돌아갈 자리(3분할)에서는 잴 필요가 없으니 아예 걸지 않는다.
@@ -28,7 +26,7 @@ const ACTIVITY = [
   "scroll",
 ] as const;
 
-export function IdleReset({ home = "/home" }: { home?: string }) {
+export function IdleReset({ home = "/" }: { home?: string }) {
   const router = useRouter();
   const pathname = usePathname();
   const timer = useRef<number | null>(null);

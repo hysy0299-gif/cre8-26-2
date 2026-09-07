@@ -1,105 +1,61 @@
-"use client";
-
-import Link from "next/link";
-import { useCallback, useRef, useState } from "react";
-import { BackLink } from "@/components/back-link";
-import { MorphingText, type MorphingTextHandle } from "@/components/morphing-text";
-import { ScrollBurnText } from "@/components/scroll-burn-text";
-import { ScrollExpand } from "@/components/scroll-expand";
-import { MANIFESTO } from "@/data/manifesto";
+import { AccordionGallery } from "@/components/accordion-gallery";
+import { mainSections } from "@/data/site";
 
 /**
- * 첫 화면 = GRIT 파트. 매니페스토를 읽고 나서 벽이 열린다.
+ * MAIN — 세 갈래로 나뉘는 첫 화면.
  *
- * 전시를 켜면 여기부터 보이고, 3분할의 GRIT 칸도 이리로 되돌아온다.
- * 그래서 뒤로가기가 여기 붙는다 — 3분할이 이 웹의 집이고, 여기는 그 안쪽 한 갈래다.
+ * 세 칸이 같은 높이로 나란히 서고, 커서를 올린 칸이 넓어진다.
+ * 사진은 크기가 안 변한다 — 칸이 창처럼 넓어졌다 좁아지며 더 보여주거나 가린다.
+ * 접힌 칸을 누르면 펼치기만 하고, 펼쳐진 칸을 다시 누르면 그 화면으로 들어간다.
  *
- * 스크롤 한 줄에 두 인터랙션이 차례로 걸린다.
- * 1. 문단 셋이 다가와 읽히고 GRIT 심볼 모양으로 타 사라진 뒤, 그 자리에 로고가 선다.
- * 2. 이어 내리면 벽 사진 프레임이 열려 화면을 먹고, 같은 스크롤로
- *    "Be Experimental"이 "GRIT"으로 녹아 바뀐다. 다 열린 뒤 누르면 메인화면으로.
- *
- * 두 컴포넌트 모두 제 구간(runway/track)을 창 스크롤에 대고 재기 때문에,
- * 위아래로 쌓아두기만 하면 각자 제 차례에만 움직인다.
- * 매니페스토 쪽 sticky 무대가 불투명(bg-ground)이라 아래 벽이 비쳐 보이지도 않는다.
+ * 링크를 열면 처음 보이는 화면이다. 여기가 집이라 뒤로가기를 두지 않는다 —
+ * 돌아갈 뒤가 없다. 손을 떼면 어느 화면에서든 다시 이리로 돌아온다(IdleReset).
+ * 나가는 길이 필요한 건 안쪽 세 화면 쪽이다.
  */
-
-/** 모핑을 스크롤 전 구간에 걸지 않는다 — 조금 내렸을 때 시작해 다 열리기 전에 끝난다 */
-const MORPH_FROM = 0.15;
-const MORPH_TO = 0.75;
 
 /**
- * 여기까지 열려야 눌러서 들어갈 수 있다.
+ * 열린 칸이 안쪽 폭에서 차지할 비율.
  *
- * 예전엔 화면 전체가 처음부터 링크라, 전시장에서 지나가다 한 번 스치면
- * 벽이 열리는 장면을 못 보고 바로 넘어가 버렸다.
- * 다 열린 뒤에만 링크를 건다.
+ * 이 값이 곧 좌우 여백을 정한다. 열린 칸의 폭은 `높이 × 사진비율`로 고정이니,
+ * 비율을 낮출수록 상자가 넓어지고(여백이 줄고) 대신 열림/접힘 차이가 작아진다.
  */
-const ENTER_AT = 0.98;
+const OPEN_RATIO = 0.42;
+const GAP = 10;
 
-export default function LandingPage() {
-  const morphRef = useRef<MorphingTextHandle>(null);
-  const [ready, setReady] = useState(false);
-  /** 스크롤 프레임마다 setState를 부르지 않게, 넘나들 때만 바꾼다 */
-  const readyRef = useRef(false);
+/**
+ * 상자 비율은 사진에서 나온다.
+ * 가장 넓은 사진이 열렸을 때 그 폭이 안쪽 폭의 OPEN_RATIO가 되도록 잡는다.
+ * 그래야 어느 칸이 열려도 사진이 잘리지도, 옆에 빈자리가 생기지도 않는다.
+ */
+const WIDEST = Math.max(
+  ...mainSections.map((s) => (s.image ? s.image.width / s.image.height : 0)),
+);
 
-  const handleProgress = useCallback((p: number) => {
-    const t = (p - MORPH_FROM) / (MORPH_TO - MORPH_FROM);
-    morphRef.current?.setProgress(Math.min(Math.max(t, 0), 1));
-
-    const open = p >= ENTER_AT;
-    if (open !== readyRef.current) {
-      readyRef.current = open;
-      setReady(open);
-    }
-  }, []);
-
+export default function MainPage() {
   return (
-    <div data-screen="landing" className="relative">
-      {/* 긴 스크롤이라 흐름에 두면 첫 화면에서만 보인다. 화면에 고정해 둔다 */}
-      <div className="fixed top-[var(--nav-pad)] left-[var(--page-margin)] z-50">
-        <BackLink href="/home" label="Back to main" />
-      </div>
-
-      <section data-block="manifesto">
-        <h1 className="sr-only">GRIT — Manifesto</h1>
-        <ScrollBurnText sections={MANIFESTO} logoOutro hint="scroll" />
-      </section>
-
-      <ScrollExpand
-        src="/img/landing-bg.webp"
-        alt=""
-        useWindowScroll
-        startWidth={42}
-        startHeight={58}
-        mediaZoom={1.35}
-        scrollDistance={1.2}
-        holdDistance={0.35}
-        overlayScrim={0}
-        onProgress={handleProgress}
-        overlay={
-          <MorphingText
-            ref={morphRef}
-            from="Be Experimental"
-            to="GRIT"
-            className="text-ink h-[1.15em] text-[clamp(2rem,7vw,6.5rem)] font-bold tracking-tight"
-          />
-        }
-        hint={<span className="text-label text-ink-muted uppercase">Scroll</span>}
-      />
-
-      {/*
-        다 열린 뒤에만 링크를 건다. 그 전에는 눌러도 안 넘어간다 —
-        스크롤로 벽이 열리는 장면을 건너뛰지 않게 하려는 것.
-      */}
-      {ready ? (
-        <Link
-          href="/home"
-          aria-label="Enter"
-          className="fixed inset-0 z-10"
-          style={{ WebkitTapHighlightColor: "transparent" }}
+    <div
+      data-screen="main"
+      className="relative flex h-dvh items-center justify-center py-[var(--page-margin)]"
+    >
+      <div className="h-full max-w-full" style={{ aspectRatio: `${WIDEST / OPEN_RATIO}` }}>
+        <AccordionGallery
+          items={mainSections.map((s) => ({
+            label: s.label,
+            href: s.href,
+            image: s.image,
+          }))}
+          defaultIndex={1}
+          orientation="horizontal"
+          height="100%"
+          gap={GAP}
+          expandRatio={OPEN_RATIO}
+          fitOpen
+          // 기울이지 않는다 — 세 칸이 같은 높이로 나란히 선다
+          tilt={0}
+          trigger="hover"
+          sizes="(max-width: 520px) 100vw, 40vw"
         />
-      ) : null}
+      </div>
     </div>
   );
 }

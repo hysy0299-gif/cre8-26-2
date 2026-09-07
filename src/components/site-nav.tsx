@@ -23,7 +23,7 @@ export function SiteNav() {
   return (
     <nav className="page-inset flex items-center justify-end py-[var(--nav-pad)]">
       <div className="fixed top-[var(--nav-pad)] left-[var(--page-margin)] z-50">
-        <BackLink href="/home" label="Back to main" />
+        <BackLink href="/" label="Back to main" />
       </div>
 
       <ul data-nav-links className="text-label flex gap-[var(--grid-gutter)] uppercase">
