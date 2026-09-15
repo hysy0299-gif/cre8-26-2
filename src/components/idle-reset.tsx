@@ -37,6 +37,15 @@ export function IdleReset({ home = "/" }: { home?: string }) {
     const reset = () => {
       if (timer.current !== null) window.clearTimeout(timer.current);
       timer.current = window.setTimeout(() => {
+        /*
+         * 손이 안 닿아도 화면이 스스로 보여주는 중이면 기다린다.
+         * 프로세스 북은 표지만 넘겨주면 30장을 알아서 넘기는데, 그동안 입력이 없다고
+         * 데려가면 정확히 중간쯤에서 끊긴다. 다 넘기고 나면 그때부터 다시 잰다.
+         */
+        if (document.querySelector("[data-idle-hold]")) {
+          reset();
+          return;
+        }
         router.push(home);
         // 클라이언트 이동이라 스크롤이 남을 수 있다. 3분할은 맨 위에서 시작해야 한다
         window.scrollTo(0, 0);

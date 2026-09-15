@@ -36,6 +36,14 @@ const CLICK_SLOP = 6;
 const TURN_DURATION = 0.5;
 /** 지금 장 앞뒤로 몇 장을 미리 받아둘지 */
 const LOAD_AHEAD = 3;
+/**
+ * 표지를 넘기면 나머지는 책이 알아서 넘어간다. 그 간격.
+ *
+ * 전시장에서는 60쪽을 끝까지 끌어 넘기는 사람이 거의 없다. 첫 장만 넘겨 주면
+ * 나머지를 책이 보여주고, 붙잡고 싶으면 손을 대서 가져가면 된다.
+ * TURN_DURATION과 같은 값이라 한 장이 다 돌면 다음 장이 바로 이어진다 — 쉬는 틈 없이 흐른다.
+ */
+const AUTOPLAY_MS = 500;
 
 export function PageFlip({ pages, className = "" }: PageFlipProps) {
   const leaves = useMemo<Leaf[]>(() => {
@@ -67,6 +75,9 @@ export function PageFlip({ pages, className = "" }: PageFlipProps) {
     null,
   );
   const [isDragging, setIsDragging] = useState(false);
+
+  /** 자동 넘김이 도는 중인지. 표지를 넘기면 켜지고, 손을 대거나 끝에 닿으면 꺼진다 */
+  const [playing, setPlaying] = useState(false);
 
   /** 넘긴 장은 나중 것이 위로, 안 넘긴 장은 앞 것이 위로 쌓인다 */
   const zIndexFor = useCallback(
@@ -186,9 +197,50 @@ export function PageFlip({ pages, className = "" }: PageFlipProps) {
     [animate, maxTurned, settleFlying],
   );
 
+  /**
+   * 표지를 막 넘겼으면 자동 넘김을 켠다.
+   *
+   * 다 넘어간 뒤가 아니라 **넘기기로 결정된 순간** 켜는 게 중요하다.
+   * 표지가 도는 0.5초가 그대로 첫 박자가 되어, 표지가 다 돌자마자 다음 장이 이어진다.
+   * 완료를 기다렸다 켜면 거기서 한 박자 쉬어 리듬이 끊긴다.
+   */
+  const armAutoplay = (from: number, to: number) => {
+    if (from === 0 && to === 1) setPlaying(true);
+  };
+
+  /**
+   * 한 장씩 스스로 넘긴다.
+   *
+   * 장이 다 돌기를 기다리지 않고 고정 간격으로 돈다 — 기다렸다 재면
+   * 도는 시간 0.5초에 쉬는 0.5초가 붙어 한 장에 1초가 걸린다.
+   */
+  useEffect(() => {
+    if (!playing) return;
+    const id = window.setInterval(() => {
+      /*
+       * 세기 전에 먼저 앉힌다.
+       *
+       * 돌던 장은 gsap의 onComplete가 와야 turnedRef에 반영된다. 간격이 도는 시간과
+       * 같아서 종종 타이머가 그 완료보다 몇 ms 빠른데, 그때 turnedRef를 먼저 읽으면
+       * 목적지가 지금 자리와 같아져 turnTo가 그냥 돌아간다 — 한 박자가 통째로 샌다.
+       * 실제로 초당 2장이 아니라 1.3장씩 넘어갔다.
+       */
+      settleFlying();
+      if (turnedRef.current >= maxTurned) {
+        setPlaying(false);
+        return;
+      }
+      turnTo(turnedRef.current + 1);
+    }, AUTOPLAY_MS);
+    return () => window.clearInterval(id);
+  }, [playing, maxTurned, turnTo, settleFlying]);
+
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     const book = bookRef.current;
     if (!book) return;
+
+    // 손을 댄 순간 자동 넘김은 물러난다 — 보고 싶은 쪽에서 멈출 수 있어야 한다
+    setPlaying(false);
 
     // 돌고 있던 장을 먼저 앉히고 나서 어느 장을 집을지 정한다
     settleFlying();
@@ -272,15 +324,18 @@ export function PageFlip({ pages, className = "" }: PageFlipProps) {
       return;
     }
 
+    armAutoplay(cur, next);
     animate(drag.leaf, next);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key === "ArrowRight") {
       e.preventDefault();
+      armAutoplay(turnedRef.current, turnedRef.current + 1);
       turnTo(turnedRef.current + 1);
     } else if (e.key === "ArrowLeft") {
       e.preventDefault();
+      setPlaying(false);
       turnTo(turnedRef.current - 1);
     }
   };
@@ -299,6 +354,12 @@ export function PageFlip({ pages, className = "" }: PageFlipProps) {
       <div
         ref={bookRef}
         className={`book${isDragging ? " book--dragging" : ""}`}
+        /*
+          스스로 넘어가는 동안은 손이 안 닿아도 화면이 일하는 중이다.
+          이 표시가 붙어 있으면 IdleReset이 첫 화면으로 돌려보내지 않고 기다린다 —
+          없으면 30장을 다 넘기기도 전에(15초) 책이 끊긴다.
+        */
+        data-idle-hold={playing ? "" : undefined}
         role="group"
         aria-label="Brand book"
         tabIndex={0}
