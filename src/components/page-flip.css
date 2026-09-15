@@ -13,10 +13,16 @@
   user-select: none;
   /* 가로 드래그는 우리가 먹고 세로 스크롤은 페이지에 넘긴다 */
   touch-action: pan-y;
+  /*
+    책 위에서는 커서를 감춘다.
+    펼친 책이 화면을 거의 다 덮는 통짜 이미지라, 그 위에 떠 있는 화살표가
+    종이 위의 얼룩처럼 읽힌다. 잎 사이 빈틈까지 덮으려고 책 전체에 건다.
+  */
+  cursor: none;
 }
 
 .book--dragging {
-  cursor: grabbing;
+  cursor: none;
 }
 
 .book__leaf {
@@ -28,7 +34,7 @@
   transform-origin: left center;
   transform-style: preserve-3d;
   will-change: transform;
-  cursor: grab;
+  cursor: none;
 }
 
 .book__face {
