@@ -41,9 +41,9 @@ const LOAD_AHEAD = 3;
  *
  * 전시장에서는 60쪽을 끝까지 끌어 넘기는 사람이 거의 없다. 첫 장만 넘겨 주면
  * 나머지를 책이 보여주고, 붙잡고 싶으면 손을 대서 가져가면 된다.
- * TURN_DURATION과 같은 값이라 한 장이 다 돌면 다음 장이 바로 이어진다 — 쉬는 틈 없이 흐른다.
+ * 도는 데 TURN_DURATION(0.5초)이 걸리니 한 장이 다 돈 뒤 반 박자 쉬고 다음 장이 간다.
  */
-const AUTOPLAY_MS = 500;
+const AUTOPLAY_MS = 1000;
 
 export function PageFlip({ pages, className = "" }: PageFlipProps) {
   const leaves = useMemo<Leaf[]>(() => {
